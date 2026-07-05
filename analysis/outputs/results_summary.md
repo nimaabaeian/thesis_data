@@ -1,6 +1,6 @@
 # Orexigenic drive — results summary
 
-_Generated 2026-07-05 20:11. Single always-on condition; no drive-off comparison. Unit = run (10 runs, 8 days, 217 interactions)._
+_Generated 2026-07-05 20:28. Single always-on condition; no drive-off comparison. Unit = run (10 runs, 8 days, 217 interactions)._
 
 ## Verification gate
 

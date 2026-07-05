@@ -1908,10 +1908,12 @@ savefig(fig,"fig03_thresholds_transitions"); plt.show()
 md("""**Fig 4 — Deficit → action (RQ1-3)**: the correct contrast, **Full vs deficit
 (Hungry+Starving)**. Left: recovery-action rates with bootstrap CIs. Right: the
 time distribution of deficit-gated actions across the deployment, rather than a bar chart
-of corpus totals.""")
+of corpus totals; the thin state-coloured trace is the continuous stomach level context.""")
 code(r"""
 # Fig 4 — RQ1-3 visual: does a DEFICIT change what the robot does? Contrast no-deficit (Full)
 # vs deficit (Hungry+Starving) across the coded state-gated recovery repertoire.
+from matplotlib.collections import LineCollection
+
 def _grp(h): return "Full" if h=="HS1" else ("Deficit" if h in ("HS2","HS3") else None)
 FULL_C, DEF_C = HS_PALETTE["HS1"], "#E0892E"
 
@@ -1966,31 +1968,50 @@ day_start=hunger_raw.groupby("day_rome")["timestamp_epoch"].min().to_dict()
 _events["minute"]=_events.apply(lambda r:(r["timestamp_epoch"]-day_start.get(r["day_rome"],r["timestamp_epoch"]))/60.0,axis=1)
 _events["y"]=_events["day_rome"].map(day_to_y)
 styles={
-    "Hungry Telegram ping":("o",HS_ACCENT["HS2"],28),
-    "Starving Telegram ping":("o",HS_ACCENT["HS3"],34),
-    "Face-to-face ask-feed":("^","#7A4EAB",52),
-    "Face-to-face still-hungry":("s","#7A4EAB",46),
-    "Face-to-face look-around":("D","#7A4EAB",44),
+    "Hungry Telegram ping":("o",HS_ACCENT["HS2"],64),
+    "Starving Telegram ping":("o",HS_ACCENT["HS3"],72),
+    "Face-to-face ask-feed":("^","#7A4EAB",92),
+    "Face-to-face still-hungry":("s","#7A4EAB",84),
+    "Face-to-face look-around":("D","#7A4EAB",84),
 }
 for day in days:
     dd=hunger_raw[hunger_raw["day_rome"]==day]
     span=(dd["timestamp_epoch"].max()-dd["timestamp_epoch"].min())/60.0
     axB.hlines(day_to_y[day],0,span,color="#D9DEE5",lw=0.9,zorder=0)
+    # Mini-sparkline of the continuous stomach level for this day. It is scaled to
+    # stay inside the day row; segment colour carries the current hunger state.
+    dd=dd.sort_values(["timestamp_epoch","id"]).copy()
+    if len(dd) >= 2:
+        xx=(dd["timestamp_epoch"].values-dd["timestamp_epoch"].min())/60.0
+        yy=day_to_y[day] + (50.0-dd["stomach_level_after"].astype(float).values)/175.0
+        states=dd["hunger_state_after"].fillna(dd["hunger_state_before"]).astype(str).values
+        run_ids=dd["run_id"].astype(str).values
+        epochs=dd["timestamp_epoch"].astype(float).values
+        segs=[]; cols=[]
+        for i in range(len(dd)-1):
+            if run_ids[i] != run_ids[i+1] or (epochs[i+1]-epochs[i]) > 180:
+                continue
+            segs.append([(xx[i],yy[i]),(xx[i+1],yy[i+1])])
+            cols.append(HS_ACCENT.get(states[i], MUTED))
+        if segs:
+            axB.add_collection(LineCollection(segs, colors=cols, linewidths=1.25, alpha=0.90, zorder=1))
 for action,(marker,color,size) in styles.items():
     sub=_events[_events["action"]==action]
     if len(sub):
         axB.scatter(sub["minute"],sub["y"],s=size,marker=marker,color=color,
-                    edgecolor="white",linewidth=0.55,alpha=0.88,label=f"{action} (n={len(sub)})",zorder=3)
+                    edgecolor="white",linewidth=1.0,alpha=0.94,label=f"{action} (n={len(sub)})",zorder=3)
 _nondef=_events[_events["hs_group"]!="Deficit"]
 if len(_nondef):
-    axB.scatter(_nondef["minute"],_nondef["y"],s=82,facecolors="none",edgecolors=HS_PALETTE["HS1"],
-                linewidth=1.5,label=f"non-deficit edge case (n={len(_nondef)})",zorder=4)
+    axB.scatter(_nondef["minute"],_nondef["y"],s=130,facecolors="none",edgecolors=HS_PALETTE["HS1"],
+                linewidth=2.0,label=f"non-deficit edge case (n={len(_nondef)})",zorder=4)
 axB.set_yticks(range(len(days))); axB.set_yticklabels(days,fontsize=8.5)
 axB.set_xlabel("minutes into experiment day (wall-clock)")
 axB.set_ylabel("experiment day")
 axB.grid(False)
 axB.invert_yaxis()
 axB.legend(loc="upper left",bbox_to_anchor=(1.01,1.0),fontsize=8,frameon=False)
+axB.text(0.01,0.985,"thin line: stomach level (green/amber/red = state)",
+         transform=axB.transAxes,ha="left",va="top",fontsize=8.2,color=MUTED)
 axB.set_title("When deficit-gated actions occur over time",fontsize=11)
 fig.suptitle("Fig 4 — Deficit→action: a deficit switches on the proactive recovery repertoire (Full vs Hungry+Starving)",
              fontsize=13,fontweight="semibold")

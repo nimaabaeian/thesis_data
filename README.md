@@ -225,7 +225,8 @@ bootstrap CIs, recovery-action rates jump: face-to-face hunger framing **0.03 �
 Telegram hunger framing **0.09 → 0.27**, and co-present feeding pursuit **0.15 → 0.43**.
 Right: the same deficit-gated actions are plotted by experiment time, showing when the robot
 actually emitted Hungry/Starving Telegram pings and face-to-face feed-seeking acts across the
-deployment rather than reducing them to a bar count.* ***Conclusion.*** *A deficit changes the
+deployment, overlaid on the continuous stomach-level trace whose colour changes with state,
+rather than reducing them to a bar count.* ***Conclusion.*** *A deficit changes the
 robot's action repertoire; the evidence is the emergence and timing of recovery actions, not
 generic reply behaviour.*
 
