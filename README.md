@@ -106,7 +106,7 @@ The notebook runs in phases, each a gate for the next:
 | **A — Data preparation** | Load the clean DB views, pseudonymise all identities (`P01…P14`), reconstruct analysis units (HS3 episodes, transitions, drive timeline), and build one **leakage-safe master table** (one row per interaction, predictors from *before* the interaction only). | A trustworthy, privacy-safe table that can't "cheat" by peeking at the outcome. |
 | **Verification gate (V1–V5)** | 15 hard/soft checks: do meal sizes match the source constants? Does the fitted drain rate match nominal? Referential integrity, clock sanity, energy balance. | **Nothing proceeds until the data provably matches the code.** All passed. |
 | **B — Statistics (B1–B9)** | The confirmatory core. Mixed-effects models, bootstrap CIs, a Markov steady-state model. One analysis per homeostatic function. | This is where the real evidential weight sits. |
-| **C — Visualisation** | 12 figures, all tied to a specific claim. | Make the mechanism legible. |
+| **C — Visualisation** | 13 figures, all tied to a specific claim. | Make the mechanism legible. |
 | **D — Machine learning (D1, D4, D5)** | *Interpretive, not confirmatory* (only ~200 rows). Group-aware cross-validation (D1), feeding-concentration robustness (D4), and language framing (D5). | Sensitivity checks and robustness, honestly labelled as such. |
 
 A recurring, deliberate stance runs through Phase B: **Starving is rare and small-n**
@@ -220,6 +220,18 @@ and not merely a Starving effect — the moment the robot has *any* deficit, its
 categorically.
 
 **Verdict: Supported.**
+
+### Figure 4b — the deficit switches on the recovery repertoire
+
+![Deficit activates recovery repertoire](analysis/figures/fig04b_deficit_repertoire.png)
+
+***Reading.*** *The correct RQ1-3 contrast — **Full vs deficit (Hungry+Starving)**. Left: with
+bootstrap CIs, the recovery-repertoire rates jump (face-to-face framing 0.03 → 0.67, Telegram
+framing 0.09 → 0.27, feeding pursuit 0.15 → 0.43) while **reply rate (shaded, the baseline
+control) stays flat (0.78 → 0.76)**. Right: the deficit-gated actions that are essentially
+**silent at Full** — proactive Telegram pings (0 → 162) and feed-seeking speech acts (1 → 20).*
+***Conclusion.*** *A deficit doesn't quiet the robot; it adds a whole proactive recovery layer on
+top of unchanged conversation — the clearest single demonstration that deficit → action is real.*
 
 ### Figure 4 — engagement and energy spend by hunger state
 

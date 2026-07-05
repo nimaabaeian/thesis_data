@@ -1936,6 +1936,70 @@ fig.suptitle("Fig 4 — Deficit→action: engagement and active-energy spend fal
 savefig(fig,"fig04_deficit_action"); plt.show()
 """)
 
+md("""**Fig 4b — Deficit → action (RQ1-3)**: the correct contrast, **Full vs deficit
+(Hungry+Starving)**. Left: behavioural *rates* with bootstrap CIs — the recovery repertoire
+surges while baseline sociability (reply rate, shaded) is flat. Right: *deficit-gated* action
+counts that are silent at Full.""")
+code(r"""
+# Fig 4b — RQ1-3 visual: does a DEFICIT change what the robot does? Contrast no-deficit (Full)
+# vs deficit (Hungry+Starving) across the coded state-gated recovery repertoire.
+def _grp(h): return "Full" if h=="HS1" else ("Deficit" if h in ("HS2","HS3") else None)
+FULL_C, DEF_C = HS_PALETTE["HS1"], "#E0892E"
+
+_tt = turns_nlp.copy(); _tt["g"]=_tt["hunger_state"].map(_grp)
+_tt["v"]=pd.to_numeric(_tt.get("hunger_mentioned",0),errors="coerce").fillna(0)
+_am = chat_msgs.copy()
+if "role" in _am.columns: _am=_am[_am["role"]=="assistant"]
+_am["g"]=_am["hs"].map(_grp); _am["v"]=pd.to_numeric(_am.get("hunger_mentioned",0),errors="coerce").fillna(0)
+_mm = master.copy(); _mm["g"]=_mm["hunger_state_start"].map(_grp)
+_mm["fed"]=(pd.to_numeric(_mm["meals_eaten_count"],errors="coerce").fillna(0)>0).astype(float)
+_mm["rep"]=pd.to_numeric(_mm["replied_any"],errors="coerce").fillna(0)
+rate_specs=[("hunger framing\nface-to-face",_tt,"v"),
+            ("hunger framing\nTelegram",_am,"v"),
+            ("feeding pursuit\nP(meal)",_mm,"fed"),
+            ("reply rate\n(baseline)",_mm,"rep")]
+def _ci(df,col,g):
+    e,lo,hi=boot_ci(df[df["g"]==g][col]); return e,max(e-lo,0.0),max(hi-e,0.0)
+
+fig,(axA,axB)=plt.subplots(1,2,figsize=(14,4.6),gridspec_kw={"width_ratios":[1.55,1]})
+x=np.arange(len(rate_specs)); w=0.38
+for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
+    es=[];los=[];his=[]
+    for _,df,col in rate_specs:
+        e,lo,hi=_ci(df,col,g); es.append(e);los.append(lo);his.append(hi)
+    off=(-w/2 if gi==0 else w/2)
+    axA.bar(x+off,es,w,color=c,edgecolor="white",linewidth=1.1,label=g,zorder=3)
+    axA.errorbar(x+off,es,yerr=[los,his],fmt="none",ecolor=INK,elinewidth=1.1,capsize=3,zorder=4)
+    for xi,e in zip(x,es):
+        axA.annotate(f"{e:.2f}",(xi+off,e),textcoords="offset points",xytext=(0,3),
+                     ha="center",fontsize=8.5,color=INK)
+axA.axvspan(x[-1]-0.5,x[-1]+0.5,color=MUTED,alpha=0.07,zorder=0)  # baseline control band
+axA.set_xticks(x); axA.set_xticklabels([s[0] for s in rate_specs],fontsize=9)
+axA.set_ylabel("rate"); axA.set_ylim(0,1.0); axA.grid(False); axA.legend(loc="upper right")
+axA.set_title("Behavioural rates: recovery repertoire surges, sociability flat",fontsize=11)
+
+_ev=chat_events.copy(); _prov=_ev[_ev["event_type"].isin(["hs2_entry","hs3_proactive"])]
+pings={"Full":int((_prov["hs"]=="HS1").sum()),"Deficit":int(_prov["hs"].isin(["HS2","HS3"]).sum())}
+_ac=hunger_raw[hunger_raw["event_type"]=="active_cost"].copy()
+_ac["g"]=_ac["hunger_state_before"].fillna(_ac["hunger_state_after"]).map(_grp)
+_seek=_ac[_ac["stimulus_label"].isin(["hunger_ask_feed","hunger_still_hungry","hunger_look_around"])]
+seekc={"Full":int((_seek["g"]=="Full").sum()),"Deficit":int((_seek["g"]=="Deficit").sum())}
+cats=[("proactive\nTelegram pings",pings),("feed-seeking\nspeech acts",seekc)]
+xb=np.arange(len(cats))
+for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
+    vals=[d[g] for _,d in cats]; off=(-w/2 if gi==0 else w/2)
+    axB.bar(xb+off,vals,w,color=c,edgecolor="white",linewidth=1.1,label=g,zorder=3)
+    for xi,v in zip(xb,vals):
+        axB.annotate(str(v),(xi+off,v),textcoords="offset points",xytext=(0,3),
+                     ha="center",fontsize=9,fontweight="bold",color=INK)
+axB.set_xticks(xb); axB.set_xticklabels([c[0] for c in cats],fontsize=9)
+axB.set_ylabel("count over the corpus"); axB.grid(False); axB.margins(y=0.20)
+axB.set_title("Deficit-gated actions: silent at Full",fontsize=11)
+fig.suptitle("Fig 4b — Deficit→action: a deficit switches on the proactive recovery repertoire (Full vs Hungry+Starving)",
+             fontsize=13,fontweight="semibold")
+savefig(fig,"fig04b_deficit_repertoire"); plt.show()
+""")
+
 md("**Fig 5 — State×Hunger prioritisation heatmap**: grid coloured by Engaged-completion and by avg turns (Starving override should pop out).")
 code(r"""
 # Sequential single-hue (magnitude), NOT a red-green rainbow: CVD-safe, and every cell
@@ -2739,9 +2803,9 @@ items = [
 	 ("ml_dropcolumn_importance.csv", exists("ml_dropcolumn_importance.csv")),
 	]
 for n in ["fig01_architecture","fig02_drive_timeline","fig03_thresholds_transitions",
-          "fig04_deficit_action","fig05_prioritisation_heatmap","fig06_ips_decomposition",
-          "fig07_hs3_funnel","fig08_remote_loop","fig09_steady_state","fig10_affinity_trajectories",
-          "fig11_affinity_learning","figD1_ml_sensitivity"]:
+          "fig04_deficit_action","fig04b_deficit_repertoire","fig05_prioritisation_heatmap",
+          "fig06_ips_decomposition","fig07_hs3_funnel","fig08_remote_loop","fig09_steady_state",
+          "fig10_affinity_trajectories","fig11_affinity_learning","figD1_ml_sensitivity"]:
     items.append((n, fig_exists(n)))
 print("FINAL OUTPUT CHECKLIST")
 for name, st in items:
