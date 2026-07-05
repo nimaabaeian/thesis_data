@@ -57,8 +57,7 @@ two are faithful-implementation facts, true by construction. The load-bearing re
 behavioural and cross **two coded thresholds**: at the deficit line (entering Hungry) the robot
 switches on a whole **proactive recovery repertoire** that is silent at Full — hunger framing in
 speech jumps **3% → 67%**, feed-seeking acts and proactive Telegram pings go from **0 to 162**,
-feeding pursuit **~triples (0.15 → 0.43)** — while ordinary conversation is untouched (reply/turns
-flat); then at the starving line it **overrides** the social agenda entirely (turns 2.5 → 0.2,
+and feeding pursuit **~triples (0.15 → 0.43)**; then at the starving line it **overrides** the social agenda entirely (turns 2.5 → 0.2,
 Engaged 0.68 → 0.08). *The deficit adds recovery behaviour at 60 and overrides social behaviour at
 25 — a two-threshold controller, not a smooth ramp.*
 
@@ -207,43 +206,28 @@ switches on an entire **proactive recovery repertoire that is silent at Full**:
 | Telegram hunger framing | 8.7% | 27.2% | ~3× |
 | Co-present feeding pursuit (P(meal in interaction)) | 0.15 | 0.43 | ~3× |
 | Mean meal size | 21.2 | 31.4 | +48% |
-| *Reply rate (baseline sociability)* | *0.78* | *0.76* | *unchanged* |
-| *Mean conversation turns* | *2.27* | *2.54* | *unchanged* |
 
 **How to read it.** Two honest layers: the **remote pings and feed-seeking acts are coded
 gates** — their appearance only-in-deficit confirms the state *does* switch the action repertoire
 (faithful implementation). The **framing, feeding pursuit and meal size are emergent
 measurements** of how strongly the deficit reshapes what actually happens — and they move a lot.
-Crucially, **baseline sociability is unchanged** (reply, turns flat): the deficit doesn't degrade
-conversation, it **adds** a goal-directed recovery layer on top of it. So this is not cosmetic
-and not merely a Starving effect — the moment the robot has *any* deficit, its behaviour changes
-categorically.
+This is not cosmetic and not merely a Starving effect — the moment the robot has *any* deficit,
+its behaviour changes categorically in both face-to-face and remote channels.
 
 **Verdict: Supported.**
 
-### Figure 4b — the deficit switches on the recovery repertoire
-
-![Deficit activates recovery repertoire](analysis/figures/fig04b_deficit_repertoire.png)
-
-***Reading.*** *The correct RQ1-3 contrast — **Full vs deficit (Hungry+Starving)**. Left: with
-bootstrap CIs, the recovery-repertoire rates jump (face-to-face framing 0.03 → 0.67, Telegram
-framing 0.09 → 0.27, feeding pursuit 0.15 → 0.43) while **reply rate (shaded, the baseline
-control) stays flat (0.78 → 0.76)**. Right: the deficit-gated actions that are essentially
-**silent at Full** — proactive Telegram pings (0 → 162) and feed-seeking speech acts (1 → 20).*
-***Conclusion.*** *A deficit doesn't quiet the robot; it adds a whole proactive recovery layer on
-top of unchanged conversation — the clearest single demonstration that deficit → action is real.*
-
-### Figure 4 — engagement and energy spend by hunger state
+### Figure 4 — Deficit → action
 
 ![Deficit to action](analysis/figures/fig04_deficit_action.png)
 
-***Reading.*** *Four outcomes split by state, with bootstrap CIs (hatching flags the small
-Starving cell, n=13). Reply rate is **flat Full→Hungry (0.78 → 0.79)** then eases to 0.54; but
-the decisive moves are P(reach Engaged) **0.69 / 0.67 / 0.08** and mean active energy per
-interaction **9.1 / 10.4 / 2.9** — both hold through Hungry and* **cliff at Starving.**
-***Conclusion.*** *Nothing ramps smoothly with hunger; behaviour is preserved through the Hungry
-band and then steps down at the 25 threshold — the visual signature of a threshold controller,
-not a gradient.*
+***Reading.*** *The correct RQ1-3 contrast — **Full vs deficit (Hungry+Starving)**. Left: with
+bootstrap CIs, recovery-action rates jump: face-to-face hunger framing **0.03 → 0.67**,
+Telegram hunger framing **0.09 → 0.27**, and co-present feeding pursuit **0.15 → 0.43**.
+Right: the same deficit-gated actions are plotted by experiment time, showing when the robot
+actually emitted Hungry/Starving Telegram pings and face-to-face feed-seeking acts across the
+deployment rather than reducing them to a bar count.* ***Conclusion.*** *A deficit changes the
+robot's action repertoire; the evidence is the emergence and timing of recovery actions, not
+generic reply behaviour.*
 
 ### RQ1.4 — Behavioural prioritisation: the Starving override *(analysis B4 — the centrepiece)*
 
@@ -295,8 +279,8 @@ both B3 and B4 are Supported. It's one design, not a contradiction:
 - **At the deficit line (60, entering Hungry): the recovery repertoire turns ON** (B3). Being in
   a deficit vs Full flips hunger framing **3% → 67%**, activates feed-seeking acts and proactive
   Telegram pings (**0 → 162**), and roughly triples feeding pursuit (**0.15 → 0.43**) with bigger
-  meals (**21 → 31**) — a large, categorical change in *what the robot does*, layered on top of
-  **unchanged** conversation (reply 0.78 → 0.76, turns 2.3 → 2.5).
+  meals (**21 → 31**) — a large, categorical change in *what the robot does* across face-to-face
+  and remote channels.
 - **At the starving line (25, entering Starving): the social agenda is OVERRIDDEN** (B4). Now
   conversation itself collapses (turns 2.5 → 0.2, Engaged 0.68 → 0.08) as `_run_hunger_tree` takes
   over.
@@ -314,24 +298,24 @@ and *overrides* social behaviour at 25. B3, B4 and B8 are that one two-threshold
 robot *initiate* this, or only react?
 
 **How.** Three angles: (1) meal size vs the deficit state at feed time; (2) reactive QR feeds
-by state; (3) **proactive Telegram pings → did the user reply within 1 h**; plus a
+by state; (3) **proactive Telegram pings → did they produce a user response within 1 h**; plus a
 proactive-vs-reactive comparison.
 
 **Result.**
 - Meal size **grows with deficit** (Full 21 / Hungry 29 / Starving 43) — bigger meals when
   hungrier.
-- Proactive Telegram pings drew replies at **0.21 [0.16, 0.26]** — modest but real; the drive
+- Proactive Telegram pings produced user responses at **0.21 [0.16, 0.26]** — modest but real; the drive
   **reaches users off-robot** and pulls a response.
 - Recovery is **drive-initiated (proactive)**, not merely reactive.
 
 **Verdict: Supported.**
 
-### Figure 8 — the remote loop reaches people and draws replies
+### Figure 8 — the remote loop reaches people
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
-***Reading.*** *Left: proactive Telegram pings by type; right: their 1-hour reply rate with
-bootstrap CIs. Across all proactive pings the response rate is **0.21 [0.16, 0.26]** (47/224),
+***Reading.*** *Left: proactive Telegram pings by type; right: their 1-hour response-to-ping rate
+with bootstrap CIs. Across all proactive pings the response rate is **0.21 [0.16, 0.26]** (47/224),
 and for the Starving-specific `hs3_proactive` ping **0.26** (19/74).* ***Conclusion.*** *The
 deficit genuinely escapes the robot's body and pulls a human response off-robot — modest but
 real, and drive-*initiated*: co-present interactions are **83%** reply-bearing when proactive vs

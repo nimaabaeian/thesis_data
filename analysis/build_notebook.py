@@ -1293,15 +1293,12 @@ print(f"(2) Feed-seeking speech acts (ask_feed/still_hungry/look_around): "
       f"Full={int(sk.get('Full',0))} vs Deficit={int(sk.get('Deficit',0))} "
       f"(deficit-only, as coded in _run_hunger_tree)")
 
-# ---- (3) Co-present interaction behaviour: pursuit & meals rise, sociability unchanged ----
+# ---- (3) Co-present interaction behaviour: pursuit rises under deficit ----
 d = master.copy()
 d["grp"] = d["hunger_state_start"].map(deficit_grp)
-d["replied"] = pd.to_numeric(d["replied_any"], errors="coerce").fillna(0)
 d["fed"] = pd.to_numeric(d["meals_eaten_count"], errors="coerce").fillna(0) > 0
-d["nt"] = pd.to_numeric(d["n_turns"], errors="coerce").fillna(0)
 d = d.dropna(subset=["grp"])
-g = d.groupby("grp").agg(n=("interaction_id","size"), reply=("replied","mean"),
-                         feed_pursuit=("fed","mean"), turns=("nt","mean"))
+g = d.groupby("grp").agg(n=("interaction_id","size"), feed_pursuit=("fed","mean"))
 print("\n(3) Co-present interactions Full vs Deficit:")
 print(g.loc[["Full","Deficit"]].round(3).to_string())
 dp,dplo,dphi = boot_diff_ci(d[d.grp=="Deficit"]["fed"].astype(float), d[d.grp=="Full"]["fed"].astype(float))
@@ -1344,10 +1341,8 @@ verdict("B3", f"Supported: being in a deficit categorically changes what the rob
         f"(deficit-only); co-present feeding pursuit {g.loc['Full','feed_pursuit']:.2f} -> "
         f"{g.loc['Deficit','feed_pursuit']:.2f} with larger meals ({ms.loc['Full','mean']:.0f} -> "
         f"{ms.loc['Deficit','mean']:.0f}); and the remote channel fires {n_def_ping} proactive pings "
-        f"in deficit vs {n_full_ping} at Full. Baseline sociability is unchanged (reply "
-        f"{g.loc['Full','reply']:.2f} -> {g.loc['Deficit','reply']:.2f}, turns "
-        f"{g.loc['Full','turns']:.1f} -> {g.loc['Deficit','turns']:.1f}) — the deficit ADDS "
-        f"goal-directed recovery behaviour rather than degrading conversation. "
+        f"in deficit vs {n_full_ping} at Full. This is the action-conversion evidence: the deficit "
+        f"adds goal-directed recovery behaviour in both face-to-face and remote channels. "
         f"(Pings/feed-seeking are coded gates = faithful implementation; framing/pursuit/meal-size "
         f"are emergent measurements of how strongly the deficit reshapes behaviour.)",
         p=float(b3_p), n=len(d))
@@ -1632,7 +1627,7 @@ crossing two coded thresholds:
 - **At the deficit line (60, entering Hungry): the recovery repertoire turns on** (B3). Hunger
   framing jumps **3% → 67%**, feed-seeking speech acts and proactive Telegram pings go from
   ~0 to their full rate, feeding pursuit and meal size rise — a large, categorical change in
-  *what the robot does*, layered on top of still-normal conversation (reply/turns unchanged).
+  *what the robot does*.
 - **At the starving line (25, entering Starving): the social agenda is overridden** (B4).
   Conversation collapses (turns 2.5 → 0.2, Engaged 0.68 → 0.08) as the `_run_hunger_tree`
   feed-seeking loop takes over.
@@ -1910,38 +1905,12 @@ fig.suptitle("Fig 3 — Deficit detection: state transitions fire precisely at 6
 savefig(fig,"fig03_thresholds_transitions"); plt.show()
 """)
 
-md("**Fig 4 — Deficit→action panel**: reply rate, Engaged rate, avg turns, active-energy cost by HS with bootstrap CIs.")
+md("""**Fig 4 — Deficit → action (RQ1-3)**: the correct contrast, **Full vs deficit
+(Hungry+Starving)**. Left: recovery-action rates with bootstrap CIs. Right: the
+time distribution of deficit-gated actions across the deployment, rather than a bar chart
+of corpus totals.""")
 code(r"""
-d = master.copy(); d["reached_ss4"]=(d["final_state"]=="ss4").astype(int)
-d["replied_any"]=pd.to_numeric(d["replied_any"],errors="coerce").fillna(0)
-d["n_turns"]=pd.to_numeric(d["n_turns"],errors="coerce").fillna(0)
-d=d.dropna(subset=["hunger_state_start"])
-metrics=[("replied_any","reply rate","{:.2f}"),("reached_ss4","P(reach Engaged)","{:.2f}"),
-         ("n_turns","avg conversation turns","{:.1f}"),("active_energy_cost","avg active energy","{:.1f}")]
-fig, axes = plt.subplots(1,4,figsize=(15,4.0))
-ncount=d["hunger_state_start"].value_counts()
-for ax,(col,lab,fmt) in zip(axes,metrics):
-    es=[];los=[];his=[];cols=[];ns=[];small=[]
-    for hs in HS_ORDER:
-        s=d[d["hunger_state_start"]==hs][col]
-        e,lo,hi=boot_ci(s); es.append(e); los.append(e-lo); his.append(hi-e)
-        cols.append(HS_PALETTE[hs]); ns.append(int(ncount.get(hs,0))); small.append(ncount.get(hs,0)<20)
-    bars_with_ci(ax,HS_NAMES,es,los,his,cols,n_labels=ns,small_flag=small,value_fmt=fmt)
-    ax.set_title(lab)
-axes[0].set_ylabel("estimate (bootstrap 95% CI)")
-fig.legend(handles=[mpl.patches.Patch(fc="white",ec=INK,hatch="//",label="hatched bar = small-n (<20)")],
-           loc="lower center",bbox_to_anchor=(0.5,-0.08),ncol=1)
-fig.suptitle("Fig 4 — Deficit→action: engagement and active-energy spend fall sharply when Starving",
-             fontsize=13,fontweight="semibold")
-savefig(fig,"fig04_deficit_action"); plt.show()
-""")
-
-md("""**Fig 4b — Deficit → action (RQ1-3)**: the correct contrast, **Full vs deficit
-(Hungry+Starving)**. Left: behavioural *rates* with bootstrap CIs — the recovery repertoire
-surges while baseline sociability (reply rate, shaded) is flat. Right: *deficit-gated* action
-counts that are silent at Full.""")
-code(r"""
-# Fig 4b — RQ1-3 visual: does a DEFICIT change what the robot does? Contrast no-deficit (Full)
+# Fig 4 — RQ1-3 visual: does a DEFICIT change what the robot does? Contrast no-deficit (Full)
 # vs deficit (Hungry+Starving) across the coded state-gated recovery repertoire.
 def _grp(h): return "Full" if h=="HS1" else ("Deficit" if h in ("HS2","HS3") else None)
 FULL_C, DEF_C = HS_PALETTE["HS1"], "#E0892E"
@@ -1953,15 +1922,13 @@ if "role" in _am.columns: _am=_am[_am["role"]=="assistant"]
 _am["g"]=_am["hs"].map(_grp); _am["v"]=pd.to_numeric(_am.get("hunger_mentioned",0),errors="coerce").fillna(0)
 _mm = master.copy(); _mm["g"]=_mm["hunger_state_start"].map(_grp)
 _mm["fed"]=(pd.to_numeric(_mm["meals_eaten_count"],errors="coerce").fillna(0)>0).astype(float)
-_mm["rep"]=pd.to_numeric(_mm["replied_any"],errors="coerce").fillna(0)
 rate_specs=[("hunger framing\nface-to-face",_tt,"v"),
             ("hunger framing\nTelegram",_am,"v"),
-            ("feeding pursuit\nP(meal)",_mm,"fed"),
-            ("reply rate\n(baseline)",_mm,"rep")]
+            ("feeding pursuit\nP(meal)",_mm,"fed")]
 def _ci(df,col,g):
     e,lo,hi=boot_ci(df[df["g"]==g][col]); return e,max(e-lo,0.0),max(hi-e,0.0)
 
-fig,(axA,axB)=plt.subplots(1,2,figsize=(14,4.6),gridspec_kw={"width_ratios":[1.55,1]})
+fig,(axA,axB)=plt.subplots(1,2,figsize=(14.6,4.8),gridspec_kw={"width_ratios":[0.95,1.55]})
 x=np.arange(len(rate_specs)); w=0.38
 for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
     es=[];los=[];his=[]
@@ -1973,31 +1940,61 @@ for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
     for xi,e in zip(x,es):
         axA.annotate(f"{e:.2f}",(xi+off,e),textcoords="offset points",xytext=(0,3),
                      ha="center",fontsize=8.5,color=INK)
-axA.axvspan(x[-1]-0.5,x[-1]+0.5,color=MUTED,alpha=0.07,zorder=0)  # baseline control band
 axA.set_xticks(x); axA.set_xticklabels([s[0] for s in rate_specs],fontsize=9)
 axA.set_ylabel("rate"); axA.set_ylim(0,1.0); axA.grid(False); axA.legend(loc="upper right")
-axA.set_title("Behavioural rates: recovery repertoire surges, sociability flat",fontsize=11)
+axA.set_title("Recovery-action rates: Full vs deficit",fontsize=11)
 
 _ev=chat_events.copy(); _prov=_ev[_ev["event_type"].isin(["hs2_entry","hs3_proactive"])]
-pings={"Full":int((_prov["hs"]=="HS1").sum()),"Deficit":int(_prov["hs"].isin(["HS2","HS3"]).sum())}
+_prov = _prov.assign(action=_prov["event_type"].map({"hs2_entry":"Hungry Telegram ping",
+                                                     "hs3_proactive":"Starving Telegram ping"}),
+                     hs_state=_prov["hs"])
 _ac=hunger_raw[hunger_raw["event_type"]=="active_cost"].copy()
-_ac["g"]=_ac["hunger_state_before"].fillna(_ac["hunger_state_after"]).map(_grp)
-_seek=_ac[_ac["stimulus_label"].isin(["hunger_ask_feed","hunger_still_hungry","hunger_look_around"])]
-seekc={"Full":int((_seek["g"]=="Full").sum()),"Deficit":int((_seek["g"]=="Deficit").sum())}
-cats=[("proactive\nTelegram pings",pings),("feed-seeking\nspeech acts",seekc)]
-xb=np.arange(len(cats))
-for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
-    vals=[d[g] for _,d in cats]; off=(-w/2 if gi==0 else w/2)
-    axB.bar(xb+off,vals,w,color=c,edgecolor="white",linewidth=1.1,label=g,zorder=3)
-    for xi,v in zip(xb,vals):
-        axB.annotate(str(v),(xi+off,v),textcoords="offset points",xytext=(0,3),
-                     ha="center",fontsize=9,fontweight="bold",color=INK)
-axB.set_xticks(xb); axB.set_xticklabels([c[0] for c in cats],fontsize=9)
-axB.set_ylabel("count over the corpus"); axB.grid(False); axB.margins(y=0.20)
-axB.set_title("Deficit-gated actions: silent at Full",fontsize=11)
-fig.suptitle("Fig 4b — Deficit→action: a deficit switches on the proactive recovery repertoire (Full vs Hungry+Starving)",
+_seek=_ac[_ac["stimulus_label"].isin(["hunger_ask_feed","hunger_still_hungry","hunger_look_around"])].copy()
+_seek = _seek.assign(action=_seek["stimulus_label"].map({
+                        "hunger_ask_feed":"Face-to-face ask-feed",
+                        "hunger_still_hungry":"Face-to-face still-hungry",
+                        "hunger_look_around":"Face-to-face look-around"}),
+                     hs_state=_seek["hunger_state_before"].fillna(_seek["hunger_state_after"]))
+_events = pd.concat([
+    _prov[["timestamp_epoch","day_rome","action","hs_state"]],
+    _seek[["timestamp_epoch","day_rome","action","hs_state"]]
+], ignore_index=True).dropna(subset=["timestamp_epoch","day_rome"])
+_events["hs_group"]=_events["hs_state"].map(_grp)
+days=sorted(hunger_raw["day_rome"].dropna().unique())
+day_to_y={d:i for i,d in enumerate(days)}
+day_start=hunger_raw.groupby("day_rome")["timestamp_epoch"].min().to_dict()
+_events["minute"]=_events.apply(lambda r:(r["timestamp_epoch"]-day_start.get(r["day_rome"],r["timestamp_epoch"]))/60.0,axis=1)
+_events["y"]=_events["day_rome"].map(day_to_y)
+styles={
+    "Hungry Telegram ping":("o",HS_ACCENT["HS2"],28),
+    "Starving Telegram ping":("o",HS_ACCENT["HS3"],34),
+    "Face-to-face ask-feed":("^","#7A4EAB",52),
+    "Face-to-face still-hungry":("s","#7A4EAB",46),
+    "Face-to-face look-around":("D","#7A4EAB",44),
+}
+for day in days:
+    dd=hunger_raw[hunger_raw["day_rome"]==day]
+    span=(dd["timestamp_epoch"].max()-dd["timestamp_epoch"].min())/60.0
+    axB.hlines(day_to_y[day],0,span,color="#D9DEE5",lw=0.9,zorder=0)
+for action,(marker,color,size) in styles.items():
+    sub=_events[_events["action"]==action]
+    if len(sub):
+        axB.scatter(sub["minute"],sub["y"],s=size,marker=marker,color=color,
+                    edgecolor="white",linewidth=0.55,alpha=0.88,label=f"{action} (n={len(sub)})",zorder=3)
+_nondef=_events[_events["hs_group"]!="Deficit"]
+if len(_nondef):
+    axB.scatter(_nondef["minute"],_nondef["y"],s=82,facecolors="none",edgecolors=HS_PALETTE["HS1"],
+                linewidth=1.5,label=f"non-deficit edge case (n={len(_nondef)})",zorder=4)
+axB.set_yticks(range(len(days))); axB.set_yticklabels(days,fontsize=8.5)
+axB.set_xlabel("minutes into experiment day (wall-clock)")
+axB.set_ylabel("experiment day")
+axB.grid(False)
+axB.invert_yaxis()
+axB.legend(loc="upper left",bbox_to_anchor=(1.01,1.0),fontsize=8,frameon=False)
+axB.set_title("When deficit-gated actions occur over time",fontsize=11)
+fig.suptitle("Fig 4 — Deficit→action: a deficit switches on the proactive recovery repertoire (Full vs Hungry+Starving)",
              fontsize=13,fontweight="semibold")
-savefig(fig,"fig04b_deficit_repertoire"); plt.show()
+savefig(fig,"fig04_deficit_action"); plt.show()
 """)
 
 md("**Fig 5 — State×Hunger prioritisation heatmap**: grid coloured by Engaged-completion and by avg turns (Starving override should pop out).")
@@ -2638,7 +2635,7 @@ print(f"Leakage-free elicitation: hs3_proactive ping -> user reply within 1h = {
 RESULTS["D5"]={"verdict":f"Descriptive: deficit raises hunger framing (path a +{da:.2f} [95% CI {dalo:.2f},{dahi:.2f}]; "
                f"co-present {cop['hunger_mentioned'].mean():.2f} vs Telegram {tel['hunger_mentioned'].mean():.2f}). "
                f"Path a is legitimate; the framing->reply path is DROPPED as temporally leaked (framing sits inside "
-               f"reply-bearing turns). The only leakage-free elicitation signal is the proactive ping->reply rate "
+               f"reply-bearing turns). The only leakage-free elicitation signal is the proactive response-to-ping rate "
                f"({ping_reply:.2f}), which is modest."}
 """)
 
@@ -2734,7 +2731,7 @@ L+=["## Reading of the four homeostatic functions", "",
     "line (60, entering Hungry) the recovery repertoire turns ON (B3): being in a deficit vs Full flips "
     "hunger framing 3%->67%, activates feed-seeking acts and proactive Telegram pings (0 at Full -> 162 "
     "in deficit), and raises feeding pursuit 0.15->0.43 and meal size 21->31 — a large categorical change "
-    "in what the robot does, layered on top of unchanged conversation (reply 0.78->0.76, turns 2.3->2.5). "
+    "in what the robot does across face-to-face and remote channels. "
     "At the starving line (25) the social agenda is OVERRIDDEN (B4): conversation collapses (turns "
     "2.5->0.2, Engaged 0.68->0.08). The empirical weight is here, in RQ2-c, the D1 ablation, and B9 — "
     "not in RQ1-1/1-2.",
@@ -2803,7 +2800,7 @@ items = [
 	 ("ml_dropcolumn_importance.csv", exists("ml_dropcolumn_importance.csv")),
 	]
 for n in ["fig01_architecture","fig02_drive_timeline","fig03_thresholds_transitions",
-          "fig04_deficit_action","fig04b_deficit_repertoire","fig05_prioritisation_heatmap",
+          "fig04_deficit_action","fig05_prioritisation_heatmap",
           "fig06_ips_decomposition","fig07_hs3_funnel","fig08_remote_loop","fig09_steady_state",
           "fig10_affinity_trajectories","fig11_affinity_learning","figD1_ml_sensitivity"]:
     items.append((n, fig_exists(n)))
