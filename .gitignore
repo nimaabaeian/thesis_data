@@ -1,0 +1,22 @@
+# Python/runtime noise
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local editor and assistant state
+.vscode/
+.claude/
+
+# Local safety backups and scratch outputs
+data_backup_*/
+/outputs/
+*.tmp
+*.bak
+.DS_Store
+
+# Private identity maps (real-name <-> pseudonym); never publish
+analysis/private/
+data/
+
+# Cache stores REAL (pre-pseudonymization) identities by design; never publish
+analysis/cache/

@@ -1,0 +1,15 @@
+stimulus_label,cost_per_event,cost_min,cost_max,n_events,total_energy,mean_stomach_before,category,const_expected,matches_source
+ss3_conversation_turn,3.6,3.6,3.6,457,1645.2,64.44986631658418,conversation (largest sink),3.6,True
+ss3_starter,1.2,1.2,1.2,161,193.2,63.86379373472602,conversation opener,1.2,True
+feed_ack,0.8,0.8,0.8,77,61.6,76.05638182021573,meal acknowledgement,0.8,True
+known_greeting,0.8,0.8,0.8,76,60.800000000000004,59.99174182020038,greeting,0.8,True
+ss1_ask_name,1.0,1.0,1.0,20,20.0,59.182693146170664,name extraction,1.0,True
+ambient_feed_ack,0.8,0.8,0.8,20,16.0,71.95194299598563,meal acknowledgement,0.8,True
+hunger_ask_feed,1.0,1.0,1.0,13,13.0,15.032778728977435,drive-driven feeding prompt / seeking,1.0,True
+reactive_unknown_greeting,0.8,0.8,0.8,16,12.8,57.313370236114714,reactive greeting,0.8,True
+ss1_ask_name_retry,1.0,1.0,1.0,6,6.0,53.57395705730013,name extraction,1.0,True
+hunger_look_around,1.0,1.0,1.0,6,6.0,16.318036512809915,drive-driven feeding prompt / seeking,1.0,True
+ss1_greeting,0.8,0.8,0.8,7,5.6000000000000005,63.463193651514494,greeting,0.8,True
+reactive_nice_to_meet,0.8,0.8,0.8,3,2.4000000000000004,73.36198162105671,reactive greeting,0.8,True
+ss1_nice_to_meet,0.8,0.8,0.8,3,2.4000000000000004,65.51648307840024,greeting,0.8,True
+hunger_still_hungry,1.0,1.0,1.0,2,2.0,70.47515448116592,drive-driven feeding prompt / seeking,1.0,True

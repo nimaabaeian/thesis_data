@@ -1,0 +1,52 @@
+# Orexigenic drive — results summary
+
+_Generated 2026-07-05 18:16. Single always-on condition; no drive-off comparison. Unit = run (10 runs, 8 days, 217 interactions)._
+
+## Verification gate
+
+All V1–V5 checks passed (see `verification_report.md`). Per-action energy costs match source constants exactly; corpus energy balance active-out 2047 vs meal-in 3225.
+
+## Success criteria
+
+| id | claim | outcome |
+|---|---|---|
+| RQ1-1 | Internal monitoring continuous & autonomous | **Supported** |
+| RQ1-2 | Deficit detection correct (60/25 thresholds) | **Supported** |
+| RQ1-3 | Deficit→action conversion is real, not cosmetic | **Weakened** |
+| RQ1-4 | Behavioural prioritisation (drive outranks social agenda) | **Supported** |
+| RQ2-a | Deficit expression elicits recovery behaviour | **Supported** |
+| RQ2-b | Starving episodes feed, escape, and recover to Full | **Supported (weak)** |
+| RQ2-c | Replenishment reliable (always-on, long-run) | **Supported** |
+| gradient | Full→Hungry→Starving effects monotonic & robust | **Weakened** |
+
+## Per-analysis verdicts
+
+- **B1** — Supported (faithful implementation, not a measurement): the drive is a software integrator that self-drains at exactly 1.00x nominal (zero-width CI — the tell) and samples every 2.3s across 12 runs / 46 h, autonomously — incl. 2 runs with no visitors.
+- **B2** — Supported (faithful implementation, not a measurement): labels are derived from level by the coded 60/25 thresholds, so transitions bracket them by construction (acc 1.00/1.00); the non-trivial result is near-zero flapping (0 reversals) around the boundaries.
+- **B3** — Weakened (directional): Starving lowers reply odds beyond social state & IPS (OR~0.37, p=0.136; note BH q>0.05 after family correction), and the active-cost table shows deterministic action-scaled spend (conversation 3.6 >> greeting 0.8) — coupling is behavioural, not label-only. Starving n=13.
+- **B4** — Supported: when Starving, conversation collapses (turns diff -2.39, Engaged 0.08 vs 0.68) while feeding pursuit rises (0.54 vs 0.26) — reprioritisation, not disengagement. Starving n=13 (small-n; directional).
+- **B5** — Supported: meal size rises with deficit {'Full': 21.0, 'Hungry': 29.0, 'Starving': 43.0}; proactive Telegram pings drew replies at 0.21 [0.16,0.26]; recovery is drive-initiated (proactive) not merely reactive.
+- **B6** — Supported (weak): Starving episodes received a feed in 100%, escaped Starving via feeding in 100%, and recovered to Full via feeding in 100% (n=8 — thin, exploratory). Note: overall reliability (RQ2-c) is carried by the LOW long-run starvation occupancy (B7), not by these 8 episodes nor by the modest 21% remote ping-response rate — recovery works mainly because starvation is rare.
+- **B7** — Supported: modelled long-run Starving occupancy is median 1.1% [95% 0.4, 2.3%] (bootstrap over the 17-transition Starving row) — i.e. the robot is out of starvation ~98-100% of the time; no absorbing state. Point est 1.1% is fragile, so we lead with the interval.
+- **B8** — Weakened as a *smooth* gradient / Supported as a *threshold override*: Engaged-completion declines monotonically with severity (rho=-0.16, p=0.016) but the drop is concentrated in Starving ({'Full': 0.69, 'Hungry': 0.67, 'Starving': 0.08}) — consistent with the coded Starving override firing only below 25, not a smooth Full->Hungry->Starving ramp; turns/energy trends are weak and do not survive covariate adjustment.
+- **B9** — Supported: affinity learning converges (update 0.09->0.05), reward-driven; it personalises IPS via the threshold (eff_thr=max(0.50,base-0.15*affinity), exact), giving high-affinity feeders up to ~0.14 lower a bar; and gates HS2 pings to the 11/15 people above affinity 0.20. Weights themselves are fixed.
+- **D1** — adding hunger changes Engaged AUC by +0.030 and PR-AUC by +0.023; drop-column CV ranks hunger_state #3/13 (AUC loss +0.030, PR-AUC loss +0.023). Social/perceptual state dominates, so ML is treated as sensitivity evidence, not a confirmatory mechanism test.
+- **D4** — Feeding Gini=0.58 over 15 users; top-3 supply 61% of meals — moderate concentration (a mild robustness caveat — replenishment leans on a few feeders).
+- **D5** — Descriptive: deficit raises hunger framing (path a +0.31 [95% CI 0.19,0.43]; co-present 0.35 vs Telegram 0.30). Path a is legitimate; the framing->reply path is DROPPED as temporally leaked (framing sits inside reply-bearing turns). The only leakage-free elicitation signal is the proactive ping->reply rate (0.26), which is modest.
+
+## Multiple-comparison note
+
+No metric survives Benjamini–Hochberg at q<0.05 (best q≈0.066); with a single condition and single-digit Starving cells the evidence is carried by effect sizes + bootstrap CIs, not NHST (see `bh_corrected_pvalues.csv`).
+
+## Reading of the four homeostatic functions
+
+- **RQ1-1 monitoring & RQ1-2 detection** are *faithful-implementation* results, not empirical measurements: the stomach level is a software integrator and the HS labels are derived from it by the same thresholds, so drain=nominal (zero-width CI) and 1.00/1.00 bracketing hold by construction. The non-trivial parts are the dense autonomous sampling and near-zero flapping.
+- **The drive is a threshold controller, not a ramp** (B3+B4+B8 read together): graded *signalling* below the line (meal size 21→29→43, framing 3%→67%, reply rate flat 0.78→0.79 Full→Hungry) and a decisive behavioural *override* at Starving (turns 2.5→0.2, Engaged 0.68→0.08). The empirical weight is here, in RQ2-c, the D1 ablation, and B9 — not in RQ1-1/1-2.
+
+## Key quantities
+
+- Passive drain: exactly 1.00x nominal (software integrator); dense sampling (median gap 2.3 s) across 12 monitored runs, 10 with visitors.
+- Long-run Starving occupancy (RQ2-c, headline): bootstrap median 1.1% [95% 0.4, 2.3%] — out of starvation ~98%+ of the time.
+- Starving episodes: 8/8 received a feed, 8/8 escaped Starving via feeding, and 8/8 recovered to Full via feeding (exploratory); reliability is carried by the low occupancy above, not by these episodes or the modest 21% ping-response rate.
+- Meal size by deficit: Full 21 / Hungry 29 / Starving 44 (graded expression).
+- D1 grouped-CV ablation: adding hunger changes Engaged-prediction AUC 0.903→0.933 (+0.030) and PR-AUC 0.931→0.954 (+0.023); B9: affinity learning converges and gates Hungry-state proactive pings to feeders.
