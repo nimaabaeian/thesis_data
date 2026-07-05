@@ -274,21 +274,33 @@ into a ranked comparison. Right: IPS at selection sits above each social state's
 
 ### Reading RQ1.3 + RQ1.4 + the gradient together: **a two-threshold controller, not a ramp**
 
-The single most important interpretive point: the deficit changes behaviour in **two stages,
-crossing two coded thresholds** — which is exactly why the gradient looks "not smooth" (B8) yet
-both B3 and B4 are Supported. It's one design, not a contradiction:
+The data make most sense if we read the system as the code implements it: not as a smooth
+"more hungry = slightly more of the same" ramp, but as a controller with **two explicit
+thresholds**. The stomach level is first converted into an orexigenic state, and that state
+selects which behaviour policy is allowed to run.
 
-- **At the deficit line (60, entering Hungry): the recovery repertoire turns ON** (B3). Being in
-  a deficit vs Full flips hunger framing **3% → 67%**, activates feed-seeking acts and proactive
-  Telegram pings (**0 → 172**), and roughly triples feeding pursuit (**0.15 → 0.43**) with bigger
-  meals (**21 → 31**) — a large, categorical change in *what the robot does* across face-to-face
-  and remote channels.
-- **At the starving line (25, entering Starving): the social agenda is OVERRIDDEN** (B4). Now
-  conversation itself collapses (turns 2.5 → 0.2, Engaged 0.68 → 0.08) as `_run_hunger_tree` takes
-  over.
+**1. Full is the baseline social policy.** Above the deficit threshold, the robot can still
+select faces, hold conversations, and ask ordinary follow-up questions. Hunger language is rare
+here (**3%**), proactive feeding requests are absent (**0 Telegram pings**), and feeding pursuit is
+low (**0.15**). This is the reference condition for B3.
 
-So B8's "no smooth gradient" is **not a failure** — the deficit *adds* recovery behaviour at 60
-and *overrides* social behaviour at 25. B3, B4 and B8 are that one two-threshold design.
+**2. Hungry and Starving together are the deficit policy.** Once stomach level crosses **60**,
+the recovery repertoire is enabled. This is the main B3 effect: compared with Full, deficit states
+shift *what the robot tries to do*. Hunger framing rises **3% -> 67%**, proactive Telegram
+recovery pings appear (**0 -> 172**), feeding pursuit increases **0.15 -> 0.43**, and meals are
+larger (**21 -> 31**). The important comparison is therefore **Full vs deficit**, because the
+architecture first asks whether a recovery need exists.
+
+**3. Starving is the emergency override inside the deficit policy.** Crossing **25** does not just
+make the robot "a bit more hungry"; it changes priority. `_run_hunger_tree` takes over, and social
+conversation is suppressed so the robot can focus on recovery. That is why turns fall **2.5 ->
+0.2** and Engaged drops **0.68 -> 0.08**. This is the B4 effect.
+
+This also explains B8. The gradient is not smooth because the architecture is not smooth: it has
+a recovery threshold at **60** and an override threshold at **25**. B3 shows the first switch
+(`Full -> Hungry/Starving`: recovery actions turn on). B4 shows the second switch (`Starving`:
+social behaviour is overridden). B8 is therefore not a contradiction; it is the behavioural
+signature of the same two-threshold controller.
 
 ---
 
