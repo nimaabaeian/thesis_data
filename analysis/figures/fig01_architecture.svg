@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-07-05T20:27:49.791863</dc:date>
+    <dc:date>2026-07-05T20:59:21.878352</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -35,7 +35,7 @@ L 199.6128 169.4304
 L 199.6128 57.8016 
 L 27.9648 57.8016 
 z
-" clip-path="url(#pbc246e3da1)" style="fill: #4b8bbe; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
+" clip-path="url(#pbfb03f1d40)" style="fill: #4b8bbe; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
     <path d="M 238.2336 169.4304 
@@ -43,7 +43,7 @@ L 409.8816 169.4304
 L 409.8816 57.8016 
 L 238.2336 57.8016 
 z
-" clip-path="url(#pbc246e3da1)" style="fill: #8e7cc3; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
+" clip-path="url(#pbfb03f1d40)" style="fill: #8e7cc3; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
    </g>
    <g id="patch_4">
     <path d="M 448.5024 169.4304 
@@ -51,7 +51,7 @@ L 620.1504 169.4304
 L 620.1504 57.8016 
 L 448.5024 57.8016 
 z
-" clip-path="url(#pbc246e3da1)" style="fill: #5bcb97; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
+" clip-path="url(#pbfb03f1d40)" style="fill: #5bcb97; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
    </g>
    <g id="patch_5">
     <path d="M 658.7712 169.4304 
@@ -59,7 +59,7 @@ L 830.4192 169.4304
 L 830.4192 57.8016 
 L 658.7712 57.8016 
 z
-" clip-path="url(#pbc246e3da1)" style="fill: #2ca5e0; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
+" clip-path="url(#pbfb03f1d40)" style="fill: #2ca5e0; opacity: 0.85; stroke: #000000; stroke-linejoin: miter"/>
    </g>
    <g id="text_1">
     <!-- Vision -->
@@ -1014,8 +1014,8 @@ z
      <use xlink:href="#DejaVuSans-74" transform="translate(701.953125 0)"/>
      <use xlink:href="#DejaVuSans-73" transform="translate(741.162109 0)"/>
     </g>
-    <!--  IPS = w·[prox,cent,vel,gaze] -->
-    <g style="fill: #22282e" transform="translate(269.857795 218.987381) scale(0.075 -0.075)">
+    <!--  IPS = w·[prox,cent,gaze] -->
+    <g style="fill: #22282e" transform="translate(276.618342 218.987381) scale(0.075 -0.075)">
      <defs>
       <path id="DejaVuSans-49" d="M 628 4666 
 L 1259 4666 
@@ -1179,15 +1179,11 @@ z
      <use xlink:href="#DejaVuSans-6e" transform="translate(852.876953 0)"/>
      <use xlink:href="#DejaVuSans-74" transform="translate(916.255859 0)"/>
      <use xlink:href="#DejaVuSans-2c" transform="translate(955.464844 0)"/>
-     <use xlink:href="#DejaVuSans-76" transform="translate(987.251953 0)"/>
-     <use xlink:href="#DejaVuSans-65" transform="translate(1046.431641 0)"/>
-     <use xlink:href="#DejaVuSans-6c" transform="translate(1107.955078 0)"/>
-     <use xlink:href="#DejaVuSans-2c" transform="translate(1135.738281 0)"/>
-     <use xlink:href="#DejaVuSans-67" transform="translate(1167.525391 0)"/>
-     <use xlink:href="#DejaVuSans-61" transform="translate(1231.001953 0)"/>
-     <use xlink:href="#DejaVuSans-7a" transform="translate(1292.28125 0)"/>
-     <use xlink:href="#DejaVuSans-65" transform="translate(1344.771484 0)"/>
-     <use xlink:href="#DejaVuSans-5d" transform="translate(1406.294922 0)"/>
+     <use xlink:href="#DejaVuSans-67" transform="translate(987.251953 0)"/>
+     <use xlink:href="#DejaVuSans-61" transform="translate(1050.728516 0)"/>
+     <use xlink:href="#DejaVuSans-7a" transform="translate(1112.007812 0)"/>
+     <use xlink:href="#DejaVuSans-65" transform="translate(1164.498047 0)"/>
+     <use xlink:href="#DejaVuSans-5d" transform="translate(1226.021484 0)"/>
     </g>
     <!--  target_selections, attempts -->
     <g style="fill: #22282e" transform="translate(271.393537 227.385741) scale(0.075 -0.075)">
@@ -2721,7 +2717,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pbc246e3da1">
+  <clipPath id="pbfb03f1d40">
    <rect x="10.8" y="10.8" width="858.24" height="293.76"/>
   </clipPath>
  </defs>

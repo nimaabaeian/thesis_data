@@ -260,7 +260,7 @@ mechanism tested in B4.
 
 | Constant | Value | Source |
 |---|---|---|
-| `BASELINE_WEIGHTS` | prox 0.5, cent 0.15, vel 0.3, gaze 0.5 | L141 |
+| `BASELINE_WEIGHTS` | prox 0.5, cent 0.15, gaze 0.5 | L141 |
 | `SS_THRESHOLDS` | ss1 0.80, ss2 0.65, ss3 0.70, ss4 0.85 | L144 |
 | `HABITUATION_LAMBDA` | 0.06 (~11.6 s half-life) | L151 |
 | affinity EMA | `ALPHA=0.25`, `ALPHA_NEG=0.10`, `REWARD_SCALE=25`, `PENALTY_FLOOR=-0.3` | L155-160 |
@@ -306,7 +306,7 @@ CONST = dict(
         "reactive_unknown_greeting": 0.8, "reactive_nice_to_meet": 0.8,
     },
     SS_THRESHOLDS={"ss1": 0.80, "ss2": 0.65, "ss3": 0.70, "ss4": 0.85},
-    BASELINE_WEIGHTS={"prox": 0.5, "cent": 0.15, "vel": 0.3, "gaze": 0.5},
+    BASELINE_WEIGHTS={"prox": 0.5, "cent": 0.15, "gaze": 0.5},
     HABITUATION_LAMBDA=0.06, IMG_W=640.0, IMG_H=480.0,
 )
 print("Nominal passive drain rate: %.6f %%/s  (empty in %.1f h)"
@@ -472,7 +472,7 @@ LM_COLS  = ["run_id","day_rome","monotonic_sec","timestamp_epoch","frame_id","fa
             "time_in_view","valid_for_analysis","is_test_run"]
 IPS_COLS = ["run_id","day_rome","monotonic_sec","timestamp_epoch","track_id","face_id","person_id",
             "social_state","is_known","eligible","is_active_target","ips","ips_before_habituation",
-            "habituation_multiplier","prox_score","cent_score","vel_score","gaze_score",
+            "habituation_multiplier","prox_score","cent_score","gaze_score",
             "valid_for_analysis","is_test_run"]
 
 print("Loading core frames ...")
@@ -866,7 +866,7 @@ def prewindow_ips(inter, ips):
             if len(w):
                 rec.update(ips_mean=w["ips"].mean(), ips_max=w["ips"].max(),
                            prox=w["prox_score"].mean(), cent=w["cent_score"].mean(),
-                           vel=w["vel_score"].mean(), gaze=w["gaze_score"].mean(),
+                           gaze=w["gaze_score"].mean(),
                            habituation_mult=w["habituation_multiplier"].mean(),
                            eligible_pre=w["eligible"].max())
         feats.append(rec)
@@ -912,7 +912,7 @@ master = (base.merge(att_feat, left_on="interaction_id", right_on="exec_interact
               .merge(ips_feat, on="interaction_id", how="left")
               .merge(lm_feat, on="interaction_id", how="left"))
 # Ensure expected feature columns exist even if coverage was 0 (keeps downstream robust).
-for c in ["ips_mean","ips_max","prox","cent","vel","gaze","habituation_mult","eligible_pre",
+for c in ["ips_mean","ips_max","prox","cent","gaze","habituation_mult","eligible_pre",
           "cos_angle","attention_frac","talking_rate","time_in_view","copresence",
           "start_ss","is_proactive","duration_sec","attempt_abort",
           "interaction_logged_epoch","interaction_start_epoch","start_anchor_source"]:
@@ -1315,12 +1315,14 @@ ev = chat_events.copy()
 prov = ev[ev["event_type"].isin(["hs2_entry","hs3_proactive"])]
 n_full_ping = int((prov["hs"]=="HS1").sum())
 n_def_ping = int(prov["hs"].isin(["HS2","HS3"]).sum())
+ping_counts = prov.groupby("event_type").size()
 am = chat_msgs.copy(); am = am[am["role"]=="assistant"] if "role" in am.columns else am
 am["grp"] = am["hs"].map(deficit_grp)
 am["hm"] = pd.to_numeric(am.get("hunger_mentioned",0), errors="coerce").fillna(0)
 tg = am.dropna(subset=["grp"]).groupby("grp")["hm"].mean()
 print(f"\n(5) Remote (Telegram): proactive hunger pings = {n_full_ping} at Full vs {n_def_ping} in "
-      f"Deficit (88 hs2_entry + 74 hs3_proactive) — the whole proactive channel is deficit-gated. "
+      f"Deficit ({int(ping_counts.get('hs2_entry',0))} hs2_entry + "
+      f"{int(ping_counts.get('hs3_proactive',0))} hs3_proactive) — the whole proactive channel is deficit-gated. "
       f"Telegram hunger-framing: Full {tg.get('Full',float('nan')):.3f} -> Deficit {tg.get('Deficit',float('nan')):.3f}.")
 
 # Statistical anchor for the family correction. We use FEEDING PURSUIT (an emergent behaviour
@@ -1654,7 +1656,7 @@ md(r"""### B9 — Adaptive personalization: affinity learning → IPS eligibilit
 
 The salience network runs a per-person **homeostatic learning** loop: after each interaction
 it updates a person's **affinity** — an EMA (α=0.25) of normalised drive reward — in [−1,+1].
-**Important:** the four IPS component weights (`prox 0.5, cent 0.15, vel 0.3, gaze 0.5`) are
+**Important:** the three IPS component weights (`prox 0.5, cent 0.15, gaze 0.5`) are
 **fixed constants and do not learn**; what adapts is affinity, and affinity acts on IPS *only*
 through the per-person **eligibility threshold**
 `eff_thr = max(0.50, base_ss − 0.15·affinity)` — a person the drive has learned to like clears
@@ -1709,7 +1711,7 @@ print(hlc.groupby("outcome").agg(n=("reward_delta","size"),
 
 # (c) LEARNED AFFINITY -> IPS ELIGIBILITY THRESHOLD (weights are fixed; threshold personalises).
 _con=ro_connect(SUPER["salience"])
-ipschk=pd.read_sql("SELECT DISTINCT weight_prox,weight_cent,weight_vel,weight_gaze "
+ipschk=pd.read_sql("SELECT DISTINCT weight_prox,weight_cent,weight_gaze "
                    "FROM face_ips_events WHERE valid_for_analysis=1",_con); _con.close()
 print(f"\n(c) IPS component weights are constant across all {len(ips):,} events "
       f"({ipschk.iloc[0].to_dict()}; {len(ipschk)} distinct combo) — learning does NOT touch the weights.")
@@ -1773,7 +1775,7 @@ fig, ax = plt.subplots(figsize=(12, 4.2)); ax.axis("off")
 ax.set_xlim(0, 1); ax.set_ylim(0, 1)
 stages = [
     ("Vision\n(vision.db)", "landmark_events\n gaze / attention / zone\n faces_in_frame", "#4B8BBE"),
-    ("Salience\n(salience_network.db)", "face_ips_events\n IPS = w·[prox,cent,vel,gaze]\n target_selections, attempts", "#8E7CC3"),
+    ("Salience\n(salience_network.db)", "face_ips_events\n IPS = w·[prox,cent,gaze]\n target_selections, attempts", "#8E7CC3"),
     ("Executive\n(executive_control.db)", "HungerModel drain/feed\n interactions + turns\n hunger_level_events", "#5BCB97"),
     ("Remote/Telegram\n(chat_bot.db)", "hs2_entry / hs3_proactive\n hs3_recovery\n chat_messages", "#2CA5E0"),
 ]
@@ -2056,10 +2058,10 @@ fig.suptitle("Fig 5 — Behavioural prioritisation: the Starving column collapse
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
 """)
 
-md("**Fig 6 — IPS decomposition** *(salience-mechanism context, not a drive result)*: stacked prox/cent/vel/gaze contribution to IPS; IPS vs effective threshold.")
+md("**Fig 6 — IPS decomposition** *(salience-mechanism context, not a drive result)*: stacked prox/cent/gaze contribution to IPS; IPS vs effective threshold.")
 code(r"""
-w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","vel","gaze"]
-SUBCOL={"prox":"#3A7CA5","cent":"#8E7CC3","vel":"#E0A126","gaze":"#CF4A33"}
+w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","gaze"]
+SUBCOL={"prox":"#3A7CA5","cent":"#8E7CC3","gaze":"#CF4A33"}
 s=ips.dropna(subset=[f"{k}_score" for k in SUB]).copy()
 contrib={k:(s[f"{k}_score"]*w[k]).mean() for k in SUB}
 fig,(a1,a2)=plt.subplots(1,2,figsize=(13,4.4),gridspec_kw={"width_ratios":[0.8,1.2]})
@@ -2070,12 +2072,12 @@ for k in SUB:
     if contrib[k]>0.012:   # label only segments tall enough to hold text
         a1.text(0,bottom+contrib[k]/2,f"{k}  (w={w[k]})\n{contrib[k]:.2f}",ha="center",va="center",
                 color="white",fontsize=9,fontweight="bold")
-    else:                  # near-zero segments (e.g. vel: weight 0.3 but score≈0) annotated to the side
+    else:
         a1.annotate(f"{k} (w={w[k]}) ≈ {contrib[k]:.2f}",(0.26,bottom+contrib[k]/2),
                     fontsize=8.5,color=SUBCOL[k],va="center",fontweight="medium")
     bottom+=contrib[k]
 a1.set_ylabel("mean weighted contribution to IPS"); a1.grid(False); a1.set_xlim(-0.5,0.9)
-a1.set_title("IPS = Σ wᵢ·scoreᵢ\n(vel weight 0.3 but scores ≈0: faces mostly stationary)",fontsize=11)
+a1.set_title("IPS = Σ wᵢ·scoreᵢ\n(proximity + centrality + gaze)",fontsize=11)
 # IPS distribution by social state vs thresholds (violin + threshold marks)
 tsel=load_view("salience","v_target_selections_clean")
 ss_list=["ss1","ss2","ss3","ss4"]
@@ -2372,7 +2374,7 @@ from sklearn.base import clone
 d = master.copy()
 d["replied_any"]=pd.to_numeric(d["replied_any"],errors="coerce").fillna(0).astype(int)
 d["reached_ss4"]=(d["final_state"]=="ss4").astype(int)
-feat_num=["ips_mean","ips_max","prox","cent","vel","gaze","copresence","attention_frac",
+feat_num=["ips_mean","ips_max","prox","cent","gaze","copresence","attention_frac",
           "talking_rate","cos_angle","hour_of_day"]
 for c in feat_num:
     if c not in d.columns: d[c]=np.nan
@@ -2514,7 +2516,7 @@ for i,row in enumerate(ab.itertuples()):
 
 # (2) Drop-column importance: one refit per feature under the same grouped CV.
 labels={"ips_mean":"IPS mean","ips_max":"IPS max","prox":"proximity","cent":"centrality",
-        "vel":"velocity","gaze":"gaze","copresence":"copresence","attention_frac":"attention",
+        "gaze":"gaze","copresence":"copresence","attention_frac":"attention",
         "talking_rate":"talking","cos_angle":"angle","hour_of_day":"hour","ss_rank":"social state",
         "hs_rank":"hunger state"}
 top=drop_df.sort_values("auc_loss").tail(9).copy()
@@ -2750,7 +2752,7 @@ L+=["## Reading of the four homeostatic functions", "",
     "construction. The non-trivial parts are the dense autonomous sampling and near-zero flapping.",
     "- **The drive is a two-threshold controller, not a ramp** (B3+B4+B8 read together). At the deficit "
     "line (60, entering Hungry) the recovery repertoire turns ON (B3): being in a deficit vs Full flips "
-    "hunger framing 3%->67%, activates feed-seeking acts and proactive Telegram pings (0 at Full -> 162 "
+    "hunger framing 3%->67%, activates feed-seeking acts and proactive Telegram pings (0 at Full -> 172 "
     "in deficit), and raises feeding pursuit 0.15->0.43 and meal size 21->31 — a large categorical change "
     "in what the robot does across face-to-face and remote channels. "
     "At the starving line (25) the social agenda is OVERRIDDEN (B4): conversation collapses (turns "

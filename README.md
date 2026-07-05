@@ -56,7 +56,7 @@ empty rooms) and detects deficits cleanly (exact 60/25 thresholds, zero flapping
 two are faithful-implementation facts, true by construction. The load-bearing results are
 behavioural and cross **two coded thresholds**: at the deficit line (entering Hungry) the robot
 switches on a whole **proactive recovery repertoire** that is silent at Full — hunger framing in
-speech jumps **3% → 67%**, feed-seeking acts and proactive Telegram pings go from **0 to 162**,
+speech jumps **3% → 67%**, feed-seeking acts and proactive Telegram pings go from **0 to 172**,
 and feeding pursuit **~triples (0.15 → 0.43)**; then at the starving line it **overrides** the social agenda entirely (turns 2.5 → 0.2,
 Engaged 0.68 → 0.08). *The deficit adds recovery behaviour at 60 and overrides social behaviour at
 25 — a two-threshold controller, not a smooth ramp.*
@@ -202,7 +202,7 @@ switches on an entire **proactive recovery repertoire that is silent at Full**:
 |---|---|---|---|
 | Hunger framing in face-to-face speech | **2.8%** | **66.5%** | **~24×** |
 | Feed-seeking speech acts (ask-feed / still-hungry / look-around) | 1 | 20 | deficit-only *(coded)* |
-| Proactive Telegram pings (`hs2_entry` + `hs3_proactive`) | **0** | **162** | deficit-only *(coded)* |
+| Proactive Telegram pings (`hs2_entry` + `hs3_proactive`) | **0** | **172** | deficit-only *(coded)* |
 | Telegram hunger framing | 8.7% | 27.2% | ~3× |
 | Co-present feeding pursuit (P(meal in interaction)) | 0.15 | 0.43 | ~3× |
 | Mean meal size | 21.2 | 31.4 | +48% |
@@ -266,10 +266,10 @@ out regardless of who the person is.*
 ![IPS decomposition](analysis/figures/fig06_ips_decomposition.png)
 
 ***Context (salience mechanism, not a drive result).*** *IPS is a* **fixed** *weighted sum —
-prox 0.5, cent 0.15, vel 0.3, gaze 0.5 — identical across all 216,940 events (learning never
-touches the weights; see B9). Velocity contributes ≈0 because faces are near-stationary, so
-proximity, centrality and gaze do the work. Right: IPS at selection sits above each social
-state's eligibility bar (ss1 0.80 … ss4 0.85), confirming the gate fires as coded.*
+prox 0.5, cent 0.15, gaze 0.5 — identical across all 216,940 events (learning never
+touches the weights; see B9). Proximity, centrality and gaze are the full salience model used
+in the analysis. Right: IPS at selection sits above each social state's eligibility bar
+(ss1 0.80 … ss4 0.85), confirming the gate fires as coded.*
 
 ### Reading RQ1.3 + RQ1.4 + the gradient together: **a two-threshold controller, not a ramp**
 
@@ -279,7 +279,7 @@ both B3 and B4 are Supported. It's one design, not a contradiction:
 
 - **At the deficit line (60, entering Hungry): the recovery repertoire turns ON** (B3). Being in
   a deficit vs Full flips hunger framing **3% → 67%**, activates feed-seeking acts and proactive
-  Telegram pings (**0 → 162**), and roughly triples feeding pursuit (**0.15 → 0.43**) with bigger
+  Telegram pings (**0 → 172**), and roughly triples feeding pursuit (**0.15 → 0.43**) with bigger
   meals (**21 → 31**) — a large, categorical change in *what the robot does* across face-to-face
   and remote channels.
 - **At the starving line (25, entering Starving): the social agenda is OVERRIDDEN** (B4). Now
