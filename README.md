@@ -267,8 +267,9 @@ out regardless of who the person is.*
 
 ***Context (salience mechanism, not a drive result).*** *IPS is a* **fixed** *weighted sum —
 prox 0.5, cent 0.15, gaze 0.5 — identical across all 216,940 events (learning never
-touches the weights; see B9). Proximity, centrality and gaze are the full salience model used
-in the analysis. Right: IPS at selection sits above each social state's eligibility bar
+touches the weights; see B9). The left panel shows the weighted IPS composition
+(`score × weight`) as one summed bar, so the formula is visible without turning the components
+into a ranked comparison. Right: IPS at selection sits above each social state's eligibility bar
 (ss1 0.80 … ss4 0.85), confirming the gate fires as coded.*
 
 ### Reading RQ1.3 + RQ1.4 + the gradient together: **a two-threshold controller, not a ramp**

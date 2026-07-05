@@ -2058,26 +2058,27 @@ fig.suptitle("Fig 5 — Behavioural prioritisation: the Starving column collapse
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
 """)
 
-md("**Fig 6 — IPS decomposition** *(salience-mechanism context, not a drive result)*: stacked prox/cent/gaze contribution to IPS; IPS vs effective threshold.")
+md("**Fig 6 — IPS decomposition** *(salience-mechanism context, not a drive result)*: weighted prox/cent/gaze composition of IPS; IPS vs effective threshold.")
 code(r"""
 w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","gaze"]
 SUBCOL={"prox":"#3A7CA5","cent":"#8E7CC3","gaze":"#CF4A33"}
 s=ips.dropna(subset=[f"{k}_score" for k in SUB]).copy()
 contrib={k:(s[f"{k}_score"]*w[k]).mean() for k in SUB}
-fig,(a1,a2)=plt.subplots(1,2,figsize=(13,4.4),gridspec_kw={"width_ratios":[0.8,1.2]})
-bottom=0
+fig,(a1,a2)=plt.subplots(1,2,figsize=(13,4.4),gridspec_kw={"width_ratios":[0.82,1.2]})
+left=0.0
+total=sum(contrib.values())
 for k in SUB:
-    a1.bar(["mean IPS"],[contrib[k]],bottom=bottom,color=SUBCOL[k],
-           edgecolor="white",linewidth=1.5,width=0.5)
-    if contrib[k]>0.012:   # label only segments tall enough to hold text
-        a1.text(0,bottom+contrib[k]/2,f"{k}  (w={w[k]})\n{contrib[k]:.2f}",ha="center",va="center",
-                color="white",fontsize=9,fontweight="bold")
-    else:
-        a1.annotate(f"{k} (w={w[k]}) ≈ {contrib[k]:.2f}",(0.26,bottom+contrib[k]/2),
-                    fontsize=8.5,color=SUBCOL[k],va="center",fontweight="medium")
-    bottom+=contrib[k]
-a1.set_ylabel("mean weighted contribution to IPS"); a1.grid(False); a1.set_xlim(-0.5,0.9)
-a1.set_title("IPS = Σ wᵢ·scoreᵢ\n(proximity + centrality + gaze)",fontsize=11)
+    v=contrib[k]
+    a1.barh(["mean IPS"],[v],left=left,color=SUBCOL[k],edgecolor="white",linewidth=1.6,height=0.46,zorder=3)
+    label=f"{k}\nw={w[k]}\n{v:.2f}"
+    a1.text(left+v/2,0,label,ha="center",va="center",color="white",fontsize=9,fontweight="bold")
+    left+=v
+a1.set_xlabel("mean weighted IPS contribution")
+a1.set_xlim(0,total*1.14)
+a1.set_ylim(-0.6,0.6)
+a1.grid(axis="x",alpha=0.16)
+a1.set_title("Mean IPS composition\nweighted contribution only",fontsize=11)
+a1.text(total*1.02,0,f"total\n{total:.2f}",ha="left",va="center",fontsize=9,color=INK,fontweight="bold")
 # IPS distribution by social state vs thresholds (violin + threshold marks)
 tsel=load_view("salience","v_target_selections_clean")
 ss_list=["ss1","ss2","ss3","ss4"]
