@@ -2107,34 +2107,13 @@ fig.suptitle("Fig 6 — Salience: how IPS is composed, and the per-state hurdle 
 savefig(fig,"fig06_ips_decomposition"); plt.show()
 """)
 
-md("**Fig 7 — Starving recovery** *(exploratory, n=8 episodes)*: compact recovery status plus cumulative first-feed probability. Thin n — read as directional, not a rate estimate.")
+md("**Fig 7 — Starving recovery** *(exploratory, n=8 episodes)*: cumulative first-feed probability, with recovery status summarized in-plot. Thin n — read as directional, not a rate estimate.")
 code(r"""
 ep=hs3_episodes.copy(); n=len(ep)
 n_feed=int(ep["received_feed"].sum())
 n_escape=int(ep["escaped_starving_by_feeding"].sum())
 n_full=int(ep["recovered_to_full_by_feeding"].sum())
-fig,(a1,a2)=plt.subplots(1,2,figsize=(13.5,4.6),gridspec_kw={"width_ratios":[1.05,1.25]})
-a1.axis("off"); a1.set_xlim(0,1); a1.set_ylim(0,1)
-a1.set_title(f"Recovery status  (n={n}, exploratory)",fontsize=12,fontweight="semibold",pad=10)
-status_rows=[
-    ("HS3 episodes", n, HS_PALETTE["HS3"]),
-    ("received ≥1 feed", n_feed, HS_PALETTE["HS2"]),
-    ("escaped Starving via feed", n_escape, HS_PALETTE["HS2"]),
-    ("recovered to Full via feed", n_full, HS_PALETTE["HS1"]),
-]
-for i,(label,val,col) in enumerate(status_rows):
-    y=0.78 - i*0.17
-    a1.add_patch(plt.Rectangle((0.05,y-0.055),0.90,0.10,fc=col,ec="white",lw=1.5,alpha=0.92))
-    a1.text(0.09,y,label,ha="left",va="center",fontsize=10.5,fontweight="medium",color=INK)
-    a1.text(0.91,y,f"{val}/{n}",ha="right",va="center",fontsize=12,fontweight="bold",color=INK)
-if len(ep):
-    ttf=ep["time_to_first_feed_sec"].dropna()
-    ttf_med=ttf.median() if len(ttf) else np.nan
-    ttf_max=ttf.max() if len(ttf) else np.nan
-    a1.text(0.05,0.10,
-            f"No attrition observed; median first feed {ttf_med:.0f}s, max {ttf_max:.0f}s.\n"
-            "Interpret as a small-n operational check, not a population rate.",
-            ha="left",va="bottom",fontsize=9.2,color=MUTED)
+fig,ax=plt.subplots(1,1,figsize=(10.8,4.8))
 ttf=ep["time_to_first_feed_sec"].dropna()
 try:
     from lifelines import KaplanMeierFitter
@@ -2145,23 +2124,36 @@ try:
     kmf = KaplanMeierFitter().fit(km["dur"], km["event"], label="first feed")
     sf = kmf.survival_function_["first feed"]
     ci = kmf.confidence_interval_
-    a2.step(sf.index, 1 - sf.values, where="post", color=HS_ACCENT["HS1"], lw=2.4)
+    ax.step(sf.index, 1 - sf.values, where="post", color=HS_ACCENT["HS1"], lw=2.6)
     lo = 1 - ci.iloc[:,1].values; hi = 1 - ci.iloc[:,0].values
-    a2.fill_between(ci.index, lo, hi, step="post", color=HS_PALETTE["HS1"], alpha=0.25)
+    ax.fill_between(ci.index, lo, hi, step="post", color=HS_PALETTE["HS1"], alpha=0.25)
     if np.isfinite(kmf.median_survival_time_):
-        a2.axvline(kmf.median_survival_time_, color=INK, ls="--", lw=1.4,
+        ax.axvline(kmf.median_survival_time_, color=INK, ls="--", lw=1.4,
                    label=f"median {kmf.median_survival_time_:.0f}s")
 except Exception:
     vals_ecdf = np.sort(ttf.values)
     if len(vals_ecdf):
-        a2.step(vals_ecdf, np.arange(1, len(vals_ecdf)+1)/len(vals_ecdf),
+        ax.step(vals_ecdf, np.arange(1, len(vals_ecdf)+1)/len(vals_ecdf),
                 where="post", color=HS_ACCENT["HS1"], lw=2.2)
-a2.axvline(CONST["FEED_WAIT_TIMEOUT_SEC"], color=MUTED, ls=":", lw=1.4,
+ax.axvline(CONST["FEED_WAIT_TIMEOUT_SEC"], color=MUTED, ls=":", lw=1.4,
            label="8 s feed-wait timeout")
-a2.set_xlabel("seconds since Starving entry"); a2.set_ylabel("cumulative P(first feed)")
-a2.set_ylim(0,1.02); a2.grid(False); a2.legend(loc="lower right")
-a2.set_title("Cumulative first-feed probability")
-fig.suptitle("Fig 7 — Starving recovery: status and time-to-first-feed",
+if len(ep):
+    ttf_med=ttf.median() if len(ttf) else np.nan
+    ttf_max=ttf.max() if len(ttf) else np.nan
+    status = (
+        f"recovery status (n={n})\n"
+        f"fed: {n_feed}/{n}\n"
+        f"escaped Starving: {n_escape}/{n}\n"
+        f"recovered to Full: {n_full}/{n}\n"
+        f"median first feed: {ttf_med:.0f}s\n"
+        f"max: {ttf_max:.0f}s"
+    )
+    ax.text(0.985,0.055,status,transform=ax.transAxes,ha="right",va="bottom",
+            fontsize=9.2,color=INK,
+            bbox=dict(boxstyle="round,pad=0.34",fc="white",ec=HS_PALETTE["HS1"],lw=0.9,alpha=0.94))
+ax.set_xlabel("seconds since Starving entry"); ax.set_ylabel("cumulative P(first feed)")
+ax.set_ylim(0,1.02); ax.grid(False); ax.legend(loc="lower right", bbox_to_anchor=(0.78,0.05))
+fig.suptitle("Fig 7 — Starving recovery: time-to-first-feed",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig07_hs3_funnel"); plt.show()
 """)

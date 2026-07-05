@@ -354,14 +354,14 @@ whole human–robot loop staying fed, not of these few deep recoveries.
 
 **Verdict: Supported (weak).**
 
-### Figure 7 — Starving recovery status and time-to-feed *(exploratory, n = 8)*
+### Figure 7 — Starving recovery time-to-feed *(exploratory, n = 8)*
 
 ![Starving recovery](analysis/figures/fig07_hs3_funnel.png)
 
-***Reading (exploratory, n=8).*** *Left: the funnel has* **no attrition** *— all 8 Starving
-episodes received a feed, escaped Starving, and recovered to Full, entirely via feeding (mean
-entry level 24.0, just under the 25 line). Right: cumulative first-feed probability climbs fast —
-**median 21 s to first feed** (KM 31 s), range 2–166 s — against the 8-s per-attempt feed-wait
+***Reading (exploratory, n=8).*** *The cumulative first-feed curve climbs quickly: all 8 Starving
+episodes received a feed, escaped Starving, and recovered to Full, entirely via feeding. The
+in-plot note keeps that status check visible without giving it a separate redundant panel. Median
+time to first feed was **21 s** (KM 31 s), range 2–166 s, against the 8-s per-attempt feed-wait
 timeout.* ***Conclusion.*** *When Starving does occur, the recovery path is quick and complete —
 but n=8 makes this an operational check, not a population rate; the reliability claim rests on B7,
 not here.*
