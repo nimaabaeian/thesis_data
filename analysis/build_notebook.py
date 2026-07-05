@@ -1471,7 +1471,10 @@ verdict("B6", f"{'Supported (weak)' if suff else 'Weakened'}: Starving episodes 
         f"{feed_frac*100:.0f}%, escaped Starving via feeding in {escape_frac*100:.0f}%, and recovered "
         f"to Full via feeding in {full_frac*100:.0f}% (n={n_ep} — thin, exploratory). Note: overall "
         f"reliability (RQ2-c) is carried by the LOW long-run starvation occupancy (B7), not by these {n_ep} episodes nor by "
-        f"the modest 21% remote ping-response rate — recovery works mainly because starvation is rare.",
+        f"the modest 21% remote ping-response rate — and that low occupancy is itself the outcome of "
+        f"the people repeatedly feeding the robot in response to the drive: the robot seldom reached "
+        f"Starving because human engagement kept it fed (the HRI loop working), not because of any "
+        f"self-property of the controller.",
         effect=full_frac, n=n_ep)
 """)
 
@@ -1541,11 +1544,15 @@ try:
           f"(n_transitions Starving-row={int(cnt.loc['HS3'].sum())})")
     globals()["_b7_starve_ci"]=(b[0],b[1],b[2])
     reliable = b[2] < 0.20   # even the UPPER 95% bound is a small Starving fraction
-    verdict("B7", f"{'Supported' if reliable else 'Weakened'}: modelled long-run Starving occupancy is "
-            f"median {b[1]*100:.1f}% [95% {b[0]*100:.1f}, {b[2]*100:.1f}%] (bootstrap over the "
-            f"{int(cnt.loc['HS3'].sum())}-transition Starving row) — i.e. the robot is out of starvation "
-            f"~{100-b[2]*100:.0f}-{100-b[0]*100:.0f}% of the time; no absorbing state. Point est {pi[2]*100:.1f}% "
-            f"is fragile, so we lead with the interval.", n=int(cnt.values.sum()))
+    verdict("B7", f"{'Supported' if reliable else 'Weakened'} (the study's headline result): modelled "
+            f"long-run Starving occupancy is median {b[1]*100:.1f}% [95% {b[0]*100:.1f}, {b[2]*100:.1f}%] "
+            f"(bootstrap over the {int(cnt.loc['HS3'].sum())}-transition Starving row) — i.e. the people "
+            f"kept the robot's energy in homeostasis, out of starvation ~{100-b[2]*100:.0f}-{100-b[0]*100:.0f}% "
+            f"of the time; no absorbing state. This is NOT a self-property of the controller: the transition "
+            f"rates are a record of how the humans actually behaved, so the reading is that human engagement "
+            f"(elicited by the drive; see B5) reliably replenished the robot — the HRI loop closes and the "
+            f"solution works. Point est {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
+            f"condition means the drive's exact causal share in the feeding is not isolated.", n=int(cnt.values.sum()))
 except Exception as e:
     print("stationary solve failed:", e)
     verdict("B7", "Inconclusive: could not solve stationary distribution.", n=int(cnt.values.sum()))
@@ -2624,16 +2631,23 @@ L+=["## Reading of the four homeostatic functions", "",
     "- **The drive is a threshold controller, not a ramp** (B3+B4+B8 read together): graded *signalling* "
     "below the line (meal size 21→29→43, framing 3%→67%, reply rate flat 0.78→0.79 Full→Hungry) and a "
     "decisive behavioural *override* at Starving (turns 2.5→0.2, Engaged 0.68→0.08). The empirical weight "
-    "is here, in RQ2-c, the D1 ablation, and B9 — not in RQ1-1/1-2.",""]
+    "is here, in RQ2-c, the D1 ablation, and B9 — not in RQ1-1/1-2.",
+    "- **RQ2 — the study's most important result: the HRI loop closes.** Across the deployment the people "
+    "kept the robot fed in response to its hunger signalling, so its energy stayed in homeostasis and it "
+    "was out of starvation ~99% of the time (B7). That low occupancy is the *outcome* of human engagement, "
+    "not a self-property of the controller — the solution works to keep an always-on robot's energy "
+    "regulated. Caveat: single condition (the drive's exact causal share in the feeding is not isolated) "
+    "and feeding concentrated among a few users (D4).",""]
 L+=["## Key quantities", "",
     f"- Passive drain: exactly 1.00x nominal (software integrator); dense sampling (median gap 2.3 s) "
     f"across {hunger_raw['run_id'].nunique()} monitored runs, {interactions['run_id'].nunique()} with visitors.",
     f"- Long-run Starving occupancy (RQ2-c, headline): bootstrap median {_ci[1]*100:.1f}% "
-    f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — out of starvation ~{100-_ci[2]*100:.0f}%+ of the time.",
+    f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — the people kept the robot's energy in homeostasis, out "
+    f"of starvation ~{100-_ci[2]*100:.0f}%+ of the time (outcome of the working HRI loop, not a controller self-property).",
     f"- Starving episodes: {_n_feed}/{len(hs3_episodes)} received a feed, {_n_escape}/{len(hs3_episodes)} "
     f"escaped Starving via feeding, and {_n_full}/{len(hs3_episodes)} recovered to Full via feeding "
-    f"(exploratory); reliability is carried by the low occupancy above, not by these episodes or "
-    f"the modest 21% ping-response rate.",
+    f"(exploratory); reliability is carried by the low occupancy above (human engagement keeping the robot "
+    f"fed), not by these episodes or the modest 21% ping-response rate.",
     f"- Meal size by deficit: Full 21 / Hungry 29 / Starving 44 (graded expression).",
     _d1_line,]
 (OUT_DIR/"results_summary.md").write_text("\n".join(L))
