@@ -21,18 +21,19 @@ evidence is strong versus thin.
 Everything below exists to answer two questions. Every low-level analysis step is tied to
 one of them — nothing is run "just because".
 
-- **RQ1 — Is this a *real* homeostatic drive?** Concretely, does it fulfil the four classical
-  functions of homeostasis?
-  1. **Internal monitoring** — does it continuously track an internal variable on its own?
-  2. **Deficit detection** — does it correctly notice when that variable falls too low?
-  3. **Deficit → action conversion** — does the deficit actually change behaviour, or is it
-     cosmetic?
-  4. **Behavioural prioritisation** — when starving, does the drive *override* the social
-     agenda to pursue food?
+- **RQ1** — To what extent does the orexigenic drive fulfil the four functions of
+  classical homeostasis: (1) internal monitoring, (2) deficit detection,
+  (3) deficit-to-action conversion, (4) behavioural prioritisation?
+- **RQ2** — Does the expression of an orexigenic deficit promote recovery-oriented
+  engagement sufficient to support reliable energy replenishment in an always-on
+  social robot?
 
-- **RQ2 — Does expressing the deficit lead to reliable recovery?** When the robot signals
-  hunger, do people (in person or over Telegram) feed it enough that it reliably climbs back
-  out of starvation and stays out over the long run?
+In plain terms: RQ1 asks whether this is a *real* homeostatic drive — does it continuously
+track its own state, correctly detect when that state is a deficit, actually change behaviour
+because of the deficit (not just cosmetically), and override the social agenda when the
+deficit is severe? RQ2 asks whether *expressing* that deficit reliably gets the robot fed —
+whether people (in person or over Telegram) respond enough to bring it back out of starvation
+and keep it out over the long run.
 
 ### One design fact that shapes everything
 
@@ -46,6 +47,24 @@ data:
    when a human happens to show up?
 
 This is an honest limitation and it is stamped on every conclusion.
+
+### The answers, up front
+
+**RQ1 — is this a real homeostatic drive? Yes — specifically a *threshold* controller.** All four
+functions are met. It monitors itself autonomously (dense 2.3-s sampling across 46 h, even in
+empty rooms) and detects deficits cleanly (exact 60/25 thresholds, zero flapping) — though those
+two are faithful-implementation facts, true by construction. The load-bearing result is
+behavioural: hunger leaves conversation *intact* through the Hungry band and then **overrides** it
+at Starving (turns 2.5 → 0.2, Engaged 0.68 → 0.08, feeding pursuit 0.26 → 0.54). The one soft spot
+is function 3 (deficit→action), which is directional not significant (OR ≈ 0.37, p = 0.14, n = 13).
+*The drive acts as a step-override, not a smooth ramp.*
+
+**RQ2 — does expressing the deficit yield reliable replenishment? Yes, but for a structural
+reason.** The deficit elicits graded feeding (meal size 21 → 29 → 43) and draws replies both in
+person and over Telegram (proactive ping-reply 0.21–0.26), and Starving episodes recover fast and
+completely (8/8, median 21 s to first feed). But replenishment is *reliable* mainly because the
+controller keeps Starving to **~1% of the long run** (no absorbing state) — recovery rarely has to
+work hard. The single caveat: those recoveries lean on a few feeders (Gini 0.58, top-3 = 61%).
 
 ---
 
@@ -129,19 +148,27 @@ clean, stable boundaries).
 
 ![Drive timeline](analysis/figures/fig02_drive_timeline.png)
 
-*Each panel is one experiment day on the wall-clock. Green/amber/red bands are
-Full/Hungry/Starving; the black line is the stomach level sawtoothing down (drain) and up
-(meals, shown as up-arrows sized by meal). Dotted lines are restarts; red shading marks
-Starving episodes. You can literally see the homeostasis: autonomous decay punctuated by
-feeding recoveries, and Starving is brief and rare.*
+***What to see.*** *Eight days on the wall-clock; the black line is the stomach level,
+sawtoothing **down** under autonomous drain and **up** at the 108 logged meals (arrow size ∝
+SMALL/MED/LARGE). Bands = Full/Hungry/Starving; dotted lines = restarts; red shading = Starving
+episodes.* ***Reading.*** *The signal spans the full 0–100 range but lives overwhelmingly in the
+green/amber bands; time below 25 (Starving) is a thin red sliver, and conditions vary sharply
+across runs — one 15-06 run spent **14%** of its time Starving while several others never dipped
+below 25 at all.* ***Conclusion.*** *This is the homeostatic loop made visible — continuous
+decay, discrete feeding recoveries, starvation as a rare and quickly-corrected excursion — the
+qualitative picture that B7 later quantifies at ~1% long-run Starving.*
 
 ### Figure 3 — detection fires exactly at the thresholds
 
 ![Thresholds and transitions](analysis/figures/fig03_thresholds_transitions.png)
 
-*Left: drain-driven falls straddle the 60 and 25 lines within a single sample. Right: the
-observed state-transition graph with counts — traffic concentrates on the Full↔Hungry edge,
-with far fewer excursions down to Starving.*
+***Reading.*** *Left: every drain-driven fall brackets its threshold within one ~2.3-s sample
+(accuracy **1.00/1.00**; n=121 at the 60 line, 14 at the 25 line) — detection is exact. Right:
+the observed transition graph. Of 180 state changes, **153 ride the Full↔Hungry edge** (Full→
+Hungry 81, Hungry→Full 72); Starving is entered only **16 times** (Hungry→Starving 10) and*
+**never** *directly Full→Starving — the drive always passes through Hungry first.* ***Conclusion.***
+*Traffic is dominated by the mild Full↔Hungry oscillation; the deep Starving excursions the rest
+of the analysis worries about are genuinely infrequent.*
 
 ### RQ1.3 — Deficit → action conversion *(analysis B3 + the active-cost table)*
 
@@ -187,9 +214,13 @@ significant** under correction, and n is small. Honest call.
 
 ![Deficit to action](analysis/figures/fig04_deficit_action.png)
 
-*Reply rate, P(reach Engaged), average turns, and active energy, each split Full/Hungry/
-Starving with bootstrap CIs. Hatched bars flag small-n (< 20). Reply rate is nearly flat
-Full→Hungry, then everything drops sharply at Starving — a step, not a smooth ramp.*
+***Reading.*** *Four outcomes split by state, with bootstrap CIs (hatching flags the small
+Starving cell, n=13). Reply rate is **flat Full→Hungry (0.78 → 0.79)** then eases to 0.54; but
+the decisive moves are P(reach Engaged) **0.69 / 0.67 / 0.08** and mean active energy per
+interaction **9.1 / 10.4 / 2.9** — both hold through Hungry and* **cliff at Starving.**
+***Conclusion.*** *Nothing ramps smoothly with hunger; behaviour is preserved through the Hungry
+band and then steps down at the 25 threshold — the visual signature of a threshold controller,
+not a gradient.*
 
 ### RQ1.4 — Behavioural prioritisation: the Starving override *(analysis B4 — the centrepiece)*
 
@@ -214,19 +245,23 @@ specifies. Starving n = 13 (directional).
 
 ![Prioritisation heatmap](analysis/figures/fig05_prioritisation_heatmap.png)
 
-*Social state (rows) × hunger state (columns). Left: Engaged-completion rate; right: average
-turns. The whole **Starving column collapses** while Full/Hungry sustain conversation — the
-override is visible as a dark vertical stripe. Every cell shows its n so small cells aren't
-over-read.*
+***Reading.*** *Engagement is set jointly by social* and *hunger state. Completion actually
+**peaks at Greeted×Hungry (0.93, 4.33 turns)** — a familiar face plus mild hunger is the robot's
+most engaged regime — and stays high across the whole Full and Hungry columns for known people
+(0.72–0.93). The entire **Starving column collapses to 0.00 / 0.00 / 0.25**, visible as a dark
+vertical stripe. Every cell shows its n.* ***Conclusion.*** *Hunger doesn't gently erode
+conversation; it leaves it intact — even enhanced — until Starving, where one override zeroes it
+out regardless of who the person is.*
 
 ### Figure 6 — how salience picks who to talk to
 
 ![IPS decomposition](analysis/figures/fig06_ips_decomposition.png)
 
-*Context for prioritisation: the Interaction Priority Score is a fixed weighted sum of
-proximity, centrality, velocity, gaze. Right panel shows the IPS distribution per social state
-against the eligibility threshold each must clear. (Velocity contributes ≈0 because faces are
-mostly stationary.)*
+***Context (salience mechanism, not a drive result).*** *IPS is a* **fixed** *weighted sum —
+prox 0.5, cent 0.15, vel 0.3, gaze 0.5 — identical across all 216,940 events (learning never
+touches the weights; see B9). Velocity contributes ≈0 because faces are near-stationary, so
+proximity, centrality and gaze do the work. Right: IPS at selection sits above each social
+state's eligibility bar (ss1 0.80 … ss4 0.85), confirming the gate fires as coded.*
 
 ### Reading RQ1.3 + RQ1.4 + the gradient together: **a threshold controller, not a ramp**
 
@@ -271,9 +306,12 @@ proactive-vs-reactive comparison.
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
-*Left: count of proactive Telegram pings by type (Hungry-entry, Starving-proactive, Starving-
-recovery). Right: the response-to-ping rate with bootstrap CIs. The deficit escapes the robot
-body and elicits replies from subscribers, at a modest but non-zero rate.*
+***Reading.*** *Left: proactive Telegram pings by type; right: their 1-hour reply rate with
+bootstrap CIs. Across all proactive pings the response rate is **0.21 [0.16, 0.26]** (47/224),
+and for the Starving-specific `hs3_proactive` ping **0.26** (19/74).* ***Conclusion.*** *The
+deficit genuinely escapes the robot's body and pulls a human response off-robot — modest but
+real, and drive-*initiated*: co-present interactions are **83%** reply-bearing when proactive vs
+**42%** when merely reactive.*
 
 ### RQ2.b — Are Starving recoveries *sufficient*? *(analysis B6)*
 
@@ -299,9 +337,13 @@ mainly because the robot seldom gets that low.
 
 ![Starving recovery](analysis/figures/fig07_hs3_funnel.png)
 
-*Left: the recovery funnel — every episode received a feed, escaped, and recovered to Full.
-Right: cumulative probability of the first feed over time since Starving onset, with the 8-s
-feed-wait timeout marked. Read as directional given the tiny n.*
+***Reading (exploratory, n=8).*** *Left: the funnel has* **no attrition** *— all 8 Starving
+episodes received a feed, escaped Starving, and recovered to Full, entirely via feeding (mean
+entry level 24.0, just under the 25 line). Right: cumulative first-feed probability climbs fast —
+**median 21 s to first feed** (KM 31 s), range 2–166 s — against the 8-s per-attempt feed-wait
+timeout.* ***Conclusion.*** *When Starving does occur, the recovery path is quick and complete —
+but n=8 makes this an operational check, not a population rate; the reliability claim rests on B7,
+not here.*
 
 ### RQ2.c — Is replenishment *reliable* over the long run? *(analysis B7, the headline)*
 
@@ -327,8 +369,11 @@ single piece of RQ2 evidence, and it is a **model result** grounded in real tran
 
 ![Steady state](analysis/figures/fig09_steady_state.png)
 
-*The CTMC steady-state distribution (solid) sits right on top of the empirical time-occupancy
-(hatched): the robot lives in Full/Hungry ~99% of the time; Starving is a thin sliver.*
+***Reading.*** *Modelled CTMC occupancy (solid) lands almost exactly on the empirical
+time-occupancy (hatched): Full **54.1% vs 54.5%**, Hungry **44.8% vs 43.7%**, Starving
+**1.1% vs 1.8%** — the model isn't extrapolating away from the data. Mean Starving sojourn 163 s.*
+***Conclusion.*** *The robot lives in Full/Hungry ~99% of the time and leaves Starving quickly;
+there is no absorbing "starve-out" state. This is the headline reliability result for RQ2-c.*
 
 ### The gradient question *(analysis B8)*
 
@@ -337,6 +382,13 @@ with severity (**Spearman ρ = −0.16, p = 0.016**) but the drop is **concentra
 (0.69 / 0.67 / 0.08), and the turns/energy trends **do not survive covariate adjustment**.
 **Weakened as a smooth gradient / Supported as a threshold override** — the same coherent
 story, not a contradiction.
+
+**RQ2, concluded.** Expressing the deficit *does* drive recovery: it elicits graded feeding
+(bigger meals when hungrier, B5) and pulls replies both in person and off-robot (Fig 8), and
+when Starving does occur the escape is fast and complete (B6). But the reason replenishment is
+*reliable* is structural, not heroic — the controller keeps starvation to ~1% of the time
+(B7), so recovery rarely has to work hard. The one genuine caveat is that those recoveries
+lean on a **few feeders** (Gini 0.58, top-3 = 61%, D4).
 
 ---
 
@@ -367,16 +419,24 @@ to court its feeders.
 
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
-*Left: per-person affinity trajectories stabilising positive as people feed the robot. Right:
-a Lorenz curve of feeding concentration (see D4).*
+***Reading.*** *Left: per-person affinity trajectories climb and* **stabilise positive** *for
+people who feed the robot (terminal affinity ↔ meals-given r=0.54). Right: the Lorenz curve of
+feeding — **Gini 0.58**, with the **top-3 users (P01, P10, P06) supplying 61%** of the 77 total
+meal-units across 15 people.* ***Conclusion.*** *The drive demonstrably learns who its feeders
+are, but replenishment leans on a handful of them — a real if moderate robustness caveat for
+RQ2-c.*
 
 ### Figure 11 — affinity learning → eligibility → targeting
 
 ![Affinity learning](analysis/figures/fig11_affinity_learning.png)
 
-*Left: the EMA update shrinks (convergence). Middle: higher affinity lowers the eligibility
-threshold along the exact coded formula. Right: Hungry-state pings go only to the above-0.20
-people (amber).*
+***Reading.*** *Left: the EMA update shrinks* **0.089 → 0.053** *over 239 updates — learning
+converges. Middle: affinity maps onto the eligibility threshold along the exact coded line
+`max(0.50, base − 0.15·affinity)` (fit error 1e-4), so the most-liked people clear a bar up to
+**~0.14 lower** (e.g. P08, P13). Right: when Hungry the chatbot pings only the **11/15**
+above-0.20 people, filtering out **56%** of subscriber-slots (142/252).* ***Conclusion.*** *One
+learned scalar quietly personalises both who the robot approaches in person and who it messages
+when hungry — spending scarce recovery effort on proven feeders.*
 
 ---
 
@@ -404,8 +464,12 @@ model reproduces the Starving collapse), *not* a mechanism proof.
 
 ![ML sensitivity](analysis/figures/figD1_ml_sensitivity.png)
 
-*Left: ablation (hunger adds a modest bump). Middle: drop-column importance — social state
-dominates, hunger is #3. Right: out-of-fold predictions track the observed Starving collapse.*
+***Reading (sensitivity, not proof).*** *Adding hunger to a social/perceptual Engaged-model lifts
+held-out **AUC 0.903 → 0.933 (+0.030)** and **PR-AUC 0.931 → 0.954 (+0.023)**; drop-column CV
+ranks hunger **#3 of 13** (AUC loss 0.030), well behind **social state (#1, loss 0.077)** and just
+behind centrality. Right: out-of-fold predictions reproduce the Starving collapse.*
+***Conclusion.*** *Hunger carries real, independent predictive signal — but a secondary one;
+social/perceptual context dominates, so this corroborates the mechanism rather than proving it.*
 
 ### D4 — Does recovery depend on a few feeders? (robustness of RQ2-c)
 
