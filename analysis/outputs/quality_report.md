@@ -1,6 +1,6 @@
 # Quality report
 
-_Generated 2026-07-06 12:06_
+_Generated 2026-07-06 12:35_
 
 | check | result | detail |
 |---|---|---|
@@ -12,4 +12,4 @@ _Generated 2026-07-06 12:06_
 | no feeding with meal_delta==0 | PASS | (n_feeds=108) |
 | meal_delta matches SMALL/MEDIUM/LARGE constants | PASS | (mismatches=0) |
 | HS label consistent with level thresholds | PASS | (mismatch rows=0/165460) |
-| non-feeding level changes are non-increasing | WARN | (violations=111/165324) |
+| passive/active level changes are non-increasing | PASS | (violations=0/165336) |

@@ -610,17 +610,15 @@ q_check("HS label consistent with level thresholds", mismatch == 0,
 """)
 
 code(r"""
-# Drain monotonic (non-increasing between feeds): within each run, level only rises on
-# feeding events; passive_drain + active_cost must be non-increasing.
+# Drain monotonicity: passive drain and active costs must never increase the level.
+# Do not diff after dropping feeding rows: that compares the post-feed sample to the
+# pre-feed row and creates false positives across legitimate meal jumps.
 def drain_monotonic_report(hr):
-    bad = 0; total = 0
-    for run, g in hr.sort_values(["run_id","monotonic_sec","id"]).groupby("run_id"):
-        g = g[g["event_type"].isin(["sample","active_cost"])]
-        d = g["stomach_level_after"].diff()
-        bad += (d > 1e-6).sum(); total += d.notna().sum()
-    return bad, total
+    checked = hr[hr["event_type"].isin(["sample", "active_cost"])].copy()
+    delta = pd.to_numeric(checked["level_delta"], errors="coerce")
+    return int((delta > 1e-6).sum()), int(delta.notna().sum())
 bad, total = drain_monotonic_report(hunger_raw)
-q_check("non-feeding level changes are non-increasing", bad == 0,
+q_check("passive/active level changes are non-increasing", bad == 0,
         f"(violations={bad}/{total})", hard=False)
 
 # Emit quality_report.md
@@ -1576,9 +1574,9 @@ try:
             f"(bootstrap over the {int(cnt.loc['HS3'].sum())}-transition Starving row) — i.e. the people "
             f"kept the robot's energy in homeostasis, out of starvation ~{100-b[2]*100:.0f}-{100-b[0]*100:.0f}% "
             f"of the time; no absorbing state. This is NOT a self-property of the controller: the transition "
-            f"rates are a record of how the humans actually behaved, so the reading is that human engagement "
-            f"(elicited by the drive; see B5) reliably replenished the robot — the HRI loop closes and the "
-            f"solution works. Point est {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
+            f"rates are a record of how the humans actually behaved, so the reading is that human engagement, "
+            f"with demonstrated participation from the drive (see B5), reliably replenished the robot — the "
+            f"HRI loop closes and the solution works. Point est {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
             f"condition means the drive's exact causal share in the feeding is not isolated.", n=int(cnt.values.sum()))
 except Exception as e:
     print("stationary solve failed:", e)
@@ -1787,7 +1785,7 @@ for i,(name, sig, col) in enumerate(stages):
     if i<3: ax.annotate("",(x+0.235,0.65),(x+0.20,0.65),arrowprops=dict(arrowstyle="-|>",lw=2))
     x += 0.245
 ax.text(0.5,0.95,"Always-on embodied behaviour — data-logging pipeline",ha="center",fontsize=12,fontweight="bold")
-ax.annotate("interaction_result RPC (homeostatic reward, energy cost)\ncloses the loop: drive reduction ↦ IPS weight learning",
+ax.annotate("interaction_result RPC (homeostatic reward, energy cost)\ncloses the loop: drive reduction ↦ affinity / eligibility-threshold learning",
             (0.5,0.12),ha="center",fontsize=7.5,style="italic")
 savefig(fig,"fig01_architecture"); plt.show()
 """)
