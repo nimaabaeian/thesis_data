@@ -2215,15 +2215,16 @@ if pi:
 savefig(fig,"fig09_steady_state"); plt.show()
 """)
 
-md("**Fig 10 — Per-person affinity / engagement trajectories and feeding concentration.**")
+md("**Fig 10 — Per-person affinity trajectories across the whole experiment.**")
 code(r"""
 # Use B9's re-threaded affinity (merged identities get a single coherent EMA, not the stale
 # last-label value) rather than reloading the raw per-label log.
-hlc=globals()["_b9_hlc"]
-fig,(a1,a2)=plt.subplots(1,2,figsize=(15,5.0),gridspec_kw={"width_ratios":[1.35,1]})
+hlc=globals()["_b9_hlc"].copy()
+fig,ax=plt.subplots(figsize=(12.2,5.8))
 
 # --- 1-D label declutter: spread label y-positions so names never overlap ---
 def declutter(ys, gap, ymin, ymax):
+    if len(ys)==0: return np.asarray([])
     order=np.argsort(ys); s=np.sort(np.asarray(ys,float))
     for i in range(1,len(s)):                       # push apart upward
         if s[i]-s[i-1]<gap: s[i]=s[i-1]+gap
@@ -2238,109 +2239,93 @@ meals_by=(master.assign(fed=pd.to_numeric(master["meals_eaten_count"],errors="co
 if len(hlc) and "affinity_after" in hlc.columns:
     hlc=hlc.sort_values(["person_id","timestamp_epoch"])
     # named people only: "unknown" is the unrecognised-face placeholder (no stable affinity).
-    named=hlc[(hlc["person_id"]!="unknown") & hlc["affinity_after"].notna()]
-    top=list(named["person_id"].value_counts().head(6).index)
-    hlc=named
-    cmap=plt.cm.viridis(np.linspace(0.05,0.80,len(top)))
-    ends=[]                                         # (name, colour, x_end, y_end)
-    for c,pid in zip(cmap,top):
-        g=hlc[hlc["person_id"]==pid]; yv=g["affinity_after"].values
-        a1.plot(range(len(g)),yv,marker="o",ms=3,lw=1.4,color=c,alpha=0.9,zorder=3)
-        ends.append([str(pid), c, len(g)-1, yv[-1]])
+    named=hlc[(hlc["person_id"]!="unknown") & hlc["affinity_after"].notna()].copy()
+    named["experiment_day"]=(named["timestamp_epoch"]-named["timestamp_epoch"].min())/86400.0
+    term=(named.groupby("person_id").tail(1)[["person_id","affinity_after","experiment_day"]]
+          .rename(columns={"affinity_after":"terminal_affinity"}))
+    order=(term.assign(meals=term["person_id"].map(meals_by).fillna(0))
+              .sort_values(["terminal_affinity","meals"],ascending=[False,False])["person_id"].tolist())
+    cmap=plt.cm.tab20(np.linspace(0,1,max(len(order),1)))
+    ends=[]                                         # (name, colour, x_end, y_end, terminal_affinity)
+    for c,pid in zip(cmap,order):
+        g=named[named["person_id"]==pid]
+        xv=g["experiment_day"].values; yv=g["affinity_after"].values
+        ax.plot(xv,yv,marker="o",ms=2.8,lw=1.55,color=c,alpha=0.86,zorder=3)
+        ends.append([str(pid), c, xv[-1], yv[-1], yv[-1]])
     xmax=max(e[2] for e in ends)
-    a1.axhline(0,color=MUTED,ls=":",lw=1,zorder=1)
-    # place de-collided name+meal labels in a right-margin column, with leader lines
-    lab_y=declutter([e[3] for e in ends], gap=0.075, ymin=0.02, ymax=0.98)
-    lx=xmax*1.06
-    for (name,c,xe,ye),ly in zip(ends,lab_y):
+    ax.axhline(0,color=MUTED,ls=":",lw=1,zorder=1)
+    ax.axhspan(0,1,color=HS_PALETTE["HS1"],alpha=0.045,zorder=0)
+    ax.axhspan(-1,0,color=HS_PALETTE["HS3"],alpha=0.035,zorder=0)
+    # place de-collided terminal name+meal labels in a right-margin column, with leader lines
+    lab_y=declutter([e[3] for e in ends], gap=0.085, ymin=-0.92, ymax=0.98)
+    lx=xmax+0.55
+    for (name,c,xe,ye,_),ly in zip(ends,lab_y):
         mk=int(meals_by.get(name,0))
-        a1.plot([xe,lx],[ye,ly],color=c,lw=0.7,alpha=0.6,zorder=2)         # leader
-        a1.text(lx+xmax*0.015,ly,f"{name[:11]} · {mk} meals",va="center",ha="left",
-                fontsize=8.5,color=c,fontweight="medium")
-    a1.set_xlim(0,xmax*1.34)
-    a1.set_xlabel("interaction # (per person)"); a1.set_ylabel("affinity (EMA of normalised reward)")
-    a1.set_title("Per-person affinity trajectories — learning stabilises positive (>0 feeds the drive)",fontsize=11)
+        ax.plot([xe,lx],[ye,ly],color=c,lw=0.75,alpha=0.55,zorder=2)         # leader
+        ax.text(lx+0.08,ly,f"{name} · {mk:g} feeds",va="center",ha="left",
+                fontsize=8.3,color=c,fontweight="medium")
+    ax.set_xlim(0,lx+1.65)
+    ax.set_ylim(-1.05,1.05)
+    ax.set_xlabel("experiment time (days from first logged affinity update)")
+    ax.set_ylabel("learned affinity (EMA of normalised reward)")
+    ax.set_title("Every recognised person's affinity over the full experiment",fontsize=12)
+    ax.grid(True,axis="y")
 else:
-    a1.text(0.5,0.5,"no affinity trajectory data",ha="center")
-
-# --- Lorenz curve: direct line labels + stats box in a clear corner (no legend box) ---
-d=master.copy(); d["fed"]=pd.to_numeric(d["meals_eaten_count"],errors="coerce").fillna(0)
-per=d.groupby("user_key")["fed"].sum(); per=per[per.index!=""]
-m=np.sort(per.values.astype(float))
-if m.sum()>0:
-    cum=np.concatenate([[0],np.cumsum(m)/m.sum()]); xx=np.linspace(0,1,len(cum))
-    a2.plot([0,1],[0,1],ls="--",color=MUTED,lw=1.3,zorder=2)
-    a2.fill_between(xx,cum,xx,color=HS_PALETTE["HS2"],alpha=0.18,zorder=1)
-    a2.plot(xx,cum,color=HS_ACCENT["HS2"],lw=2.4,marker="o",ms=3,zorder=3)
-    nP=len(m); gini=(2*np.sum(np.arange(1,nP+1)*m)/(nP*m.sum())-(nP+1)/nP)
-    top3=np.sort(m)[-3:].sum()/m.sum()
-    # direct labels on the two lines (no legend -> no overlap with the stats box)
-    a2.text(0.30,0.44,"perfect equality",rotation=34,rotation_mode="anchor",
-            color=MUTED,fontsize=9,va="bottom",ha="center")
-    a2.text(0.66,0.11,"observed feeding",color=HS_ACCENT["HS2"],fontsize=9.5,fontweight="medium",ha="center")
-    # stats box in the empty upper-left triangle
-    a2.text(0.035,0.965,f"Gini = {gini:.2f}\nn = {nP} users\ntop-3 feeders = {top3*100:.0f}% of meals",
-            va="top",ha="left",fontsize=10,fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.4",fc="white",ec=MUTED,lw=0.8,alpha=0.9))
-    a2.set_xlim(0,1); a2.set_ylim(0,1); a2.grid(False)
-    a2.set_xlabel("cumulative share of users (fewest → most meals given)")
-    a2.set_ylabel("cumulative share of meals")
-    a2.set_title("Feeding concentration (Lorenz curve)",fontsize=11)
-fig.suptitle("Fig 10 — Who sustains the drive: affinity learning per person and feeding concentration",
+    ax.text(0.5,0.5,"no affinity trajectory data",ha="center")
+fig.suptitle("Fig 10 — Adaptive personalisation: affinity trajectories over the whole experiment",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig10_affinity_trajectories"); plt.show()
 """)
 
-md("""**Fig 11 — Adaptive personalization (B9)**: (left) affinity learning converges as the
-EMA update shrinks; (middle) learned affinity lowers each person's IPS eligibility threshold
-via `eff_thr = max(0.50, base − 0.15·affinity)`; (right) the chatbot pings only above-0.20-affinity
-people when Hungry.""")
+md("""**Fig 11 — Adaptive personalization payoff (B9)**: terminal affinity ranks who the robot
+learned to prioritise. The plot asks whether those high-affinity people justified the extra
+proactive effort by contributing a larger share of feeding than the share of proactive approaches
+spent on them.""")
 code(r"""
-# named people only: "unknown" is the unrecognised-face placeholder (no stable affinity).
-hlc=globals()["_b9_hlc"]; hlc=hlc[hlc["person_id"]!="unknown"]
-term=globals()["_b9_term"]; term=term[term["person_id"]!="unknown"]
-t=globals()["_b9_tsel"]
-fig,(a1,a2,a3)=plt.subplots(1,3,figsize=(16.2,4.9),gridspec_kw={"width_ratios":[1,1,1.08]})
+term=globals()["_b9_term"].copy()
+term=term[term["person_id"]!="unknown"].copy()
+d=master.copy()
+d["fed"]=pd.to_numeric(d["meals_eaten_count"],errors="coerce").fillna(0)
+d["proactive"]=((d.get("is_proactive",0).fillna(0).astype(int)==1) |
+                (d.get("trigger_mode","").astype(str)=="proactive")).astype(int)
+person=(d.groupby("user_key").agg(feeds=("fed","sum"),
+                                  proactive_attempts=("proactive","sum"),
+                                  interactions=("interaction_id","nunique"))
+          .reset_index().rename(columns={"user_key":"person_id"}))
+pay=term.merge(person,on="person_id",how="left").fillna({"feeds":0,"proactive_attempts":0,"interactions":0})
+pay["feed_share"]=pay["feeds"]/max(pay["feeds"].sum(),1)
+pay["approach_share"]=pay["proactive_attempts"]/max(pay["proactive_attempts"].sum(),1)
+pay["payoff_gap"]=pay["feed_share"]-pay["approach_share"]
+top=pay.sort_values(["affinity","feeds"],ascending=[False,False]).head(8).iloc[::-1]
 
-# (1) Convergence: |affinity update| vs update index, with a rolling mean.
-a1.scatter(hlc["k"],hlc["step"],s=12,color="#8E7CC3",alpha=0.4,edgecolors="none")
-roll=hlc.sort_values("k").groupby("k")["step"].mean()
-rk=roll.index.values; rm=pd.Series(roll.values).rolling(3,min_periods=1).mean().values
-a1.plot(rk,rm,color=INK,lw=2,label="mean |update| by step #")
-a1.set_xlabel("interaction # for that person"); a1.set_ylabel("|affinity update|  (EMA step)")
-a1.set_title("Learning converges: updates shrink"); a1.legend(); a1.grid(False)
-
-# (2) Affinity -> effective threshold, with the coded formula overlaid per social state.
-SSC={"ss1":"#3A7CA5","ss2":"#8E7CC3","ss3":"#E0A126","ss4":"#CF4A33"}
-for ss,c in SSC.items():
-    sub=t[t["ss"]==ss]
-    if len(sub): a2.scatter(sub["affinity"],sub["effective_threshold"],s=8,color=c,alpha=0.3,edgecolors="none",label=SS_NAME[ss])
-aff=np.linspace(-1,1,50)
-for ss,base in {"ss4":0.85,"ss1":0.80}.items():
-    a2.plot(aff,np.maximum(0.50,base-0.15*aff),color=SSC[ss],lw=1.6,ls="--")
-a2.axhline(0.50,color=MUTED,ls=":",lw=1)
-a2.text(-0.95,0.515,"floor 0.50",fontsize=8,color=MUTED,
-        bbox=dict(boxstyle="round,pad=0.15",fc="white",ec="none",alpha=0.85))
-a2.set_xlabel("learned affinity"); a2.set_ylabel("effective eligibility threshold")
-a2.set_title("Higher affinity → lower bar to be selected"); a2.legend(title="social state",fontsize=8); a2.grid(False)
-a2.annotate("liked people\nclear a lower bar",(0.7,0.72),(0.15,0.56),fontsize=8.5,
-            arrowprops=dict(arrowstyle="->",color=INK),color=INK)
-
-# (3) HS2 proactive targeting by learned affinity: who gets pinged when Hungry.
-tt=term.sort_values("affinity")
-cols=[HS_PALETTE["HS2"] if a>0.20 else "#C7CDD4" for a in tt["affinity"]]
-a3.barh(range(len(tt)),tt["affinity"],color=cols,edgecolor="white",linewidth=0.6)
-a3.axvline(0.20,color=HS_ACCENT["HS3"],lw=2,ls="--")
-a3.annotate("HS2 ping threshold\n0.20", xy=(0.20, len(tt)-1.0), xytext=(0.28, len(tt)-1.0),
-            ha="left", va="center", color=HS_ACCENT["HS3"], fontsize=8.2, fontweight="bold",
-            arrowprops=dict(arrowstyle="-",color=HS_ACCENT["HS3"],lw=0.9),
-            bbox=dict(boxstyle="round,pad=0.22",fc="white",ec=HS_ACCENT["HS3"],lw=0.7,alpha=0.95))
-a3.set_yticks(range(len(tt))); a3.set_yticklabels(tt["person_id"],fontsize=7.0)
-a3.margins(x=0.12)
-a3.set_xlabel("terminal learned affinity"); a3.grid(False)
-npass=(tt["affinity"]>0.20).sum()
-a3.set_title(f"Hungry pings go to {npass}/{len(tt)} learned people (amber)",fontsize=11,pad=8)
-fig.suptitle("Fig 11 — Adaptive personalization: affinity learning → IPS eligibility → Hungry-state proactive targeting",
+fig,ax=plt.subplots(figsize=(11.2,5.8))
+y=np.arange(len(top))
+feed=100*top["feed_share"].values
+approach=100*top["approach_share"].values
+for yi,a,f in zip(y,approach,feed):
+    ax.plot([a,f],[yi,yi],color=GRID,lw=2.1,zorder=1)
+ax.scatter(approach,y,s=55,color=MUTED,label="proactive approach share",zorder=3)
+ax.scatter(feed,y,s=70,color=HS_ACCENT["HS1"],label="feeding contribution share",zorder=4)
+for yi,a,f in zip(y,approach,feed):
+    gap=f-a
+    ax.text(max(a,f)+0.9,yi,f"{gap:+.1f} pp",va="center",ha="left",fontsize=8.8,
+            color=HS_ACCENT["HS1"] if gap>=0 else HS_ACCENT["HS3"],fontweight="medium")
+labels=[f"{r.person_id}  a={r.affinity:+.2f}  feeds={int(r.feeds)}" for r in top.itertuples()]
+ax.set_yticks(y); ax.set_yticklabels(labels,fontsize=9)
+ax.set_xlabel("share of experiment total (%)")
+ax.set_title("Top terminal-affinity people: feeding share vs proactive effort share",fontsize=12)
+ax.set_xlim(0,max(np.r_[feed,approach,1])+8)
+ax.grid(True,axis="x"); ax.grid(False,axis="y")
+ax.legend(loc="lower right")
+top_pos=(top["payoff_gap"]>0).sum()
+top_feed_share=top["feed_share"].sum()*100
+top_approach_share=top["approach_share"].sum()*100
+ax.text(0.01,0.98,
+        f"{top_pos}/{len(top)} top-affinity people have positive payoff\n"
+        f"top-{len(top)}: {top_feed_share:.0f}% of feeding vs {top_approach_share:.0f}% of proactive approaches",
+        transform=ax.transAxes,va="top",ha="left",fontsize=9.6,fontweight="bold",
+        bbox=dict(boxstyle="round,pad=0.38",fc="white",ec=MUTED,lw=0.8,alpha=0.94))
+fig.suptitle("Fig 11 — Did the robot's highest-affinity people repay proactive attention with feeding?",
              fontsize=13,fontweight="semibold",y=1.02)
 savefig(fig,"fig11_affinity_learning"); plt.show()
 """)

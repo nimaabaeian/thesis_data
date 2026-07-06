@@ -444,32 +444,32 @@ to 1e-4 against the robot's own values.)*
   threshold. High-affinity feeders clear a bar up to **~0.14 lower**.
 - The chatbot pings only the **11/15** learned people above affinity 0.20 when Hungry;
   everyone gets pinged only when Starving.
+- The people who finish with the highest affinity can be checked directly against behaviour:
+  Figure 11 compares their share of proactive approaches with their share of actual feeding.
 
 **Verdict: Supported.** The drive personalises *who it spends recovery effort on* — it learns
 to court its feeders.
 
-### Figure 10 — who sustains the drive
+### Figure 10 — affinity over the whole experiment
 
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
-***Reading.*** *Left: per-person affinity trajectories climb and* **stabilise positive** *for
-people who feed the robot (terminal affinity ↔ meals-given r=0.54). Right: the Lorenz curve of
-feeding — **Gini 0.58**, with the **top-3 users (P01, P10, P06) supplying 61%** of the 77 total
-meal-units across 15 people.* ***Conclusion.*** *The drive demonstrably learns who its feeders
-are, but replenishment leans on a handful of them — a real if moderate robustness caveat for
-RQ2-c.*
+***Reading.*** *Each line is one recognised person, plotted against absolute experiment time
+rather than their own interaction count. Positive trajectories indicate people whose encounters
+reduced the robot's drive, mostly through feeding; negative or flat trajectories indicate people
+who cost energy without replenishing it.* ***Conclusion.*** *Affinity is not a static label:
+it changes over the deployment and separates the people who repeatedly helped regulate the
+drive from those who did not.*
 
-### Figure 11 — affinity learning → eligibility → targeting
+### Figure 11 — did high-affinity people repay proactive effort?
 
 ![Affinity learning](analysis/figures/fig11_affinity_learning.png)
 
-***Reading.*** *Left: the EMA update shrinks* **0.089 → 0.053** *over 239 updates — learning
-converges. Middle: affinity maps onto the eligibility threshold along the exact coded line
-`max(0.50, base − 0.15·affinity)` (fit error 1e-4), so the most-liked people clear a bar up to
-**~0.14 lower** (e.g. P08, P13). Right: when Hungry the chatbot pings only the **11/15**
-above-0.20 people, filtering out **56%** of subscriber-slots (142/252).* ***Conclusion.*** *One
-learned scalar quietly personalises both who the robot approaches in person and who it messages
-when hungry — spending scarce recovery effort on proven feeders.*
+***Reading.*** *People are ranked by terminal affinity. Grey dots show each person's share of
+the robot's proactive approaches; green dots show their share of feeding. The percentage-point
+label is feeding share minus proactive-approach share.* ***Conclusion.*** *A positive gap means
+the extra proactive attention was repaid by disproportionate feeding; a negative gap flags a
+person who was prioritised more than they replenished the robot.*
 
 ---
 
