@@ -1618,12 +1618,12 @@ except Exception as e:
 # Grade: is there a smooth monotone HS1<HS2<HS3 gradient, or a step-change at HS3?
 _rho_ss4, _p_ss4 = sps.spearmanr(d["hs_rank"], d["reached_ss4"])
 _step = (d.groupby("hunger_state_start")["reached_ss4"].mean().reindex(HS_ORDER))
-verdict("B8", f"Weakened as a *smooth* gradient / Supported as a *threshold override*: "
-        f"Engaged-completion declines monotonically with severity (rho={_rho_ss4:+.2f}, "
+verdict("B8", f"Weakened (as a smooth gradient): "
+        f"Engaged-completion declines with severity (rho={_rho_ss4:+.2f}, "
         f"p={_p_ss4:.3f}) but the drop is concentrated in Starving "
-        f"({_step.rename(index=HS_NAME).round(2).to_dict()}) — consistent with the coded Starving override firing "
-        f"only below 25, not a smooth Full->Hungry->Starving ramp; turns/energy trends are weak "
-        f"and do not survive covariate adjustment.", n=len(d))
+        f"({_step.rename(index=HS_NAME).round(2).to_dict()}) — Full and Hungry are nearly equal, so this is a "
+        f"step-change at the 25 line, not a smooth Full->Hungry->Starving ramp; turns/energy trends are weak "
+        f"and do not survive covariate adjustment. The step itself is shown directly in B4, not here.", n=len(d))
 """)
 
 md(r"""#### Reading B3 + B4 + B8 together: two thresholds, not a ramp

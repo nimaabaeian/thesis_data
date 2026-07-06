@@ -415,11 +415,13 @@ with demonstrated participation from the drive, kept the robot's energy regulate
 
 ### The gradient question *(analysis B8)*
 
-Already told above under "threshold controller": Engaged-completion declines monotonically
-with severity (**Spearman ρ = −0.16, p = 0.016**) but the drop is **concentrated at Starving**
-(0.69 / 0.67 / 0.08), and the turns/energy trends **do not survive covariate adjustment**.
-**Weakened as a smooth gradient / Supported as a threshold override** — the same coherent
-story, not a contradiction.
+As mentioned under "threshold controller": Engaged-completion does decline as the robot gets
+hungrier (**Spearman ρ = −0.16, p = 0.016**), but the drop really lives at Starving — Full and
+Hungry are almost the same (0.69 / 0.67) and only Starving falls away (0.08). The turn-count and
+energy trends don't hold up once we adjust for covariates. So **as a smooth Full→Hungry→Starving
+ramp, this is weak, and we grade it Weakened.** The change that *is* there is the step down at the
+Starving line — but we don't lean on B8 for that; it's shown directly in B4. We'd rather
+under-state the gradient than dress it up.
 
 **RQ2, concluded.** Expressing the deficit *does* drive recovery: it elicits graded feeding
 (bigger meals when hungrier, B5) and is followed by replies both in person and off-robot (Fig 8), and
@@ -546,24 +548,28 @@ responses, but the evidence should not be overstated.
 
 ## 8. Honest limitations (read before quoting any number)
 
-- **Single condition.** Always-on throughout; no drive-off control. RQ2 rests on the
-  within-drive gradient and proactive/reactive contrast, not a randomised comparison.
-- **Small-n Starving.** 8 Starving episodes, ~13 Starving interactions. Those results are
-  **directional**, reported with n and bootstrap CIs — not proof.
-- **Multiple-comparison correction.** The primary deficit→action effect (feeding pursuit Full vs
-  deficit, B3, p ≈ 1e-5) and the engagement-decline with severity (B8) **survive Benjamini–Hochberg
-  at q < 0.05**; the weaker turns/energy gradient trends do not. Small-n *Starving-specific* results
-  are still led with **effect sizes + bootstrap intervals**, not NHST. *(Note: the framing 3% → 67%
-  jump is prompt-driven, so we report it descriptively and keep it out of the NHST family.)*
-- **RQ1.1/1.2 are faithful-implementation results, not independent measurements** — they
-  confirm the machinery matches the code (zero-width CIs are the tell), and the non-trivial
-  parts are autonomy and the absence of flapping.
-- **Reliability is an emergent loop property, not a controller guarantee.** The robot stayed out
-  of starvation ~99% of the time *because the people fed it* (B7 rates are a record of their
-  behaviour), and — single condition — we cannot fully isolate how much of that feeding the drive
-  *caused* vs. what users would have done anyway. B5 shows the drive demonstrably participated
-  (graded feeding, proactive pings drawing replies), so the loop-works claim is well-supported;
-  the strict causal share is not identified.
+- **One condition only.** The drive was on the whole time — there was never a "drive-off"
+  version to compare against. So for RQ2 we lean on the two comparisons we *do* have from inside
+  the data (hungrier vs. less hungry, and the robot initiating vs. reacting), not a clean
+  randomised experiment.
+- **Starving is rare.** Only 8 Starving episodes and about 13 Starving interactions. We treat
+  anything resting on those as *suggestive* — always shown with the sample size and a confidence
+  interval, never sold as proof.
+- **We tested many things, so we corrected for it.** After that correction, the two effects we
+  most care about still hold: the jump in feeding behaviour once the robot is in a deficit, and
+  the drop in engagement as it gets more severe. The weaker turn-count and energy trends don't
+  survive, and we say so. *(The 3% → 67% rise in hunger talk is driven directly by the prompts, so
+  we just describe it rather than run a significance test on it.)*
+- **Monitoring and detection are "wired correctly," not discoveries.** The stomach level and the
+  hunger labels come straight from the code, so of course they line up — that part confirms the
+  machinery works as written. What's genuinely worth noting is that it runs on its own and doesn't
+  flicker at the boundaries.
+- **Staying fed is a property of the loop, not a promise from the robot.** The robot avoided
+  starvation ~99% of the time *because people fed it* — those numbers describe how the humans
+  behaved as much as the drive. With a single condition we can't cleanly separate how much of the
+  feeding the drive itself caused from what people would have done anyway. What we *can* show is
+  that the drive took part (bigger asks when hungrier, pings that drew replies), so "the loop
+  works here" is on solid ground; "the drive alone caused it" is not a claim we make.
 
 ---
 
@@ -578,7 +584,7 @@ responses, but the evidence should not be overstated.
 | RQ2-a | Deficit expression elicits recovery | B5 | **Supported** |
 | RQ2-b | Observed Starving episodes resolve by feeding | B6 | **Supported (exploratory)** |
 | RQ2-c | Replenishment reliable long-run | B7 | **Supported** |
-| gradient | Full→Hungry→Starving monotonic & robust | B8 | **Weakened as ramp / Supported as threshold override** |
+| gradient | Full→Hungry→Starving monotonic & robust | B8 | **Weakened** *(no smooth ramp; the movement sits at the Starving threshold — see B4)* |
 
 **Bottom line.** On the mechanism side (RQ1), the orexigenic drive is a genuine,
 faithfully-implemented **threshold homeostatic controller**: it monitors itself autonomously,
