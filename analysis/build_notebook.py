@@ -1451,7 +1451,7 @@ verdict("B5", f"{'Supported' if elicits else 'Weakened'}: meal size rises with d
         f"[{lo:.2f},{hi:.2f}]; recovery is drive-initiated (proactive) not merely reactive.", n=total)
 """)
 
-md("### B6 — Sufficiency of recovery (Starving episodes + survival)")
+md("### B6 — Observed Starving-episode recovery (exploratory status check)")
 
 code(r"""
 # B6: report first feed, escape from Starving, and recovery to Full separately.
@@ -1492,14 +1492,13 @@ try:
 except Exception as e:
     print("survival failed (small-n expected):", e)
 suff = (np.nan_to_num(full_frac) >= 0.5)
-verdict("B6", f"{'Supported (weak)' if suff else 'Weakened'}: Starving episodes received a feed in "
-        f"{feed_frac*100:.0f}%, escaped Starving via feeding in {escape_frac*100:.0f}%, and recovered "
-        f"to Full via feeding in {full_frac*100:.0f}% (n={n_ep} — thin, exploratory). Note: overall "
-        f"reliability (RQ2-c) is carried by the LOW long-run starvation occupancy (B7), not by these {n_ep} episodes nor by "
-        f"the modest 21% remote ping-response rate — and that low occupancy is itself the outcome of "
-        f"the people repeatedly feeding the robot in response to the drive: the robot seldom reached "
-        f"Starving because human engagement kept it fed (the HRI loop working), not because of any "
-        f"self-property of the controller.",
+verdict("B6", f"{'Supported (exploratory)' if suff else 'Weakened'}: in the observed Starving episodes, "
+        f"{feed_frac*100:.0f}% received a feed, {escape_frac*100:.0f}% escaped Starving via feeding, "
+        f"and {full_frac*100:.0f}% recovered to Full via feeding (n={n_ep}). This is an operational "
+        f"status check, not a population recovery rate or a guarantee. Overall reliability (RQ2-c) is "
+        f"carried by the low long-run starvation occupancy (B7), not by these {n_ep} episodes nor by "
+        f"the modest 21% remote ping-response rate: the robot seldom reached Starving because human "
+        f"engagement kept it fed.",
         effect=full_frac, n=n_ep)
 """)
 
@@ -2662,7 +2661,7 @@ def outcome_of(key):
     r = RESULTS.get(key, {})
     v = r.get("verdict","(not run)")
     tag = "Inconclusive"
-    for t in ("Supported (weak)","Supported (directional)","Supported","Weakened","Inconclusive"):
+    for t in ("Supported (exploratory)","Supported (weak)","Supported (directional)","Supported","Weakened","Inconclusive"):
         if v.startswith(t): tag=t; break
     return tag, v
 
@@ -2672,7 +2671,7 @@ rows = [
  ("RQ1-3","Deficit→action conversion is real, not cosmetic","B3"),
  ("RQ1-4","Behavioural prioritisation (drive outranks social agenda)","B4"),
  ("RQ2-a","Deficit expression elicits recovery behaviour","B5"),
- ("RQ2-b","Starving episodes feed, escape, and recover to Full","B6"),
+ ("RQ2-b","Observed Starving episodes resolve by feeding","B6"),
  ("RQ2-c","Replenishment reliable (always-on, long-run)","B7"),
  ("gradient","Full→Hungry→Starving effects monotonic & robust","B8"),
 ]
@@ -2758,10 +2757,11 @@ L+=["## Key quantities", "",
     f"- Long-run Starving occupancy (RQ2-c, headline): bootstrap median {_ci[1]*100:.1f}% "
     f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — the people kept the robot's energy in homeostasis, out "
     f"of starvation ~{100-_ci[2]*100:.0f}%+ of the time (outcome of the working HRI loop, not a controller self-property).",
-    f"- Starving episodes: {_n_feed}/{len(hs3_episodes)} received a feed, {_n_escape}/{len(hs3_episodes)} "
-    f"escaped Starving via feeding, and {_n_full}/{len(hs3_episodes)} recovered to Full via feeding "
-    f"(exploratory); reliability is carried by the low occupancy above (human engagement keeping the robot "
-    f"fed), not by these episodes or the modest 21% ping-response rate.",
+    f"- Observed Starving episodes: {_n_feed}/{len(hs3_episodes)} received a feed, "
+    f"{_n_escape}/{len(hs3_episodes)} escaped Starving via feeding, and "
+    f"{_n_full}/{len(hs3_episodes)} recovered to Full via feeding. This is exploratory; reliability is "
+    f"carried by the low occupancy above (human engagement keeping the robot fed), not by these episodes "
+    f"or the modest 21% ping-response rate.",
     f"- Meal size by deficit: Full 21 / Hungry 29 / Starving 44 (graded expression).",
     _d1_line,]
 (OUT_DIR/"results_summary.md").write_text("\n".join(L))

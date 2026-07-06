@@ -63,11 +63,12 @@ Engaged 0.68 → 0.08). *The deficit adds recovery behaviour at 60 and overrides
 
 **RQ2 — does expressing the deficit yield reliable replenishment? Yes — and this is the study's
 most important result.** The deficit elicits graded feeding (meal size 21 → 29 → 43) and draws
-replies both in person and over Telegram (proactive ping-reply 0.21–0.26), and Starving episodes
-recover fast and completely (8/8, median 21 s to first feed). Crucially, **the people kept the
-robot fed**: across the whole deployment its energy stayed in homeostasis and it was out of
-starvation **~99% of the time** (~1% long-run Starving, no absorbing "starve-out" state). That low
-number is *not* a self-property of the controller — it is the **outcome of the closed loop
+replies both in person and over Telegram (proactive ping-reply 0.21–0.26), and the observed
+Starving episodes resolved by feeding (8/8, exploratory; median 21 s to first feed). Crucially,
+**the people kept the robot fed**: across the whole deployment its energy stayed in homeostasis
+and it was out of starvation **~99% of the time** (~1% long-run Starving, no absorbing
+"starve-out" state). That low number is *not* a self-property of the controller — it is the
+**outcome of the closed loop
 working**: the drive signalled hunger, humans engaged and supplied energy, and homeostasis held.
 In other words, **the HRI loop worked in this deployment: human engagement, in which the
 drive demonstrably participated, kept the robot's energy level regulated.** The single caveat:
@@ -341,36 +342,37 @@ deficit is expressed beyond the robot's body and is followed by off-robot human 
 but measurable, and drive-*initiated*: co-present interactions are **83%** reply-bearing when
 proactive vs **42%** when merely reactive.*
 
-### RQ2.b — Are Starving recoveries *sufficient*? *(analysis B6)*
+### RQ2.b — Do observed Starving episodes resolve by feeding? *(analysis B6)*
 
-**What we asked.** When the robot does hit Starving, does it get fed, escape starvation, and
-climb all the way back to Full?
+**What we asked.** In the Starving episodes that occurred during this deployment, did the robot
+get fed, leave Starving, and climb back to Full?
 
 **How.** We reconstructed **HS3 (Starving) episodes** with three separate, strict outcomes:
 received a first feed, escaped Starving via feeding, recovered all the way to Full via feeding.
 Plus a Kaplan–Meier time-to-first-feed curve.
 
 **Result.** Of **n = 8** Starving episodes: **8/8 received a feed, 8/8 escaped Starving,
-8/8 recovered to Full** — all via feeding. No attrition.
+8/8 recovered to Full** — all via feeding. No observed attrition.
 
 **How to read it (crucial caveat).** n = 8 is **thin and exploratory** — 100% here is an
-operational check, not a population rate. And the honest attribution: **overall reliability
-(RQ2-c) is *not* carried by these 8 episodes** nor by the modest 21% ping rate. It is carried by
-the fact that **the robot seldom reached Starving at all** — because people kept feeding it, it
-stayed out of starvation ~99% of the long run (next section). Reliability is a property of the
-whole human–robot loop staying fed, not of these few deep recoveries.
+operational status check, not a population rate or a guarantee that future Starving episodes
+will always recover. The broader reliability claim (RQ2-c) is **not** carried by these 8 episodes
+or by the modest 21% ping rate. It is carried by the fact that **the robot seldom reached
+Starving at all** — because people kept feeding it, it stayed out of starvation ~99% of the long
+run (next section). Reliability is a property of the whole human–robot loop staying fed, not of
+these few deep recoveries.
 
-**Verdict: Supported (weak).**
+**Verdict: Supported for the observed episodes (exploratory, n = 8).**
 
 ### Figure 7 — Starving recovery time-to-feed *(exploratory, n = 8)*
 
 ![Starving recovery](analysis/figures/fig07_hs3_funnel.png)
 
-***Reading (exploratory, n=8).*** *The cumulative first-feed curve climbs quickly: all 8 Starving
-episodes received a feed, escaped Starving, and recovered to Full, entirely via feeding. The
+***Reading (exploratory, n=8).*** *The cumulative first-feed curve climbs quickly: all 8 observed
+Starving episodes received a feed, escaped Starving, and recovered to Full, entirely via feeding. The
 in-plot note keeps that status check visible without giving it a separate redundant panel. Median
 time to first feed was **21 s** (KM 31 s), range 2–166 s, against the 8-s per-attempt feed-wait
-timeout.* ***Conclusion.*** *When Starving does occur, the recovery path is quick and complete —
+timeout.* ***Conclusion.*** *In the observed Starving episodes, recovery was quick and complete —
 but n=8 makes this an operational check, not a population rate; the reliability claim rests on B7,
 not here.*
 
@@ -497,12 +499,11 @@ a session.
 ### D1 — Does hunger add predictive signal beyond the social state?
 
 **How.** The test is intentionally narrow. The model is given only the two state variables the
-controller itself reasons over: **social state** and **orexigenic drive (hunger state)**. Raw
-perceptual signals such as IPS, proximity, centrality, gaze, co-presence, attention and hour are
-excluded. We predict whether an interaction **reached Engaged** with a gradient-boosted model
-using social state alone, then add hunger state and measure the grouped-CV change. A
-drop-column check asks the same question from the other direction: how much held-out
-performance is lost when each state variable is removed?
+controller itself reasons over: **social state** and **orexigenic drive (hunger state)**. We
+predict whether an interaction **reached Engaged** with a gradient-boosted model using social
+state alone, then add hunger state and measure the grouped-CV change. A drop-column check asks
+the same question from the other direction: how much held-out performance is lost when each
+state variable is removed?
 
 **Result.** Adding hunger improves Engaged prediction from **AUC 0.669 to 0.757 (+0.088)** and
 from **PR-AUC 0.742 to 0.810 (+0.068)**. In the drop-column check, hunger ranks **#2 of 2**
@@ -578,7 +579,7 @@ responses, but the evidence should not be overstated.
 | RQ1-3 | Deficit→action is real, not cosmetic | B3 | **Supported** |
 | RQ1-4 | Behavioural prioritisation (drive outranks social agenda) | B4 | **Supported** |
 | RQ2-a | Deficit expression elicits recovery | B5 | **Supported** |
-| RQ2-b | Starving episodes feed, escape, recover to Full | B6 | **Supported (weak)** |
+| RQ2-b | Observed Starving episodes resolve by feeding | B6 | **Supported (exploratory)** |
 | RQ2-c | Replenishment reliable long-run | B7 | **Supported** |
 | gradient | Full→Hungry→Starving monotonic & robust | B8 | **Weakened as ramp / Supported as threshold override** |
 
