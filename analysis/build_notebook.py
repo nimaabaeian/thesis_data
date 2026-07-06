@@ -1502,10 +1502,18 @@ verdict("B6", f"{'Supported (exploratory)' if suff else 'Weakened'}: in the obse
         effect=full_frac, n=n_ep)
 """)
 
-md("### B7 — Reliability: continuous-time Markov steady-state occupancy")
+md(r"""### B7 — Reliability: continuous-time Markov steady-state occupancy
+
+> **Note on transition counts.** These CTMC counts are built from *every* `hunger_raw`
+> state-change (including drain crossings in the idle, no-visitor runs), so the deficit-entry
+> edges (Full→Hungry, Hungry→Starving) are larger here than in the Fig 3 graph, which is drawn
+> from `v_hs_transitions`. The recovery edges (Hungry→Full, Starving→Hungry, Starving→Full) match,
+> so the Starving-row denominator (~17) is the same in both.""")
 
 code(r"""
 # B7: fit CTMC generator over HS1/HS2/HS3 from transitions + dwell times; steady-state.
+# NB: counts here come from all hunger_raw state-changes (incl. idle-run drain crossings),
+# so down-crossing counts exceed the v_hs_transitions graph in Fig 3; recovery edges match.
 states = ["HS1","HS2","HS3"]
 # Build per-run state sojourns from hunger_raw ordered timeline (vectorised on
 # state-change points only, so it is O(transitions) not O(samples)).
@@ -1689,6 +1697,9 @@ def rethread_affinity(g):
     return after
 hlc["affinity_after"]=np.concatenate([rethread_affinity(g) for _,g in hlc.groupby("person_id",sort=False)])
 hlc["affinity_before"]=hlc.groupby("person_id")["affinity_after"].shift(1).fillna(0.0)
+# "unknown" is a placeholder, not a stable recognised person; keep B9's
+# per-person learning claims to named identities only.
+hlc=hlc[hlc["person_id"]!="unknown"].copy()
 
 # (a) CONVERGENCE — the EMA affinity step should shrink as evidence accumulates.
 hlc["step"]=(hlc["affinity_after"]-hlc["affinity_before"]).abs()
@@ -1714,6 +1725,7 @@ print(f"\n(c) IPS component weights are constant across all {len(ips):,} events 
       f"({ipschk.iloc[0].to_dict()}; {len(ipschk)} distinct combo) — learning does NOT touch the weights.")
 BASE={"ss1":0.80,"ss2":0.65,"ss3":0.70,"ss4":0.85}
 t=tsel.dropna(subset=["affinity","effective_threshold"]).copy()
+t=t[t["person_id"]!="unknown"].copy()
 t["pred"]=t.apply(lambda r: max(0.50, BASE.get(r["ss"],1.0)-0.15*r["affinity"]),axis=1)
 ferr=(t["pred"]-t["effective_threshold"]).abs().max()
 print(f"    effective_threshold = max(0.50, base_ss - 0.15*affinity): matches logged values "
@@ -2581,19 +2593,19 @@ code(r"""
 d=master.copy()
 d["fed_here"]=pd.to_numeric(d["meals_eaten_count"],errors="coerce").fillna(0)
 
-# Feeding concentration over ALL identified users (matches Fig 10's Lorenz curve). Does
-# replenishment depend on a few feeders? -> Gini + top-3 share answer it directly.
-all_meals=d[d["user_key"]!=""].groupby("user_key")["fed_here"].sum().sort_values(ascending=False)
+# Feeding concentration over named users. "unknown" is an unrecognised-face placeholder,
+# not a stable person, so excluding it keeps the robustness caveat interpretable.
+all_meals=d[(d["user_key"]!="") & (d["user_key"]!="unknown")].groupby("user_key")["fed_here"].sum().sort_values(ascending=False)
 m=np.sort(all_meals.values.astype(float)); nP=len(m)
 gini=(2*np.sum(np.arange(1,nP+1)*m)/(nP*m.sum())-(nP+1)/nP) if m.sum()>0 else np.nan
 top3=all_meals.head(3).sum()/max(all_meals.sum(),1)
-print(f"Total meal energy into the drive = {int(all_meals.sum())} (stomach %), across {nP} identified users.")
+print(f"Total meal energy into the drive = {int(all_meals.sum())} (stomach %), across {nP} named users.")
 print(f"Feeding concentration: Gini={gini:.2f}; top-3 users ({', '.join(all_meals.head(3).index)}) "
       f"supply {top3*100:.0f}% of meals.")
 conc = "concentrated in a few feeders (fragile)" if (top3>0.75 or gini>0.75) else \
        ("moderate concentration (a mild robustness caveat — replenishment leans on a few feeders)"
         if (top3>=0.45 or gini>=0.5) else "well spread across users (robust)")
-RESULTS["D4"]={"verdict":f"Feeding Gini={gini:.2f} over {nP} users; top-3 supply {top3*100:.0f}% "
+RESULTS["D4"]={"verdict":f"Feeding Gini={gini:.2f} over {nP} named users; top-3 supply {top3*100:.0f}% "
                f"of meals — {conc}."}
 """)
 
@@ -2661,7 +2673,7 @@ def outcome_of(key):
     r = RESULTS.get(key, {})
     v = r.get("verdict","(not run)")
     tag = "Inconclusive"
-    for t in ("Supported (exploratory)","Supported (weak)","Supported (directional)","Supported","Weakened","Inconclusive"):
+    for t in ("Supported (exploratory)","Supported (directional)","Supported","Weakened","Inconclusive"):
         if v.startswith(t): tag=t; break
     return tag, v
 
@@ -2732,6 +2744,15 @@ except Exception:
 _n_feed = int(hs3_episodes["received_feed"].sum())
 _n_escape = int(hs3_episodes["escaped_starving_by_feeding"].sum())
 _n_full = int(hs3_episodes["recovered_to_full_by_feeding"].sum())
+try:
+    _meal_by_hs = hunger_raw[hunger_raw["event_type"]=="feeding"].copy()
+    _meal_by_hs["hs_before"] = _meal_by_hs["hunger_state_before"].fillna(_meal_by_hs["hunger_state_after"])
+    _meal_means = _meal_by_hs.groupby("hs_before")["meal_delta"].mean().reindex(HS_ORDER)
+    _meal_line = (f"- Meal size by deficit: Full {_meal_means.loc['HS1']:.0f} / "
+                  f"Hungry {_meal_means.loc['HS2']:.0f} / Starving {_meal_means.loc['HS3']:.0f} "
+                  f"(graded expression).")
+except Exception:
+    _meal_line = "- Meal size by deficit: see B5 feeding table (graded expression)."
 L+=["## Reading of the four homeostatic functions", "",
     "- **RQ1-1 monitoring & RQ1-2 detection** are *faithful-implementation* results, not empirical "
     "measurements: the stomach level is a software integrator and the HS labels are derived from it "
@@ -2762,7 +2783,7 @@ L+=["## Key quantities", "",
     f"{_n_full}/{len(hs3_episodes)} recovered to Full via feeding. This is exploratory; reliability is "
     f"carried by the low occupancy above (human engagement keeping the robot fed), not by these episodes "
     f"or the modest 21% ping-response rate.",
-    f"- Meal size by deficit: Full 21 / Hungry 29 / Starving 44 (graded expression).",
+    _meal_line,
     _d1_line,]
 (OUT_DIR/"results_summary.md").write_text("\n".join(L))
 print("wrote outputs/results_summary.md")
@@ -2784,7 +2805,7 @@ print("  (4) prioritisation      :", g("B4"))
 print("\nAdaptive personalization (B9):", g("B9"))
 print("\nRQ2 — Deficit expression → reliable replenishment:")
 print("  (a) elicits recovery    :", g("B5"))
-print("  (b) sufficiency         :", g("B6"))
+print("  (b) observed recovery   :", g("B6"))
 print("  (c) reliability         :", g("B7"))
 print("  gradient robustness     :", g("B8"))
 print("\nSmall-n caveats: Starving episodes and proactive Starving interactions are single-digit;")

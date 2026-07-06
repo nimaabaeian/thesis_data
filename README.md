@@ -14,6 +14,19 @@ evidence is strong versus thin.
 > pipeline is *perception → salience → executive → remote/Telegram*
 > (see [`../alwaysOn-embodiedBehaviour/README.md`](../alwaysOn-embodiedBehaviour/README.md)).
 
+**Contents**
+
+1. [The research questions (the "why")](#1-the-research-questions-operationalised-here-the-why)
+2. [The data (the "what we had")](#2-the-data-the-what-we-had)
+3. [How the analysis is organised](#3-how-the-analysis-is-organised-the-how-at-a-glance)
+4. [RQ1 — Is this a real homeostatic drive?](#4-rq1--is-this-a-real-homeostatic-drive)
+5. [RQ2 — Does deficit expression lead to reliable recovery?](#5-rq2--does-deficit-expression-lead-to-reliable-recovery)
+6. [Adaptive personalisation — the drive learns who feeds it](#6-adaptive-personalisation-the-drive-learns-who-feeds-it-analysis-b9)
+7. [Machine learning — sensitivity checks](#7-machine-learning--sensitivity-checks-honestly-labelled-phase-d)
+8. [Honest limitations](#8-honest-limitations-read-before-quoting-any-number)
+9. [Success-criteria scorecard](#9-success-criteria-scorecard)
+10. [Reproducing this](#10-reproducing-this)
+
 ---
 
 ## 1. The research questions operationalised here (the "why")
@@ -56,8 +69,9 @@ empty rooms) and detects deficits cleanly (exact 60/25 thresholds, zero flapping
 two are faithful-implementation facts, true by construction. The load-bearing results are
 behavioural and cross **two coded thresholds**: at the deficit line (entering Hungry) the robot
 switches on a whole **proactive recovery repertoire** that is silent at Full — hunger framing in
-speech jumps **3% → 67%**, feed-seeking acts and proactive Telegram pings go from **0 to 172**,
-and feeding pursuit **~triples (0.15 → 0.43)**; then at the starving line it **overrides** the social agenda entirely (turns 2.5 → 0.2,
+speech jumps **3% → 67%**, feed-seeking speech acts and proactive Telegram pings switch on
+(**1 → 20** and **0 → 172**), and feeding pursuit **~triples (0.15 → 0.43)**; then at the starving
+line it **overrides** the social agenda entirely (turns 2.5 → 0.2,
 Engaged 0.68 → 0.08). *The deficit adds recovery behaviour at 60 and overrides social behaviour at
 25 — a two-threshold controller, not a smooth ramp.*
 
@@ -72,7 +86,7 @@ and it was out of starvation **~99% of the time** (~1% long-run Starving, no abs
 working**: the drive signalled hunger, humans engaged and supplied energy, and homeostasis held.
 In other words, **the HRI loop worked in this deployment: human engagement, in which the
 drive demonstrably participated, kept the robot's energy level regulated.** The single caveat:
-that feeding leaned on a few users (Gini 0.58, top-3 = 61%).
+that feeding leaned on a few named users (Gini 0.57, top-3 = 62%).
 
 ---
 
@@ -106,7 +120,7 @@ The notebook runs in phases, each a gate for the next:
 | **A — Data preparation** | Load the clean DB views, pseudonymise all identities (`P01…P14`), reconstruct analysis units (HS3 episodes, transitions, drive timeline), and build one **leakage-safe master table** (one row per interaction, predictors from *before* the interaction only). | A trustworthy, privacy-safe table that can't "cheat" by peeking at the outcome. |
 | **Verification gate (V1–V5)** | 15 hard/soft checks: do meal sizes match the source constants? Does the fitted drain rate match nominal? Referential integrity, clock sanity, energy balance. | **Nothing proceeds until the data provably matches the code.** All passed. |
 | **B — Statistics (B1–B9)** | The confirmatory core. Bootstrap CIs, chi-square tests, Spearman trends, a run-adjusted OLS check, and a Markov steady-state model. One analysis per homeostatic function. | This is where the real evidential weight sits. |
-| **C — Visualisation** | 13 figures, all tied to a specific claim. | Make the mechanism legible. |
+| **C — Visualisation** | 12 figures, all tied to a specific claim. | Make the mechanism legible. |
 | **D — Machine learning (D1, D4, D5)** | *Interpretive, not confirmatory* (only ~200 rows). Group-aware cross-validation (D1), feeding-concentration robustness (D4), and language framing (D5). | Sensitivity checks and robustness, honestly labelled as such. |
 
 A recurring, deliberate stance runs through Phase B: **Starving is rare and small-n**
@@ -283,31 +297,14 @@ eligibility threshold, not the IPS weights.*
 
 ### Reading RQ1.3 + RQ1.4 together: **deficit-to-action conversion**
 
-The high-level question is whether an internal deficit actually changes what the robot does. The
-answer is yes: the architecture converts stomach level into an orexigenic state, and that state
-changes the active behaviour policy.
-
-**1. Full is the baseline social policy.** Above the deficit threshold, the robot can still
-select faces, hold conversations, and ask ordinary follow-up questions. Hunger language is rare
-here (**3%**), proactive feeding requests are absent (**0 Telegram pings**), and feeding pursuit is
-low (**0.15**). This is the reference condition for B3.
-
-**2. Hungry and Starving together are the deficit policy.** Once stomach level crosses **60**,
-the robot has a recovery need. This is the main B3 effect: compared with Full, deficit states
-shift *what the robot tries to do*. Hunger framing rises **3% -> 67%**, proactive Telegram
-recovery pings appear (**0 -> 172**), feeding pursuit increases **0.15 -> 0.43**, and meals are
-larger (**21 -> 31**). The important comparison is therefore **Full vs deficit**, because RQ1.3
-asks whether being in need changes action selection.
-
-**3. Starving is the priority override inside the deficit policy.** Crossing **25** makes recovery
-urgent enough to suppress the normal social agenda. `_run_hunger_tree` takes over, so conversation
-is no longer the main behaviour. That is why turns fall **2.5 -> 0.2** and Engaged drops **0.68 ->
-0.08**. This is the B4 effect: not just hunger expression, but behavioural prioritisation.
-
-Together, B3 and B4 support the architecture's purpose. B3 shows that deficit states add recovery
-actions across face-to-face and remote channels. B4 shows that severe deficit can override social
-conversation when recovery becomes urgent. The result is a clear deficit-to-action pathway:
-**stomach level -> orexigenic state -> active behaviour policy -> observable action**.
+RQ1.3 and RQ1.4 answer one question from two coded thresholds: does an internal deficit change
+what the robot *does*? **Full** is the baseline social policy — the robot selects faces, holds
+conversations, and asks ordinary follow-ups (the B3 reference condition). Crossing **60** into
+deficit **adds** the recovery repertoire across both face-to-face and remote channels (B3, the
+numbers above). Crossing **25** into Starving goes further and **overrides** the social agenda via
+`_run_hunger_tree` (B4). So the pathway is **stomach level → orexigenic state → active behaviour
+policy → observable action**: the deficit line adds recovery behaviour, the starving line subtracts
+social behaviour, and neither change is cosmetic.
 
 ---
 
@@ -336,7 +333,7 @@ proactive-vs-reactive comparison.
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
 ***Reading.*** *Left: proactive Telegram pings by type; right: their 1-hour response-to-ping rate
-with bootstrap CIs. Across all proactive pings the response rate is **0.21 [0.15, 0.26]** (47/224),
+with bootstrap CIs. Across all proactive pings the response rate is **0.21 [0.15, 0.26]** (48/234),
 and for the Starving-specific `hs3_proactive` ping **0.26** (19/74).* ***Conclusion.*** *The
 deficit is expressed beyond the robot's body and is followed by off-robot human replies — modest
 but measurable, and drive-*initiated*: co-present interactions are **83%** reply-bearing when
@@ -426,13 +423,13 @@ story, not a contradiction.
 
 **RQ2, concluded.** Expressing the deficit *does* drive recovery: it elicits graded feeding
 (bigger meals when hungrier, B5) and is followed by replies both in person and off-robot (Fig 8), and
-when Starving does occur the escape is fast and complete (B6). And it adds up to the study's
+in the observed Starving episodes the escape path was fast and complete (B6). And it adds up to the study's
 headline: **across the whole deployment the people kept the robot fed, so its energy stayed in
 homeostasis and it was out of starvation ~99% of the time (B7)** — the HRI loop closes and the
 solution works in deployment. That low starvation figure is the *outcome* of human engagement in a
 system where the drive demonstrably participates in recovery signalling, not a self-property of the
-controller. The one genuine caveat is that this feeding leaned on a **few users** (Gini 0.58,
-top-3 = 61%, D4).
+controller. The one genuine caveat is that this feeding leaned on a **few named users** (Gini 0.57,
+top-3 = 62%, D4).
 
 ---
 
@@ -450,10 +447,10 @@ was re-threaded over merged identity variants to repair a few stale logged value
 to 1e-4 against the robot's own values.)*
 
 **Result.**
-- **Converges**: mean |affinity update| shrinks 0.09 → 0.05 as evidence accumulates.
+- **Converges**: mean |affinity update| shrinks 0.10 → 0.06 as evidence accumulates.
 - **The IPS component weights never change** — learning acts *only* through the per-person
   threshold. High-affinity feeders clear a bar up to **~0.14 lower**.
-- The chatbot pings only the **11/15** learned people above affinity 0.20 when Hungry;
+- The chatbot pings only the **11/14** learned named people above affinity 0.20 when Hungry;
   everyone gets pinged only when Starving.
 - The people who finish with the highest affinity can be checked directly against behaviour:
   Figure 11 compares their share of proactive approaches with their share of actual feeding.
@@ -529,8 +526,8 @@ it.*
 
 ### D4 — Does recovery depend on a few feeders? (robustness of RQ2-c)
 
-Replenishment is not evenly distributed. The feeding distribution has **Gini = 0.58** across
-15 users, and the **top-3 feeders supply 61% of meals**. That is moderate concentration: the
+Replenishment is not evenly distributed. The feeding distribution has **Gini = 0.57** across
+14 named users, and the **top-3 feeders supply 62% of meals**. That is moderate concentration: the
 long-run recovery result is real, but it partly depends on a small set of highly responsive
 people. *(An earlier exploratory KMeans over per-user behaviour was dropped because the
 silhouette was too low to support meaningful user types.)*

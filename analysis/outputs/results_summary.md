@@ -1,6 +1,6 @@
 # Orexigenic drive — results summary
 
-_Generated 2026-07-06 12:36. Single always-on condition; no drive-off comparison. Unit = run (10 runs, 8 days, 217 interactions)._
+_Generated 2026-07-07 01:31. Single always-on condition; no drive-off comparison. Unit = run (10 runs, 8 days, 217 interactions)._
 
 ## Verification gate
 
@@ -29,9 +29,9 @@ All V1–V5 checks passed (see `verification_report.md`). Per-action energy cost
 - **B6** — Supported (exploratory): in the observed Starving episodes, 100% received a feed, 100% escaped Starving via feeding, and 100% recovered to Full via feeding (n=8). This is an operational status check, not a population recovery rate or a guarantee. Overall reliability (RQ2-c) is carried by the low long-run starvation occupancy (B7), not by these 8 episodes nor by the modest 21% remote ping-response rate: the robot seldom reached Starving because human engagement kept it fed.
 - **B7** — Supported (the study's headline result): modelled long-run Starving occupancy is median 1.1% [95% 0.4, 2.3%] (bootstrap over the 17-transition Starving row) — i.e. the people kept the robot's energy in homeostasis, out of starvation ~98-100% of the time; no absorbing state. This is NOT a self-property of the controller: the transition rates are a record of how the humans actually behaved, so the reading is that human engagement, with demonstrated participation from the drive (see B5), reliably replenished the robot — the HRI loop closes and the solution works. Point est 1.1% is fragile, so we lead with the interval; single condition means the drive's exact causal share in the feeding is not isolated.
 - **B8** — Weakened as a *smooth* gradient / Supported as a *threshold override*: Engaged-completion declines monotonically with severity (rho=-0.16, p=0.016) but the drop is concentrated in Starving ({'Full': 0.69, 'Hungry': 0.67, 'Starving': 0.08}) — consistent with the coded Starving override firing only below 25, not a smooth Full->Hungry->Starving ramp; turns/energy trends are weak and do not survive covariate adjustment.
-- **B9** — Supported: affinity learning converges (update 0.09->0.05), reward-driven; it personalises IPS via the threshold (eff_thr=max(0.50,base-0.15*affinity), exact), giving high-affinity feeders up to ~0.14 lower a bar; and gates HS2 pings to the 11/15 people above affinity 0.20. Weights themselves are fixed.
+- **B9** — Supported: affinity learning converges (update 0.10->0.06), reward-driven; it personalises IPS via the threshold (eff_thr=max(0.50,base-0.15*affinity), exact), giving high-affinity feeders up to ~0.14 lower a bar; and gates HS2 pings to the 11/14 people above affinity 0.20. Weights themselves are fixed.
 - **D1** — adding hunger changes Engaged AUC by +0.088 and PR-AUC by +0.068; drop-column CV ranks hunger_state #2/2 (AUC loss +0.088, PR-AUC loss +0.068). Social state dominates, so ML is treated as sensitivity evidence, not a confirmatory mechanism test.
-- **D4** — Feeding Gini=0.58 over 15 users; top-3 supply 61% of meals — moderate concentration (a mild robustness caveat — replenishment leans on a few feeders).
+- **D4** — Feeding Gini=0.57 over 14 named users; top-3 supply 62% of meals — moderate concentration (a mild robustness caveat — replenishment leans on a few feeders).
 - **D5** — Descriptive: deficit raises hunger framing (path a +0.31 [95% CI 0.19,0.43]; co-present 0.35 vs Telegram 0.30). Path a is legitimate; the framing->reply path is DROPPED as temporally leaked (framing sits inside reply-bearing turns). The only leakage-free elicitation signal is the proactive response-to-ping rate (0.26), which is modest.
 
 ## Multiple-comparison note
@@ -49,5 +49,5 @@ After Benjamini–Hochberg correction, **2/4** metrics survive at q<0.05: B3_def
 - Passive drain: exactly 1.00x nominal (software integrator); dense sampling (median gap 2.3 s) across 12 monitored runs, 10 with visitors.
 - Long-run Starving occupancy (RQ2-c, headline): bootstrap median 1.1% [95% 0.4, 2.3%] — the people kept the robot's energy in homeostasis, out of starvation ~98%+ of the time (outcome of the working HRI loop, not a controller self-property).
 - Observed Starving episodes: 8/8 received a feed, 8/8 escaped Starving via feeding, and 8/8 recovered to Full via feeding. This is exploratory; reliability is carried by the low occupancy above (human engagement keeping the robot fed), not by these episodes or the modest 21% ping-response rate.
-- Meal size by deficit: Full 21 / Hungry 29 / Starving 44 (graded expression).
+- Meal size by deficit: Full 21 / Hungry 29 / Starving 43 (graded expression).
 - D1 grouped-CV ablation: adding hunger changes Engaged-prediction AUC 0.669→0.757 (+0.088) and PR-AUC 0.742→0.810 (+0.068); B9: affinity learning converges and gates Hungry-state proactive pings to feeders.
