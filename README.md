@@ -488,51 +488,61 @@ proactive approaches.*
 
 ## 7. Machine learning — sensitivity checks, honestly labelled *(Phase D)*
 
-With only ~200 interactions, **ML here is interpretive, not confirmatory** — the real weight
-is in Phase B. Everything uses **group-aware cross-validation** (leave-one-run-out /
-leave-one-person-out) so it can't memorise a person or a session.
+Phase D is deliberately small in ambition. With only ~200 interactions, the machine-learning
+analyses are **sensitivity checks**, not confirmatory tests; the evidential weight remains in
+Phase B. All models use **group-aware cross-validation** (leave-one-run-out /
+leave-one-person-out) so the held-out predictions cannot be explained by memorising a person or
+a session.
 
 ### D1 — Does hunger add predictive signal beyond the social state?
 
-**How.** The model is scoped to the two state variables the controller actually reasons over —
-the **orexigenic drive (hunger state)** and the **social state** — with the raw perceptual
-signals (IPS, proximity, centrality, gaze, co-presence, attention, hour, …) deliberately
-excluded. Predict "reached Engaged" with a gradient-boosted model, social state only, then
-**add hunger state** and measure the change; plus drop-column importance under grouped CV.
+**How.** The test is intentionally narrow. The model is given only the two state variables the
+controller itself reasons over: **social state** and **orexigenic drive (hunger state)**. Raw
+perceptual signals such as IPS, proximity, centrality, gaze, co-presence, attention and hour are
+excluded. We predict whether an interaction **reached Engaged** with a gradient-boosted model
+using social state alone, then add hunger state and measure the grouped-CV change. A
+drop-column check asks the same question from the other direction: how much held-out
+performance is lost when each state variable is removed?
 
-**Result.** Adding hunger changes Engaged-prediction **AUC 0.669 → 0.757 (+0.088)** and
-**PR-AUC 0.742 → 0.810 (+0.068)**. Drop-column CV ranks hunger **#2 of 2** features — behind
-**social state (#1, AUC loss 0.271)**. **Social state dominates**; hunger contributes a real
-but secondary signal.
+**Result.** Adding hunger improves Engaged prediction from **AUC 0.669 to 0.757 (+0.088)** and
+from **PR-AUC 0.742 to 0.810 (+0.068)**. In the drop-column check, hunger ranks **#2 of 2**
+features: removing it costs **0.088 AUC**, while removing social state costs **0.271 AUC**.
+Social state is therefore the dominant predictor; hunger adds a smaller but visible held-out
+signal.
 
-**Read as:** sensitivity evidence consistent with the threshold-override story (the held-out
-model reproduces the Starving collapse), *not* a mechanism proof.
+**Read as.** This is sensitivity evidence that agrees with the threshold-override account: the
+out-of-fold model reproduces the Starving engagement collapse. It is not a mechanism proof, and
+it is not used as the primary evidence for the claim.
 
 ### Figure D1 — ML sensitivity
 
 ![ML sensitivity](analysis/figures/figD1_ml_sensitivity.png)
 
-***Reading (sensitivity, not proof).*** *Adding hunger to a social-state Engaged-model lifts
-held-out **AUC 0.669 → 0.757 (+0.088)** and **PR-AUC 0.742 → 0.810 (+0.068)**; drop-column CV
-ranks hunger **#2 of 2** (AUC loss 0.088), behind **social state (#1, loss 0.271)**. Right:
-out-of-fold predictions reproduce the Starving collapse.* ***Conclusion.*** *Hunger adds
-held-out predictive signal beyond social state, but it is secondary; this corroborates the
-threshold-override mechanism rather than proving it.*
+***Reading (sensitivity, not proof).*** *Left: adding hunger state to the social-state model
+raises held-out AUC and PR-AUC. Centre: removing social state damages performance much more than
+removing hunger, so the social state still carries most of the predictive load. Right:
+out-of-fold predictions track the observed collapse in Engaged outcomes at Starving.*
+***Conclusion.*** *Hunger adds held-out predictive signal beyond social state, but it remains
+secondary; the figure corroborates the threshold-override interpretation rather than proving
+it.*
 
 ### D4 — Does recovery depend on a few feeders? (robustness of RQ2-c)
 
-**Feeding Gini = 0.58** over 15 users; the **top-3 feeders supply 61% of meals** — *moderate*
-concentration, a mild robustness caveat (replenishment leans on a handful of people). *(An
-earlier exploratory KMeans over per-user behaviour was dropped: its silhouette was too low to
-define meaningful user types, so it added no research-grade signal.)*
+Replenishment is not evenly distributed. The feeding distribution has **Gini = 0.58** across
+15 users, and the **top-3 feeders supply 61% of meals**. That is moderate concentration: the
+long-run recovery result is real, but it partly depends on a small set of highly responsive
+people. *(An earlier exploratory KMeans over per-user behaviour was dropped because the
+silhouette was too low to support meaningful user types.)*
 
 ### D5 — How the deficit is verbalised (framing)
 
-Deficit **raises hunger framing** in speech (path a **+0.31 [0.19, 0.43]**; co-present 0.35 vs
-Telegram 0.30 mention rate). Honest methodology note: the *framing → reply* path is
-**dropped as temporally leaked** (co-present framing only exists inside turns that already
-presuppose a reply). The one leakage-free elicitation signal is the **proactive ping → reply
-rate (0.26)** — modest, and consistent with B5.
+Deficit states **raise hunger framing** in the robot's language: path a is **+0.31
+[0.19, 0.43]**, with similar mention rates in co-present speech and Telegram messages
+(0.35 vs 0.30). The tempting *framing → reply* analysis is deliberately dropped because it is
+temporally leaked: co-present framing is observed inside turns that already presuppose a human
+reply. The only leakage-free elicitation measure is the proactive **ping → reply** rate,
+**0.26**. That effect is modest and matches the B5 reading: recovery signalling can elicit
+responses, but the evidence should not be overstated.
 
 ---
 
