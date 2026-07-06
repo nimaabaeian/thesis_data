@@ -2245,14 +2245,23 @@ if len(hlc) and "affinity_after" in hlc.columns:
           .rename(columns={"affinity_after":"terminal_affinity"}))
     order=(term.assign(meals=term["person_id"].map(meals_by).fillna(0))
               .sort_values(["terminal_affinity","meals"],ascending=[False,False])["person_id"].tolist())
-    cmap=plt.cm.tab20(np.linspace(0,1,max(len(order),1)))
-    ends=[]                                         # (name, colour, x_end, y_end, terminal_affinity)
-    for c,pid in zip(cmap,order):
+    # Declutter: only the top-N (by terminal affinity, then feeds) get coloured, labelled
+    # trajectories; everyone else forms a light-grey backdrop so the plot still shows the
+    # whole cohort without a rainbow of overlapping lines and colliding labels.
+    N_HL=8
+    highlight=order[:N_HL]; context=order[N_HL:]
+    for pid in context:                              # backdrop: thin grey, no markers, no labels
+        g=named[named["person_id"]==pid]
+        ax.plot(g["experiment_day"].values,g["affinity_after"].values,
+                lw=0.8,color=GRID,alpha=0.55,zorder=2)
+    cmap=plt.cm.tab10(np.linspace(0,1,max(len(highlight),1)))
+    ends=[]                                          # (name, colour, x_end, y_end, terminal_affinity)
+    for c,pid in zip(cmap,highlight):
         g=named[named["person_id"]==pid]
         xv=g["experiment_day"].values; yv=g["affinity_after"].values
-        ax.plot(xv,yv,marker="o",ms=2.8,lw=1.55,color=c,alpha=0.86,zorder=3)
+        ax.plot(xv,yv,marker="o",ms=3.0,lw=1.7,color=c,alpha=0.9,zorder=4)
         ends.append([str(pid), c, xv[-1], yv[-1], yv[-1]])
-    xmax=max(e[2] for e in ends)
+    xmax=float(named["experiment_day"].max())
     ax.axhline(0,color=MUTED,ls=":",lw=1,zorder=1)
     ax.axhspan(0,1,color=HS_PALETTE["HS1"],alpha=0.045,zorder=0)
     ax.axhspan(-1,0,color=HS_PALETTE["HS3"],alpha=0.035,zorder=0)
@@ -2264,11 +2273,15 @@ if len(hlc) and "affinity_after" in hlc.columns:
         ax.plot([xe,lx],[ye,ly],color=c,lw=0.75,alpha=0.55,zorder=2)         # leader
         ax.text(lx+0.08,ly,f"{name} · {mk:g} feeds",va="center",ha="left",
                 fontsize=8.3,color=c,fontweight="medium")
+    if len(context):
+        ax.plot([],[],lw=0.8,color=GRID,alpha=0.55,
+                label=f"{len(context)} other recognised people")
+        ax.legend(loc="lower left",frameon=False,fontsize=8.3)
     ax.set_xlim(0,lx+1.65)
     ax.set_ylim(-1.05,1.05)
     ax.set_xlabel("experiment time (days from first logged affinity update)")
     ax.set_ylabel("learned affinity (EMA of normalised reward)")
-    ax.set_title("Every recognised person's affinity over the full experiment",fontsize=12)
+    ax.set_title(f"Top {len(highlight)} people by terminal affinity (labelled); the rest in grey",fontsize=12)
     ax.grid(True,axis="y")
 else:
     ax.text(0.5,0.5,"no affinity trajectory data",ha="center")
@@ -2296,7 +2309,7 @@ pay=term.merge(person,on="person_id",how="left").fillna({"feeds":0,"proactive_at
 pay["feed_share"]=pay["feeds"]/max(pay["feeds"].sum(),1)
 pay["approach_share"]=pay["proactive_attempts"]/max(pay["proactive_attempts"].sum(),1)
 pay["payoff_gap"]=pay["feed_share"]-pay["approach_share"]
-top=pay.sort_values(["affinity","feeds"],ascending=[False,False]).head(8).iloc[::-1]
+top=pay.sort_values(["affinity","feeds"],ascending=[False,False]).head(5).iloc[::-1]
 
 fig,ax=plt.subplots(figsize=(11.2,5.8))
 y=np.arange(len(top))
@@ -2352,14 +2365,13 @@ from sklearn.base import clone
 d = master.copy()
 d["replied_any"]=pd.to_numeric(d["replied_any"],errors="coerce").fillna(0).astype(int)
 d["reached_ss4"]=(d["final_state"]=="ss4").astype(int)
-feat_num=["ips_mean","ips_max","prox","cent","gaze","copresence","attention_frac",
-          "talking_rate","cos_angle","hour_of_day"]
-for c in feat_num:
-    if c not in d.columns: d[c]=np.nan
+# Phase D is scoped to the two state variables the controller actually reasons over:
+# the orexigenic drive (hunger state) and the social state. The raw perceptual signals
+# (IPS mean, proximity, centrality, gaze, co-presence, attention, hour, ...) are excluded.
 d["hs_rank"]=d["hunger_state_start"].map({"HS1":1,"HS2":2,"HS3":3})
 d["ss_rank"]=d["initial_state"].map({"ss1":1,"ss2":2,"ss3":3,"ss4":4})
 HUNGER_FEATS=["hs_rank"]
-SOCIAL_FEATS=[c for c in feat_num+["ss_rank"]]
+SOCIAL_FEATS=["ss_rank"]
 X_cols=SOCIAL_FEATS+HUNGER_FEATS
 d=d.dropna(subset=["hs_rank","ss_rank"])
 X=d[X_cols].fillna(d[X_cols].median())
@@ -2418,7 +2430,7 @@ for target in ["replied_any","reached_ss4"]:
 
 metrics_df=pd.DataFrame(metric_rows); metrics_df.to_csv(OUT_DIR/"ml_model_metrics.csv",index=False)
 
-# --- ABLATION: does hunger_state add signal beyond the social/perceptual surface? ---
+# --- ABLATION: does hunger_state add signal beyond the social state? ---
 print("\n--- Ablation (leave-one-run-out AUC/PR-AUC): social-only vs social+hunger ---")
 abl_rows=[]
 for target in ["replied_any","reached_ss4"]:
@@ -2478,7 +2490,7 @@ fig=plt.figure(figsize=(16,5.7))
 gs=fig.add_gridspec(1,3,width_ratios=[1.05,1.15,1.0],wspace=0.34)
 a1=fig.add_subplot(gs[0,0]); a2=fig.add_subplot(gs[0,1]); a3=fig.add_subplot(gs[0,2])
 
-# (1) Ablation: social/perceptual surface with and without hunger_state.
+# (1) Ablation: social state with and without hunger_state.
 ab=abl[abl.target=="reached_ss4"].set_index("feature_set").loc[["social-only","social+hunger"]]
 x=np.arange(len(ab)); w=0.34
 a1.bar(x-w/2,ab["auc"],w,label="AUC",color=INK,alpha=0.86)
@@ -2528,13 +2540,13 @@ a3.set_xticks(x); a3.set_xticklabels([f"{n}\n(n={int(by.loc[h,'n']) if pd.notna(
 a3.set_ylim(0,1.0); a3.set_ylabel("P(reach Engaged)"); a3.grid(False)
 a3.legend(frameon=False,fontsize=8,loc="upper right")
 a3.set_title("Held-out predictions track the Starving collapse",fontsize=11,pad=8)
-fig.suptitle("Fig D1 — ML sensitivity: hunger contributes, but social/perceptual state dominates",
+fig.suptitle("Fig D1 — ML sensitivity: orexigenic drive vs social state",
              fontsize=13,fontweight="semibold",y=1.02)
 savefig(fig,"figD1_ml_sensitivity"); plt.show()
 RESULTS["D1"]={"verdict":f"adding hunger changes Engaged AUC by {d_auc:+.3f} and PR-AUC by {d_ap:+.3f}; "
                f"drop-column CV ranks hunger_state #{hs_rank_pos}/{len(X_cols)} "
                f"(AUC loss {hs_auc_loss:+.3f}, PR-AUC loss {hs_ap_loss:+.3f}). "
-               f"Social/perceptual state dominates, so ML is treated as sensitivity evidence, "
+               f"Social state dominates, so ML is treated as sensitivity evidence, "
                f"not a confirmatory mechanism test."}
 """)
 

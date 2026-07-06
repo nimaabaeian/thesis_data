@@ -455,7 +455,9 @@ to court its feeders.
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
 ***Reading.*** *Each line is one recognised person, plotted against absolute experiment time
-rather than their own interaction count. Positive trajectories indicate people whose encounters
+rather than their own interaction count. To keep the plot legible, only the **top 8 people by
+terminal affinity** are drawn in colour and labelled (name · feeds); the remaining recognised
+people form a light-grey backdrop. Positive trajectories indicate people whose encounters
 reduced the robot's drive, mostly through feeding; negative or flat trajectories indicate people
 who cost energy without replenishing it.* ***Conclusion.*** *Affinity is not a static label:
 it changes over the deployment and separates the people who repeatedly helped regulate the
@@ -465,11 +467,13 @@ drive from those who did not.*
 
 ![Affinity learning](analysis/figures/fig11_affinity_learning.png)
 
-***Reading.*** *People are ranked by terminal affinity. Grey dots show each person's share of
-the robot's proactive approaches; green dots show their share of feeding. The percentage-point
-label is feeding share minus proactive-approach share.* ***Conclusion.*** *A positive gap means
-the extra proactive attention was repaid by disproportionate feeding; a negative gap flags a
-person who was prioritised more than they replenished the robot.*
+***Reading.*** *The **top 5 people by terminal affinity** are shown. Grey dots show each person's
+share of the robot's proactive approaches; green dots show their share of feeding. The
+percentage-point label is feeding share minus proactive-approach share.* ***Conclusion.*** *A
+positive gap means the extra proactive attention was repaid by disproportionate feeding; a
+negative gap flags a person who was prioritised more than they replenished the robot. Across the
+top 5, 3/5 show a positive payoff and together they account for 63% of feeding against 55% of
+proactive approaches.*
 
 ---
 
@@ -479,16 +483,18 @@ With only ~200 interactions, **ML here is interpretive, not confirmatory** — t
 is in Phase B. Everything uses **group-aware cross-validation** (leave-one-run-out /
 leave-one-person-out) so it can't memorise a person or a session.
 
-### D1 — Does hunger add predictive signal beyond the social/perceptual surface?
+### D1 — Does hunger add predictive signal beyond the social state?
 
-**How.** Predict "reached Engaged" with a gradient-boosted model, social/perceptual features
-only, then **add hunger state** and measure the change; plus drop-column importance under
-grouped CV.
+**How.** The model is scoped to the two state variables the controller actually reasons over —
+the **orexigenic drive (hunger state)** and the **social state** — with the raw perceptual
+signals (IPS, proximity, centrality, gaze, co-presence, attention, hour, …) deliberately
+excluded. Predict "reached Engaged" with a gradient-boosted model, social state only, then
+**add hunger state** and measure the change; plus drop-column importance under grouped CV.
 
-**Result.** Adding hunger changes Engaged-prediction **AUC 0.903 → 0.933 (+0.030)** and
-**PR-AUC 0.931 → 0.954 (+0.023)**. Drop-column CV ranks hunger **#3 of 13** features — behind
-**social state (#1, by far)** and centrality. **Social/perceptual state dominates**; hunger
-contributes a real but secondary signal.
+**Result.** Adding hunger changes Engaged-prediction **AUC 0.669 → 0.757 (+0.088)** and
+**PR-AUC 0.742 → 0.810 (+0.068)**. Drop-column CV ranks hunger **#2 of 2** features — behind
+**social state (#1, AUC loss 0.271)**. **Social state dominates**; hunger contributes a real
+but secondary signal.
 
 **Read as:** sensitivity evidence consistent with the threshold-override story (the held-out
 model reproduces the Starving collapse), *not* a mechanism proof.
@@ -497,12 +503,12 @@ model reproduces the Starving collapse), *not* a mechanism proof.
 
 ![ML sensitivity](analysis/figures/figD1_ml_sensitivity.png)
 
-***Reading (sensitivity, not proof).*** *Adding hunger to a social/perceptual Engaged-model lifts
-held-out **AUC 0.903 → 0.933 (+0.030)** and **PR-AUC 0.931 → 0.954 (+0.023)**; drop-column CV
-ranks hunger **#3 of 13** (AUC loss 0.030), well behind **social state (#1, loss 0.077)** and just
-behind centrality. Right: out-of-fold predictions reproduce the Starving collapse.*
-***Conclusion.*** *Hunger carries real, independent predictive signal — but a secondary one;
-social/perceptual context dominates, so this corroborates the mechanism rather than proving it.*
+***Reading (sensitivity, not proof).*** *Adding hunger to a social-state Engaged-model lifts
+held-out **AUC 0.669 → 0.757 (+0.088)** and **PR-AUC 0.742 → 0.810 (+0.068)**; drop-column CV
+ranks hunger **#2 of 2** (AUC loss 0.088), behind **social state (#1, loss 0.271)**. Right:
+out-of-fold predictions reproduce the Starving collapse.* ***Conclusion.*** *Hunger carries
+real, independent predictive signal — but a secondary one; social state dominates, so this
+corroborates the mechanism rather than proving it.*
 
 ### D4 — Does recovery depend on a few feeders? (robustness of RQ2-c)
 
