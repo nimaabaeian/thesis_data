@@ -1746,68 +1746,9 @@ except Exception as e:
     verdict("B7", "Inconclusive: could not solve stationary distribution.", n=int(cnt.values.sum()))
 """)
 
-md("### B8 — Gradient robustness (monotonic Full→Hungry→Starving, covariate-adjusted)")
+md(r"""#### Reading B3 + B4 together: two thresholds, not a ramp
 
-code(r"""
-# B8: ordered-trend tests that HS1->HS2->HS3 effects are monotonic + survive adjustment.
-d = master.copy()
-d["reached_ss4"] = (d["final_state"]=="ss4").astype(int)
-d["n_turns"] = pd.to_numeric(d["n_turns"], errors="coerce").fillna(0)
-d["hs_rank"] = d["hunger_state_start"].map({"HS1":1,"HS2":2,"HS3":3})
-d = d.dropna(subset=["hs_rank"])
-
-# Descriptive trend first (Spearman), then the INFERENTIAL anchor: cluster-aware GEE
-# per outcome family — binary outcomes get logistic GEE, the turns count gets Poisson
-# GEE — both clustered on person with robust SEs. PVALS take the GEE p-values.
-for outcome in ["n_turns","reached_ss4","active_energy_cost"]:
-    sub = d.dropna(subset=[outcome])
-    rho, p = sps.spearmanr(sub["hs_rank"], sub[outcome])
-    print(f"descriptive trend {outcome} vs HS severity: Spearman rho={rho:+.2f}, p={p:.3f} (n={len(sub)})")
-
-print()
-_fam = {"n_turns": sm.families.Poisson(), "reached_ss4": sm.families.Binomial(),
-        "active_energy_cost": sm.families.Gaussian()}
-for outcome, fam in _fam.items():
-    sub = d.dropna(subset=[outcome]).copy()
-    try:
-        _g8 = smf.gee(f"{outcome} ~ hs_rank", groups="person_id", data=sub,
-                      family=fam, cov_struct=sm.cov_struct.Exchangeable()).fit()
-        _b8b = float(_g8.params["hs_rank"]); _p8 = float(_g8.pvalues["hs_rank"])
-        _lo8, _hi8 = _g8.conf_int().loc["hs_rank"]
-        _eff = (f"rate ratio {np.exp(_b8b):.2f}" if outcome=="n_turns"
-                else f"OR {np.exp(_b8b):.2f}" if outcome=="reached_ss4" else f"beta {_b8b:+.2f}")
-        print(f"GEE {outcome} ~ hs_rank (cluster=person): {_eff} "
-              f"[{np.exp(_lo8) if outcome!='active_energy_cost' else _lo8:.2f},"
-              f"{np.exp(_hi8) if outcome!='active_energy_cost' else _hi8:.2f}], p={_p8:.4f}")
-        PVALS[f"B8_{outcome}"] = _p8
-    except Exception as e:
-        print(f"GEE {outcome} failed: {e}")
-        rho, p = sps.spearmanr(d.dropna(subset=[outcome])["hs_rank"], d.dropna(subset=[outcome])[outcome])
-        PVALS[f"B8_{outcome}"] = float(p)
-
-# Covariate-adjusted sensitivity: Poisson GEE n_turns ~ hs_rank + hour + copresence, cluster=person.
-try:
-    d["copresence"] = d["copresence"].fillna(1.0); d["hour_of_day"]=d["hour_of_day"].fillna(12)
-    m = smf.gee("n_turns ~ hs_rank + hour_of_day + copresence", groups="person_id", data=d,
-                family=sm.families.Poisson(), cov_struct=sm.cov_struct.Exchangeable()).fit()
-    print(f"\nAdjusted hs_rank effect on n_turns (Poisson GEE): rate ratio={np.exp(m.params['hs_rank']):.2f}, "
-          f"p={m.pvalues['hs_rank']:.3f} (holding hour, copresence; person-clustered)")
-except Exception as e:
-    print("adjusted model failed:", e)
-# Grade: is there a smooth monotone HS1<HS2<HS3 gradient, or a step-change at HS3?
-_rho_ss4, _p_ss4 = sps.spearmanr(d["hs_rank"], d["reached_ss4"])
-_step = (d.groupby("hunger_state_start")["reached_ss4"].mean().reindex(HS_ORDER))
-verdict("B8", f"Weakened (as a smooth gradient): "
-        f"Engaged-completion declines with severity (rho={_rho_ss4:+.2f}, "
-        f"p={_p_ss4:.3f}) but the drop is concentrated in Starving "
-        f"({_step.rename(index=HS_NAME).round(2).to_dict()}) — Full and Hungry are nearly equal, so this is a "
-        f"step-change at the 25 line, not a smooth Full->Hungry->Starving ramp; turns/energy trends are weak "
-        f"and do not survive covariate adjustment. The step itself is shown directly in B4, not here.", n=len(d))
-""")
-
-md(r"""#### Reading B3 + B4 + B8 together: two thresholds, not a ramp
-
-These three are **one coherent story**. The deficit switches on behaviour in two stages,
+These two analyses are **one coherent story**. The deficit switches on behaviour in two stages,
 crossing two coded thresholds:
 
 - **At the deficit line (60, entering Hungry): the recovery repertoire turns on** (B3). Hunger
@@ -1818,9 +1759,8 @@ crossing two coded thresholds:
   Conversation collapses (turns 2.5 → 0.2, Engaged 0.68 → 0.08) as the `_run_hunger_tree`
   feed-seeking loop takes over.
 
-So B8's "no *smooth gradient*" is not a failure — the system is a **two-threshold controller**:
-the deficit *adds* recovery behaviour at 60 (B3) and *overrides* social behaviour at 25 (B4).
-B3/B4/B8 are that single design, not three separate tests.
+The system is a **two-threshold controller**: the deficit *adds* recovery behaviour at 60 (B3)
+and *overrides* social behaviour at 25 (B4).
 """)
 
 code(r"""
@@ -3270,7 +3210,6 @@ rows = [
  ("RQ2-a","Deficit expression elicits recovery behaviour","B5"),
  ("RQ2-b","Observed Starving episodes resolve by feeding","B6"),
  ("RQ2-c","Replenishment reliable (always-on, long-run)","B7"),
- ("gradient","Full→Hungry→Starving effects monotonic & robust","B8"),
  ("RQ3","Adaptive affinity reflects real behaviour (role manipulation, dose, downstream use)","B10"),
 ]
 sc = []
@@ -3301,7 +3240,7 @@ L+=["## Verification gate", "", "All V1–V5 checks passed (see `verification_re
 L+=["## Success criteria", "", "| id | claim | outcome |", "|---|---|---|"]
 for _,r in sc_df.iterrows(): L.append(f"| {r['id']} | {r['claim']} | **{r['outcome']}** |")
 L+=["", "## Per-analysis verdicts", ""]
-for k in ["B1","B2","B3","B4","B5","B6","B7","B8","B9","B10","D1","D4"]:
+for k in ["B1","B2","B3","B4","B5","B6","B7","B9","B10","D1","D4"]:
     v=RESULTS.get(k,{}).get("verdict")
     if v: L.append(f"- **{k}** — {v}")
 try:
@@ -3347,7 +3286,7 @@ L+=["## Reading of the four homeostatic functions", "",
     "measurements: the stomach level is a software integrator and the HS labels are derived from it "
     "by the same thresholds, so drain=nominal (zero-width CI) and 1.00/1.00 bracketing hold by "
     "construction. The non-trivial parts are the dense autonomous sampling and near-zero flapping.",
-    "- **The drive is a two-threshold controller, not a ramp** (B3+B4+B8 read together). At the deficit "
+    "- **The drive is a two-threshold controller, not a ramp** (B3+B4 read together). At the deficit "
     "line (60, entering Hungry) the recovery repertoire turns ON (B3): being in a deficit vs Full flips "
     "hunger framing 3%->67%, activates feed-seeking acts and proactive Telegram pings (0 at Full -> 172 "
     "in deficit), and raises feeding pursuit 0.15->0.43 and meal size 21->31 — a large categorical change "
@@ -3408,7 +3347,6 @@ print("\nRQ2 — Deficit expression → reliable replenishment:")
 print("  (a) elicits recovery    :", g("B5"))
 print("  (b) observed recovery   :", g("B6"))
 print("  (c) reliability         :", g("B7"))
-print("  gradient robustness     :", g("B8"))
 print("\nRQ3 — Adaptation reflects real behaviour (B10):", g("B10"))
 print("\nSmall-n caveats: Starving episodes and proactive Starving interactions are single-digit;")
 print("those results are DIRECTIONAL evidence, reported with n and bootstrap CIs, not proof.")

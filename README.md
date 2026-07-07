@@ -179,15 +179,6 @@ a large, directionally robust effect, not a precise estimate. *Verdict: Supporte
 Greeted×Hungry (0.93) and stays high for known people until the Starving column zeroes it out
 — hunger doesn't erode conversation, one override ends it.*
 
-**B8 — gradient robustness (honest negative).** There is **no smooth Full→Hungry→Starving
-ramp**: Engaged-completion declines with severity (GEE OR 0.56 per level [0.39, 0.81]) but the
-drop is entirely concentrated at Starving; turns and energy trends are null under
-person-clustered GEE (rate ratio 0.95, p = .50). Read with B3/B4 this is the *design*: **a
-two-threshold controller** — the deficit line adds recovery behaviour, the starving line
-subtracts social behaviour. *Verdict: Weakened as a gradient; the step-change is B4's result.*
-
----
-
 ## 5. RQ2 — Does deficit expression lead to reliable recovery?
 
 **B5 — deficit expression elicits recovery.** Meal size grows with the deficit at feed time
@@ -323,7 +314,6 @@ signal; social state dominates; out-of-fold predictions track the Starving colla
 | RQ2-a | Deficit expression elicits recovery | B5 | **Supported** |
 | RQ2-b | Observed Starving episodes resolve by feeding | B6 | **Supported (exploratory)** |
 | RQ2-c | Replenishment reliable long-run | B7 | **Supported** |
-| gradient | Smooth Full→Hungry→Starving ramp | B8 | **Weakened** *(it's a two-threshold step)* |
 | RQ3 | Adaptive affinity reflects real behaviour | B10 | **Supported** |
 
 **Bottom line.** The orexigenic drive is a faithfully implemented **threshold homeostatic
