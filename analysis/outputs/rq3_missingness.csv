@@ -1,0 +1,7 @@
+role,phase,frac_with_duration,n_events
+normal,P1,0.44,59
+normal,P2,0.65,54
+feeder,P1,0.22,55
+feeder,P2,0.44,16
+no_feed,P1,0.67,15
+no_feed,P2,1.0,6

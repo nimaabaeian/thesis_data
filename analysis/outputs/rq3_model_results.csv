@@ -1,0 +1,12 @@
+model,term,coef,p,lo,hi
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),Intercept,0.05352428151486411,0.1064060901434845,-0.0114505023402992,0.11849906537002741
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(role)[T.feeder],-0.035703785538246886,0.5485746770581204,-0.15235397368190676,0.08094640260541297
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(role)[T.no_feed],-0.025122960863790088,0.6631590430246437,-0.1381741430195599,0.08792822129197975
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(phase)[T.P2],-0.05315412517789594,0.08543913617380486,-0.1137252889545389,0.007417038598747032
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(hunger_state_start)[T.HS2],0.07361211165190601,0.02341408673649795,0.009958852024802303,0.13726537127900973
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(hunger_state_start)[T.HS3],0.04172110507333686,0.5555937867581023,-0.09701664678934348,0.1804588569360172
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec,0.1679251654074517,1.629672051035867e-13,0.12330452395752062,0.21254580685738278
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(role)[T.feeder],-0.15020466878692462,0.006050063847360632,-0.25745048793291775,-0.04295884964093148
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(role)[T.no_feed],-0.0699960625945904,0.23674518425812308,-0.18594791899928442,0.04595579381010362
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(phase)[T.P2],-0.07995698346456237,0.011607080413314708,-0.14204924678008773,-0.01786472014903702
+d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),person_id Var,0.0862590240602822,0.33777932513646347,-0.09011406296741163,0.262632111087976
