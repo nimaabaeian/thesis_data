@@ -108,24 +108,57 @@ references. All checks passed; nothing proceeds otherwise.
 
 ## 3. Statistical approach
 
-Observations repeat within people, runs and days, so **no confirmatory claim rests on
-row-independence tests**:
+The model choice is driven by two facts: **what kind of outcome is being analysed** and
+**whether observations are independent**. Most outcomes here are binary events, event counts,
+continuous learning updates, or time spent in hunger states; and many observations repeat
+within the same people, runs and days. For that reason, **no confirmatory claim rests on
+row-independence tests** such as plain t-tests, ANOVA, chi-square tests, or unclustered
+correlations. Those tests would treat repeated observations from the same person/run as if
+they came from new independent participants.
 
-- **Binary/count contrasts** → logistic / Poisson **GEE, clustered on person** (robust
-  sandwich SEs; run-clustered as sensitivity).
-- **Continuous affinity outcomes** → **linear mixed models** with a person random intercept
-  (cluster-robust OLS as companion).
-- **Long-run occupancy** → CTMC with a **run-level block bootstrap** (the cluster-honest
-  interval), Poisson bootstrap as secondary.
-- **Cells with complete separation by design** (the no-feed pair: 0 feeds) → **exact
-  Clopper–Pearson CIs**, not forced GLMs.
-- **Multiplicity** → Benjamini–Hochberg **within two pre-declared families** (RQ1/2 behaviour;
+### Why each model was used
+
+| Purpose in this study | Outcome type | Model used | Why this model was chosen |
+|---|---|---|---|
+| Deficit-to-action conversion: does Hungry/Starving increase feeding pursuit? | Binary event per interaction: pursued feeding, yes/no | **Logistic GEE, clustered on person** | The outcome is binary, so logistic regression gives odds ratios. GEE keeps the interpretation population-level while using robust sandwich SEs for repeated observations within people. |
+| Starving override: does Starving suppress completed social engagement? | Binary event per interaction: Engaged vs not engaged | **Logistic GEE, clustered on person**, adjusted for social state | Same binary-outcome logic, with clustering because the same people contribute multiple interactions. Adjustment separates hunger-state override from the current social-state context. |
+| Role manipulation: did obligated feeders supply more meals per person-day? | Count outcome: number of meals | **Poisson GEE, clustered on person** | Meal supply is a count/rate, so Poisson regression estimates rate ratios. GEE protects the inference from repeated person-days belonging to the same participant. |
+| Downstream use of learning: does prior affinity increase next-day proactive approaches? | Count outcome: number of proactive approaches | **Poisson GEE, clustered on person** | The question is about a count of robot actions on the next day. A rate-ratio model is the natural scale, and clustering handles repeated days per person. |
+| Core affinity validation: does engagement dose predict `Δaffinity`, moderated by role/phase? | Continuous outcome: change in affinity after an update | **Linear mixed model with a person random intercept** | `Δaffinity` is continuous. The random intercept lets each person have their own baseline while estimating the common dose, role and phase effects. Cluster-robust OLS is reported as a companion check. |
+| Long-run reliability: what fraction of time is the robot expected to be Starving? | Time occupancy across Full/Hungry/Starving states | **Continuous-time Markov chain (CTMC)** with **run-level block bootstrap** | Reliability is about transitions and dwell times, not a per-row mean. CTMC estimates the steady-state occupancy implied by observed state changes; run-level bootstrap gives an interval that respects run-level clustering. |
+| Observed Starving recovery episodes | Time-to-first-feed in 8 episodes | **Kaplan-Meier curve only; no Cox model** | This is a time-to-event question, but n = 8 is too small for a covariate survival regression. KM is used descriptively to show observed recovery timing. |
+| No-feed role compliance | 0 feeds in the no-feed group during Phase 1 | **Exact Clopper-Pearson confidence interval** | Complete separation makes a logistic/Poisson GLM unstable or unidentifiable. Exact binomial intervals report the compliance result directly. |
+| Machine-learning sensitivity check | Held-out prediction of engagement | **Regularised logistic models with group-aware CV** | This is not confirmatory inference. It checks whether hunger adds out-of-sample signal beyond social state while leaving out whole runs or people to avoid leakage. |
+
+### Why not the simpler textbook tests?
+
+- **t-tests/ANOVA** are for independent continuous outcomes. Most headline outcomes here are
+  binary, counts, time occupancy, or repeated continuous updates; using t-tests/ANOVA would
+  answer the wrong outcome-scale question and ignore clustering.
+- **Mann-Whitney/Kruskal-Wallis/Spearman** are useful descriptive non-parametric companions,
+  but they do not naturally handle the repeated person/run structure or the role/phase
+  moderation needed for RQ3.
+- **Plain linear regression** is appropriate for independent continuous outcomes; the affinity
+  analysis instead uses a mixed model because multiple updates come from the same person.
+- **Cox proportional hazards regression** would be the standard survival model for larger
+  time-to-event data, but the Starving episode set has only 8 episodes, so a Cox model would be
+  overfit. The README therefore reports Kaplan-Meier timing descriptively and lets the CTMC
+  occupancy analysis carry the reliability claim.
+- **Negative binomial regression** was not the primary count model because the confirmatory
+  count analyses are small, clustered rate-ratio questions handled with robust Poisson GEE and
+  bootstrap checks. If strong overdispersion dominated a larger count analysis, negative
+  binomial would be the natural alternative.
+
+Other safeguards:
+
+- **Multiplicity** → Benjamini-Hochberg **within two pre-declared families** (RQ1/2 behaviour;
   RQ3 adaptation). Implementation checks (B1/B2) get no inferential p-values at all.
 - **Power** → simulation-based **minimum detectable effects** under the observed clustering
   (never post-hoc power): this design reliably detects ORs ≳ 3 and Δaffinity slopes ≳ 0.075
   per SD; role contrasts (2 people/role) detect only very large effects.
-- Starving is small-n (13 interactions, 8 episodes): effect sizes + CIs first, "directional"
-  labels, no covariate models on single-digit n.
+- **Small-n Starving results** → Starving is small-n (13 interactions, 8 episodes), so the
+  report leads with effect sizes + CIs, uses "directional" labels, and avoids covariate models
+  on single-digit episode counts.
 
 ---
 
