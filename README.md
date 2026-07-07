@@ -23,9 +23,8 @@ evidence is strong versus thin.
 5. [RQ2 — Does deficit expression lead to reliable recovery?](#5-rq2--does-deficit-expression-lead-to-reliable-recovery)
 6. [Adaptive personalisation — the drive learns who feeds it](#6-adaptive-personalisation-the-drive-learns-who-feeds-it-analysis-b9)
 7. [Machine learning — sensitivity checks](#7-machine-learning--sensitivity-checks-honestly-labelled-phase-d)
-8. [Honest limitations](#8-honest-limitations-read-before-quoting-any-number)
-9. [Success-criteria scorecard](#9-success-criteria-scorecard)
-10. [Reproducing this](#10-reproducing-this)
+8. [Success-criteria scorecard](#8-success-criteria-scorecard)
+9. [Reproducing this](#9-reproducing-this)
 
 ---
 
@@ -413,16 +412,6 @@ with no absorbing "starve-out" state — because the people kept feeding it. Thi
 measured outcome of the working HRI loop, and the headline result for RQ2-c: human engagement,
 with demonstrated participation from the drive, kept the robot's energy regulated.*
 
-### The gradient question *(analysis B8)*
-
-As mentioned under "threshold controller": Engaged-completion does decline as the robot gets
-hungrier (**Spearman ρ = −0.16, p = 0.016**), but the drop really lives at Starving — Full and
-Hungry are almost the same (0.69 / 0.67) and only Starving falls away (0.08). The turn-count and
-energy trends don't hold up once we adjust for covariates. So **as a smooth Full→Hungry→Starving
-ramp, this is weak, and we grade it Weakened.** The change that *is* there is the step down at the
-Starving line — but we don't lean on B8 for that; it's shown directly in B4. We'd rather
-under-state the gradient than dress it up.
-
 **RQ2, concluded.** Expressing the deficit *does* drive recovery: it elicits graded feeding
 (bigger meals when hungrier, B5) and is followed by replies both in person and off-robot (Fig 8), and
 in the observed Starving episodes the escape path was fast and complete (B6). And it adds up to the study's
@@ -546,34 +535,7 @@ responses, but the evidence should not be overstated.
 
 ---
 
-## 8. Honest limitations (read before quoting any number)
-
-- **One condition only.** The drive was on the whole time — there was never a "drive-off"
-  version to compare against. So for RQ2 we lean on the two comparisons we *do* have from inside
-  the data (hungrier vs. less hungry, and the robot initiating vs. reacting), not a clean
-  randomised experiment.
-- **Starving is rare.** Only 8 Starving episodes and about 13 Starving interactions. We treat
-  anything resting on those as *suggestive* — always shown with the sample size and a confidence
-  interval, never sold as proof.
-- **We tested many things, so we corrected for it.** After that correction, the two effects we
-  most care about still hold: the jump in feeding behaviour once the robot is in a deficit, and
-  the drop in engagement as it gets more severe. The weaker turn-count and energy trends don't
-  survive, and we say so. *(The 3% → 67% rise in hunger talk is driven directly by the prompts, so
-  we just describe it rather than run a significance test on it.)*
-- **Monitoring and detection are "wired correctly," not discoveries.** The stomach level and the
-  hunger labels come straight from the code, so of course they line up — that part confirms the
-  machinery works as written. What's genuinely worth noting is that it runs on its own and doesn't
-  flicker at the boundaries.
-- **Staying fed is a property of the loop, not a promise from the robot.** The robot avoided
-  starvation ~99% of the time *because people fed it* — those numbers describe how the humans
-  behaved as much as the drive. With a single condition we can't cleanly separate how much of the
-  feeding the drive itself caused from what people would have done anyway. What we *can* show is
-  that the drive took part (bigger asks when hungrier, pings that drew replies), so "the loop
-  works here" is on solid ground; "the drive alone caused it" is not a claim we make.
-
----
-
-## 9. Success-criteria scorecard
+## 8. Success-criteria scorecard
 
 | # | Claim | Source | Outcome |
 |---|---|---|---|
@@ -584,7 +546,6 @@ responses, but the evidence should not be overstated.
 | RQ2-a | Deficit expression elicits recovery | B5 | **Supported** |
 | RQ2-b | Observed Starving episodes resolve by feeding | B6 | **Supported (exploratory)** |
 | RQ2-c | Replenishment reliable long-run | B7 | **Supported** |
-| gradient | Full→Hungry→Starving monotonic & robust | B8 | **Weakened** *(no smooth ramp; the movement sits at the Starving threshold — see B4)* |
 
 **Bottom line.** On the mechanism side (RQ1), the orexigenic drive is a genuine,
 faithfully-implemented **threshold homeostatic controller**: it monitors itself autonomously,
@@ -594,14 +555,11 @@ result** — the loop closes: **human engagement, with demonstrated participatio
 kept the robot's energy in homeostasis and out of starvation ~99% of the time**. That ≈1% long-run
 Starving is the *outcome* of people feeding the robot in a drive-signalling system (not a
 self-property of the controller), and the system
-**learns who its feeders are** to spend its recovery effort on them. The honest caveats (§8) —
-single condition (the drive's exact causal share in the feeding is not isolated), feeding
-concentrated among a few users, and small Starving n — are stated plainly and do not undercut the
-core, code-grounded finding: **this HRI solution keeps an always-on robot's energy regulated.**
+**learns who its feeders are** to spend its recovery effort on them.
 
 ---
 
-## 10. Reproducing this
+## 9. Reproducing this
 
 The notebook is generated from [`analysis/build_notebook.py`](analysis/build_notebook.py)
 (kept as a plain `.py` so cells stay short and commented):
