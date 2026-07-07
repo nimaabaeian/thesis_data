@@ -33,8 +33,7 @@ from what the data show.
   sufficient to support reliable energy replenishment in an always-on social robot?
 - **RQ3** — Does the robot's **adaptive component** (the learned per-person homeostatic
   affinity) reflect *real* participant behaviour rather than arbitrary drift, and does what it
-  learns change the robot's own later behaviour? The role manipulation is experiment metadata
-  used for validation only; it was never available to the robot or used by the software.
+  learns change the robot's own later behaviour? 
 
 ### Two design facts that shape everything
 
