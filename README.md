@@ -32,8 +32,9 @@ from what the data show.
 - **RQ2** — Does expressing an orexigenic deficit promote recovery-oriented engagement
   sufficient to support reliable energy replenishment in an always-on social robot?
 - **RQ3** — Does the robot's **adaptive component** (the learned per-person homeostatic
-  affinity) reflect *real* participant behaviour — including a controlled role manipulation —
-  rather than arbitrary drift, and does what it learns change the robot's own later behaviour?
+  affinity) reflect *real* participant behaviour rather than arbitrary drift, and does what it
+  learns change the robot's own later behaviour? The role manipulation is experiment metadata
+  used for validation only; it was never available to the robot or used by the software.
 
 ### Two design facts that shape everything
 
@@ -46,9 +47,10 @@ tests whether the drive *initiates* recovery.
 experiment days) two participants were **obligated feeders**, two were told to **interact but
 never feed**, and everyone else behaved normally. In **Phase 2** (last four days) all
 constraints were lifted. The roles *induce* known behaviour, giving RQ3 ground truth to test
-the learning against. The role map is private (`analysis/private/role_phase.json`); published
-outputs carry pseudonyms and role labels only. With **2 people per controlled role**, role
-contrasts are manipulation validation with wide uncertainty — never population inference.
+the learning against. These roles are external experimental labels, not controller inputs. The
+role map is private (`analysis/private/role_phase.json`); published outputs carry pseudonyms and
+role labels only. With **2 people per controlled role**, role contrasts are manipulation
+validation with wide uncertainty — never population inference.
 
 ### The answers, up front
 
@@ -139,9 +141,9 @@ threshold. *Verdict: faithfully implemented, autonomous.*
 
 ![Drive timeline](analysis/figures/fig02_drive_timeline.png)
 
-*Fig 2 — the homeostatic loop made visible: autonomous sawtooth drain, discrete feeding
-recoveries (arrows ∝ meal size), Starving as thin red slivers. Panels are tagged Phase 1
-(roles) / Phase 2 (free); B7 quantifies the ~1% Starving occupancy this picture suggests.*
+*Fig 2 — unit: hunger-level event, n = 165,460 across 12 monitored runs / 8 days. The
+homeostatic loop made visible: autonomous sawtooth drain, discrete feeding recoveries
+(arrows ∝ meal size), Starving as thin red slivers.*
 
 **B3 — deficit → action conversion.** The right contrast is **Full vs deficit (Hungry +
 Starving)**. A deficit switches on a recovery repertoire that is silent at Full:
@@ -161,8 +163,9 @@ feeding pursuit): **OR 4.9 [2.6, 9.5]**, p ≈ 2×10⁻⁶; leave-one-person-out
 
 ![Deficit to action](analysis/figures/fig04_deficit_action.png)
 
-*Fig 4 — recovery-action rates Full vs deficit (left, bootstrap CIs) and the deficit-gated
-actions plotted on the actual stomach-level timeline (right).*
+*Fig 4 — units: 367 interaction turns, 710 chat messages, 217 co-present interactions, and
+193 deficit-gated action events. Recovery-action rates Full vs deficit (left, bootstrap CIs)
+and the deficit-gated actions plotted on the actual stomach-level timeline (right).*
 
 **B4 — the Starving override (centrepiece).** When Starving, conversation **collapses** (turns
 2.5 → 0.2; Engaged 0.68 → 0.08; person-clustered GEE adjusted for social state: **OR 0.034
@@ -172,8 +175,9 @@ a large, directionally robust effect, not a precise estimate. *Verdict: Supporte
 
 ![Prioritisation heatmap](analysis/figures/fig05_prioritisation_heatmap.png)
 
-*Fig 5 — completion peaks at Greeted×Hungry (0.93) and stays high for known people until the
-Starving column zeroes it out — hunger doesn't erode conversation, one override ends it.*
+*Fig 5 — unit: interaction, n = 217; Starving column n = 13. Completion peaks at
+Greeted×Hungry (0.93) and stays high for known people until the Starving column zeroes it out
+— hunger doesn't erode conversation, one override ends it.*
 
 **B8 — gradient robustness (honest negative).** There is **no smooth Full→Hungry→Starving
 ramp**: Engaged-completion declines with severity (GEE OR 0.56 per level [0.39, 0.81]) but the
@@ -194,7 +198,8 @@ co-present interactions are 83% reply-bearing when proactive vs 42% reactive.
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
-*Fig 8 — proactive pings by type and their 1-hour response rates with bootstrap CIs.*
+*Fig 8 — unit: proactive Telegram ping, n = 234 across 12 subscribers; response window = 1 h.
+Proactive pings by type and their response-to-ping rates with bootstrap CIs.*
 
 **B6 — observed Starving episodes (exploratory, n = 8).** All 8 episodes received a feed,
 escaped Starving, and recovered to Full — via feeding; median time-to-first-feed 21 s
@@ -204,7 +209,8 @@ regression is fitted at this n. Reliability is carried by B7, not by these episo
 
 ![Starving recovery](analysis/figures/fig07_hs3_funnel.png)
 
-*Fig 7 — cumulative first-feed curve for the 8 observed episodes.*
+*Fig 7 — unit: Starving episode, n = 8 across 4 runs. Cumulative first-feed curve; exploratory
+and directional, not a population recovery-rate estimate.*
 
 **B7 — long-run reliability (the headline).** A continuous-time Markov chain over
 Full/Hungry/Starving, fitted from observed transitions and dwell times, gives long-run
@@ -219,8 +225,9 @@ of the feeding cannot be isolated. *Verdict: Supported.*
 
 ![Steady state](analysis/figures/fig09_steady_state.png)
 
-*Fig 9 — modelled CTMC occupancy lands on the empirical time-occupancy (Starving 1.1% vs
-1.8%); mean Starving sojourn 163 s.*
+*Fig 9 — unit: CTMC state sojourn/transition reconstructed from 165,460 hunger events across
+12 monitored runs. Modelled occupancy lands on the empirical time-occupancy (Starving 1.1%
+vs 1.8%); mean Starving sojourn 163 s.*
 
 ---
 
@@ -265,21 +272,25 @@ controlled role, role contrasts are validation, not population inference.)
 
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
-*Fig 10 — affinity trajectories coloured by Phase-1 role (green = feeder, red dashed =
-no-feed, blue = unconstrained; dashed vertical = phase boundary). The design is visible in the
-raw learning traces: feeders and natural feeders climb, the no-feed pair sits flat near zero.*
+*Fig 10 — unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events
+over 14 named people plus unknown. Affinity trajectories coloured by Phase-1 experimental role
+label (green = feeder, red dashed = no-feed, blue = unconstrained; dashed vertical = phase
+boundary).*
 
 ![Role validation](analysis/figures/fig12_role_validation.png)
 
-*Fig 12 — the manipulation validated: feed probability per interaction with exact 95% CIs
-(left; the no-feed 0/15 and its Phase-2 release are directly visible) and meals per person-day
-with the GEE rate ratios (right).*
+*Fig 12 — units: interaction and person-day; 217 interactions, 14 named people, 8 days;
+controlled roles = 2 feeders + 2 no-feed in Phase 1. The manipulation validated: feed
+probability per interaction with exact 95% CIs (left; the no-feed 0/15 and its Phase-2 release
+are directly visible) and meals per person-day with the GEE rate ratios (right). Roles are
+external experiment metadata, not robot software inputs.*
 
 ![Affinity dose model](analysis/figures/fig13_affinity_dose.png)
 
-*Fig 13 — the core RQ3 model: raw learning events with per-role trends (left) and the
-mixed-model coefficients with 95% CIs (right) — dose slope, role/phase moderations, and the
-dose-agreement slopes.*
+*Fig 13 — unit: learning update event; duration-linked subset n ≈ 97, fully observed dose
+checks use all learning-eligible events n = 205. The core RQ3 model: raw duration-linked
+learning events with per-role trends (left) and the mixed-model coefficients with 95% CIs
+(right) — dose slope, role/phase moderations, and the dose-agreement slopes.*
 
 ---
 
@@ -296,8 +307,8 @@ Deliberately small: ~200 rows, group-aware CV (leave-one-run/person-out), descri
 
 ![ML sensitivity](analysis/figures/figD1_ml_sensitivity.png)
 
-*Fig D1 — hunger adds held-out signal; social state dominates; out-of-fold predictions track
-the Starving collapse.*
+*Fig D1 — unit: interaction, n = 217; grouped CV leaves out runs/persons. Hunger adds held-out
+signal; social state dominates; out-of-fold predictions track the Starving collapse.*
 
 ---
 

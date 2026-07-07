@@ -29,8 +29,10 @@ iCub controller (perception → salience → executive → remote/Telegram).
   engagement sufficient to support reliable energy replenishment in an always-on
   social robot?
 - **RQ3** — Does the robot's **adaptive component** (per-person homeostatic affinity)
-  reflect *real* participant behaviour — including a controlled role manipulation —
-  rather than arbitrary drift, and does what it learns change its later behaviour?
+  reflect *real* participant behaviour rather than arbitrary drift, and does what it learns
+  change its later behaviour? The **role manipulation is experiment metadata only**: roles
+  were assigned by the researchers for validation and were never available to the robot or
+  used by the software.
 
 > **Fixed design fact (single condition).** The drive was **always on** for the whole
 > study. There is **no drive-off / control condition** anywhere in this notebook, and
@@ -43,8 +45,9 @@ iCub controller (perception → salience → executive → remote/Telegram).
 > roles: two **obligated feeders** (feed several times a day), two **interact-but-never-feed**
 > participants, and everyone else **unconstrained**. In **Phase 2** (last four days) all
 > constraints were lifted and everyone behaved normally. The role map is private
-> (`analysis/private/role_phase.json`, pseudonymised on load); RQ3 (analysis B10) uses this
-> structure as a *manipulation check + validation* of the affinity learning. With only
+> (`analysis/private/role_phase.json`, pseudonymised on load). These roles are **external
+> experimental labels**, not controller inputs; RQ3 (analysis B10) uses them only after the
+> fact as a *manipulation check + validation* of the affinity learning. With only
 > **2 people per controlled role**, role contrasts are validation evidence with wide
 > uncertainty, not population inference.
 
@@ -1151,6 +1154,7 @@ import statsmodels.api as sm
 
 RESULTS = {}   # metric_key -> dict(effect, ci, p, n, verdict)
 PVALS = {}     # metric_key -> p (for BH correction at the end of Phase B)
+SENSITIVITY = []  # small-cluster bootstrap sensitivity rows
 
 def boot_ci(x, fn=np.mean, n=5000, alpha=0.05, seed=SEED):
     x = np.asarray(pd.Series(x).dropna(), dtype=float)
@@ -1169,6 +1173,47 @@ def boot_diff_ci(a, b, fn=np.mean, n=5000, alpha=0.05, seed=SEED):
 def verdict(key, text, **kw):
     RESULTS[key] = kw | {"verdict": text}
     print("VERDICT:", text)
+
+def cluster_bootstrap_effect(
+    df,
+    cluster_col,
+    fit_fn,
+    *,
+    n=1000,
+    seed=SEED,
+    label="effect"):
+    '''Resample whole clusters with replacement and refit the supplied effect.
+
+    This is a small-cluster robustness check for the 14-person / 10-run setting.
+    It does not replace the primary GEE/MixedLM; it asks whether the effect scale
+    survives when participant clusters, not rows, are the resampling unit.
+    '''
+    rng = np.random.default_rng(seed)
+    clusters = pd.Series(df[cluster_col].dropna().unique())
+    vals = []
+    for _ in range(n):
+        picked = rng.choice(clusters, size=len(clusters), replace=True)
+        parts = []
+        for i, c in enumerate(picked):
+            g = df[df[cluster_col] == c].copy()
+            # Give duplicated clusters distinct ids if the model uses the cluster column.
+            g[cluster_col] = f"{c}__boot{i}"
+            parts.append(g)
+        sample = pd.concat(parts, ignore_index=True)
+        try:
+            val = fit_fn(sample)
+            if np.isfinite(val):
+                vals.append(float(val))
+        except Exception:
+            pass
+    vals = np.asarray(vals, dtype=float)
+    if len(vals) < 25:
+        print(f"{label}: cluster bootstrap failed/unstable ({len(vals)}/{n} successful refits)")
+        return (np.nan, np.nan, np.nan, len(vals))
+    lo, mid, hi = np.percentile(vals, [2.5, 50, 97.5])
+    print(f"{label}: person-cluster bootstrap median {mid:.3g} [95% {lo:.3g}, {hi:.3g}] "
+          f"({len(vals)}/{n} successful refits)")
+    return (lo, mid, hi, len(vals))
 """)
 
 md(r"""> **Read B1–B2 as verification, not headline results.** The stomach level is a software
@@ -1374,6 +1419,16 @@ for _pid in d["person_id"].unique():
     except Exception: pass
 print(f"    leave-one-person-out OR range: [{min(_lopo):.2f}, {max(_lopo):.2f}] "
       f"({len(_lopo)} refits) — no single person carries it.")
+_b3_boot = cluster_bootstrap_effect(
+    d,
+    "person_id",
+    lambda _s: np.exp(smf.glm("fed01 ~ deficit", data=_s,
+                              family=sm.families.Binomial()).fit().params["deficit"]),
+    label="B3 feeding-pursuit OR")
+SENSITIVITY.append(dict(metric="B3_deficit_pursuit_OR", primary=b3_or,
+                        boot_lo=_b3_boot[0], boot_median=_b3_boot[1],
+                        boot_hi=_b3_boot[2], successful_refits=_b3_boot[3],
+                        unit="person-cluster bootstrap over interactions"))
 from scipy.stats import chi2_contingency
 _chi, _chi_p, _dof, _exp = chi2_contingency(pd.crosstab(d["grp"], d["fed"]))
 print(f"    (descriptive row-level chi-square p={_chi_p:.2e}; framing 3%->67% is prompt-driven, reported descriptively)")
@@ -1386,7 +1441,8 @@ verdict("B3", f"Supported: being in a deficit categorically changes what the rob
         f"{g.loc['Deficit','feed_pursuit']:.2f} with larger meals ({ms.loc['Full','mean']:.0f} -> "
         f"{ms.loc['Deficit','mean']:.0f}); and the remote channel fires {n_def_ping} proactive pings "
         f"in deficit vs {n_full_ping} at Full. Feeding-pursuit OR {b3_or:.1f} "
-        f"[{b3_ci[0]:.1f},{b3_ci[1]:.1f}] (person-clustered GEE). This is the action-conversion "
+        f"[{b3_ci[0]:.1f},{b3_ci[1]:.1f}] (person-clustered GEE; bootstrap "
+        f"{_b3_boot[1]:.1f} [{_b3_boot[0]:.1f},{_b3_boot[2]:.1f}]). This is the action-conversion "
         f"evidence: the deficit adds goal-directed recovery behaviour in both channels. "
         f"(Pings/feed-seeking are coded gates = faithful implementation; framing/pursuit/meal-size "
         f"are emergent measurements of how strongly the deficit reshapes behaviour.)",
@@ -1437,6 +1493,16 @@ try:
           f"p={_g4.pvalues['starving']:.1e} — Starving cuts the odds of a completed "
           f"conversation by ~{(1-_or4)*100:.0f}% (small-n HS3: read as a large, directionally "
           f"robust effect, not a precise estimate).")
+    _b4_boot = cluster_bootstrap_effect(
+        d,
+        "person_id",
+        lambda _s: np.exp(smf.glm("reached_ss4 ~ starving + C(initial_state)", data=_s,
+                                  family=sm.families.Binomial()).fit().params["starving"]),
+        label="B4 Starving override OR")
+    SENSITIVITY.append(dict(metric="B4_starving_override_OR", primary=_or4,
+                            boot_lo=_b4_boot[0], boot_median=_b4_boot[1],
+                            boot_hi=_b4_boot[2], successful_refits=_b4_boot[3],
+                            unit="person-cluster bootstrap over interactions"))
 except Exception as e:
     print("override GEE failed:", e)
 # depth progression view for corroboration
@@ -1447,7 +1513,8 @@ try:
 except Exception as e:
     print("depth view err:", e)
 override = (not np.isnan(dt) and dt < 0) and (np.nan_to_num(feed_hs3) >= feed_rest)
-_or_txt = f"OR {_or4:.2f} [{_ci4[0]:.2f},{_ci4[1]:.2f}], person-clustered GEE" if '_or4' in dir() else "GEE n/a"
+_or_txt = (f"OR {_or4:.2f} [{_ci4[0]:.2f},{_ci4[1]:.2f}], person-clustered GEE; "
+           f"bootstrap {_b4_boot[1]:.2f} [{_b4_boot[0]:.2f},{_b4_boot[2]:.2f}]") if '_or4' in dir() else "GEE n/a"
 verdict("B4", f"{'Supported' if override else 'Weakened'}: when Starving, conversation collapses "
         f"(turns diff {dt:+.2f}, Engaged {ss4_hs3:.2f} vs {ss4_rest:.2f}; {_or_txt}) while feeding "
         f"pursuit rises ({feed_hs3:.2f} vs {feed_rest:.2f}) — reprioritisation, not disengagement. "
@@ -2019,8 +2086,19 @@ print(f"\n    Poisson GEE meals/day ~ feeder x phase (cluster=person): in Phase 
       f"the feeder x Phase-2 interaction is {_ix:.2f} [{_ix_ci[0]:.2f},{_ix_ci[1]:.2f}], p={_ix_p:.3f} "
       f"— i.e. once the obligation lifted the feeder excess shrank toward parity "
       f"(only 2 feeders: wide CI, read as validation not population inference).")
+_meal_boot = cluster_bootstrap_effect(
+    pm,
+    "person_id",
+    lambda _s: np.exp(smf.glm("meals ~ is_feeder*C(phase)", data=_s,
+                              family=sm.families.Poisson()).fit().params["is_feeder"]),
+    label="B10 role meal-rate RR")
+SENSITIVITY.append(dict(metric="B10_role_meal_rate_RR", primary=_rr,
+                        boot_lo=_meal_boot[0], boot_median=_meal_boot[1],
+                        boot_hi=_meal_boot[2], successful_refits=_meal_boot[3],
+                        unit="person-cluster bootstrap over person-days"))
 PVALS["B10_role_meal_rate"] = _rr_p
-globals()["_b10_meal_gee"]={"rr":_rr,"ci":_rr_ci,"p":_rr_p,"rr_p2":_ix,"ci_p2":_ix_ci,"p_p2":_ix_p}
+globals()["_b10_meal_gee"]={"rr":_rr,"ci":_rr_ci,"p":_rr_p,"rr_p2":_ix,"ci_p2":_ix_ci,"p_p2":_ix_p,
+                            "boot":[_meal_boot[0],_meal_boot[1],_meal_boot[2]]}
 """)
 
 md(r"""#### B10.2 — The core model: `Δaffinity ~ dose×role + dose×phase + (1 | person)`
@@ -2096,6 +2174,19 @@ if _tp is not None:
     if _slp is not None:
         print(f"  x Phase-2 moderation {_slp['coef']:+.3f} [{_slp['lo']:+.3f},{_slp['hi']:+.3f}] "
               f"(p={_slp['p']:.3f}) — the duration->affinity coupling weakened once roles lifted.")
+    _dur_df = h10.dropna(subset=["d_aff","person_id","role","phase","hunger_state_start",
+                                 "trigger_mode","z_duration_sec"]).copy()
+    _dur_boot = cluster_bootstrap_effect(
+        _dur_df,
+        "person_id",
+        lambda _s: smf.ols("d_aff ~ z_duration_sec*C(role) + z_duration_sec*C(phase) "
+                           "+ C(hunger_state_start) + C(trigger_mode)", data=_s).fit().params["z_duration_sec"],
+        label="B10 duration slope")
+    SENSITIVITY.append(dict(metric="B10_duration_slope", primary=float(_sl["coef"]),
+                            boot_lo=_dur_boot[0], boot_median=_dur_boot[1],
+                            boot_hi=_dur_boot[2], successful_refits=_dur_boot[3],
+                            unit="person-cluster bootstrap over duration-linked learning events"))
+    globals()["_b10_duration_boot"]=[_dur_boot[0],_dur_boot[1],_dur_boot[2]]
 globals()["_b10_R"]=R
 """)
 
@@ -2134,8 +2225,19 @@ print(f"Poisson GEE n_proactive(d+1) ~ prior_affinity + n_today + phase (cluster
 print(f"    prior-affinity rate ratio = {np.exp(_pa):.2f} per +1.0 affinity "
       f"[95% CI {np.exp(_pa_ci[0]):.2f}, {np.exp(_pa_ci[1]):.2f}], p={_pa_p:.3f} "
       f"(n_today RR={np.exp(g_pr.params['n_today']):.2f} controls activity/presence).")
+_prior_boot = cluster_bootstrap_effect(
+    sub,
+    "person_id",
+    lambda _s: np.exp(smf.glm("n_pro_next ~ prior_aff + n_today + C(phase)", data=_s,
+                              family=sm.families.Poisson()).fit().params["prior_aff"]),
+    label="B10 prior-affinity prioritisation RR")
+SENSITIVITY.append(dict(metric="B10_prior_affinity_RR", primary=float(np.exp(_pa)),
+                        boot_lo=_prior_boot[0], boot_median=_prior_boot[1],
+                        boot_hi=_prior_boot[2], successful_refits=_prior_boot[3],
+                        unit="person-cluster bootstrap over person-days"))
 PVALS["B10_prior_aff_prioritisation"] = _pa_p
-globals()["_b10_prior"]={"rr":float(np.exp(_pa)),"ci":[float(np.exp(_pa_ci[0])),float(np.exp(_pa_ci[1]))],"p":_pa_p}
+globals()["_b10_prior"]={"rr":float(np.exp(_pa)),"ci":[float(np.exp(_pa_ci[0])),float(np.exp(_pa_ci[1]))],"p":_pa_p,
+                         "boot":[_prior_boot[0],_prior_boot[1],_prior_boot[2]]}
 """)
 
 md(r"""#### B10.4 — Sensitivity, detectable effects, verdict
@@ -2220,19 +2322,31 @@ print("    -> effects below ~OR 2 / beta 0.075 were NOT reliably detectable here
       "with 2 people per controlled role, role contrasts detect only very large effects — "
       "their CIs above are the honest statement of that limit.")
 
-# (4) Verdict + re-run BH over both families now that B10 has registered its p-values.
+# (4) Small-cluster robustness table for the key inferential claims.
+sens_df = pd.DataFrame(SENSITIVITY)
+if len(sens_df):
+    sens_df.to_csv(OUT_DIR / "small_cluster_sensitivity.csv", index=False)
+    print("\n(4) Small-cluster sensitivity intervals (person-cluster bootstrap):")
+    print(sens_df[["metric","primary","boot_lo","boot_median","boot_hi","successful_refits"]]
+          .round(4).to_string(index=False))
+
+# (5) Verdict + re-run BH over both families now that B10 has registered its p-values.
 _mg=globals()["_b10_meal_gee"]; _pr=globals()["_b10_prior"]
 _sl=R["dur_pooled"]["table"].loc["z_duration_sec"]
 verdict("B10", f"Supported: the adaptation tracks real behaviour, not noise. Manipulation check — "
         f"obligated feeders fed {_mg['rr']:.1f}x the unconstrained rate in Phase 1 "
-        f"[{_mg['ci'][0]:.1f},{_mg['ci'][1]:.1f}] and the no-feed pair complied perfectly "
+        f"[{_mg['ci'][0]:.1f},{_mg['ci'][1]:.1f}] (bootstrap {_mg['boot'][1]:.1f} "
+        f"[{_mg['boot'][0]:.1f},{_mg['boot'][2]:.1f}]) and the no-feed pair complied perfectly "
         f"(0 feeds in Phase 1), with the feeder excess shrinking {_mg['rr_p2']:.2f}x once roles "
         f"lifted. Core model — +1 SD interaction duration predicts Δaffinity {_sl['coef']:+.2f} "
-        f"[{_sl['lo']:+.2f},{_sl['hi']:+.2f}] for unconstrained people, moderated by role "
+        f"[{_sl['lo']:+.2f},{_sl['hi']:+.2f}] (bootstrap {globals()['_b10_duration_boot'][1]:+.2f} "
+        f"[{globals()['_b10_duration_boot'][0]:+.2f},{globals()['_b10_duration_boot'][2]:+.2f}]) "
+        f"for unconstrained people, moderated by role "
         f"(feeders' affinity came from feeding, not chat length) and attenuated in Phase 2; "
         f"all three dose definitions agree in sign; LOPO-stable. Consequence — prior affinity "
         f"raises next-day proactive approaches {_pr['rr']:.2f}x per +1 affinity "
-        f"[{_pr['ci'][0]:.2f},{_pr['ci'][1]:.2f}] beyond activity. Caveat: 2 people per "
+        f"[{_pr['ci'][0]:.2f},{_pr['ci'][1]:.2f}] (bootstrap {_pr['boot'][1]:.2f} "
+        f"[{_pr['boot'][0]:.2f},{_pr['boot'][2]:.2f}]) beyond activity. Caveat: 2 people per "
         f"controlled role (validation, not population inference).",
         n=len(h10))
 run_bh()
@@ -2248,7 +2362,7 @@ N/A grey) and are saved to `analysis/figures/` as PNG + SVG at ≥200 dpi. Each 
 a caption tying it to a claim.
 """)
 
-md("**Fig 1 — Architecture recap** (perception → salience → executive → remote), annotated with the signals actually logged at each stage.")
+md("**Fig 1 — Architecture recap** *(unit: logged module/table types, n = 4 source databases)*: perception → salience → executive → remote, annotated with the signals actually logged at each stage.")
 code(r"""
 fig, ax = plt.subplots(figsize=(12, 4.2)); ax.axis("off")
 ax.set_xlim(0, 1); ax.set_ylim(0, 1)
@@ -2271,8 +2385,8 @@ ax.annotate("interaction_result RPC (homeostatic reward, energy cost)\ncloses th
 savefig(fig,"fig01_architecture"); plt.show()
 """)
 
-md("""**Fig 2 — Drive timeline per day** (signature figure): one panel per experiment day
-(8 days). The drive `run_id`/`monotonic` clock resets on every restart, so a day can
+md("""**Fig 2 — Drive timeline per day** *(unit: hunger-level event, n = 165,460 events across
+12 monitored runs / 8 days)*: one panel per experiment day. The drive `run_id`/`monotonic` clock resets on every restart, so a day can
 contain several runs (4 restarts on 2026-06-15, 2 on 2026-06-18); we stitch a day's runs
 on the shared wall-clock (`timestamp_epoch`) and mark each restart with a dotted line.
 HS bands + thresholds, feeding up-arrows sized by meal, Starving episodes shaded.""")
@@ -2335,7 +2449,7 @@ fig.suptitle("Fig 2 — Orexigenic drive timeline per experiment day (8 days): a
 savefig(fig,"fig02_drive_timeline"); plt.show()
 """)
 
-md("**Fig 3 — Thresholds / transitions**: level-at-transition histograms vs 60/25 lines + HS state-transition diagram with observed counts.")
+md("**Fig 3 — Thresholds / transitions** *(unit: hunger-state transition, n = 146 transitions)*: level-at-transition histograms vs 60/25 lines + HS state-transition diagram with observed counts.")
 code(r"""
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.6, 4.6), gridspec_kw={"width_ratios":[1.25,1.05]})
 tr = hs_transitions
@@ -2387,10 +2501,12 @@ fig.suptitle("Fig 3 — Deficit detection: state transitions fire precisely at 6
 savefig(fig,"fig03_thresholds_transitions"); plt.show()
 """)
 
-md("""**Fig 4 — Deficit → action (RQ1-3)**: the correct contrast, **Full vs deficit
-(Hungry+Starving)**. Left: recovery-action rates with bootstrap CIs. Right: the
-time distribution of deficit-gated actions across the deployment, rather than a bar chart
-of corpus totals; the thin state-coloured trace is the continuous stomach level context.""")
+md("""**Fig 4 — Deficit → action (RQ1-3)** *(units: 367 interaction turns, 710 chat messages,
+217 co-present interactions, and 193 deficit-gated action events)*: the correct contrast,
+**Full vs deficit (Hungry+Starving)**. Left: recovery-action rates with bootstrap CIs.
+Right: the time distribution of deficit-gated actions across the deployment, rather than a
+bar chart of corpus totals; the thin state-coloured trace is the continuous stomach level
+context.""")
 code(r"""
 # Fig 4 — RQ1-3 visual: does a DEFICIT change what the robot does? Contrast no-deficit (Full)
 # vs deficit (Hungry+Starving) across the coded state-gated recovery repertoire.
@@ -2500,7 +2616,7 @@ fig.suptitle("Fig 4 — Deficit→action: a deficit switches on the proactive re
 savefig(fig,"fig04_deficit_action"); plt.show()
 """)
 
-md("**Fig 5 — State×Hunger prioritisation heatmap**: grid coloured by Engaged-completion and by avg turns (Starving override should pop out).")
+md("**Fig 5 — State×Hunger prioritisation heatmap** *(unit: interaction, n = 217; Starving column n = 13)*: grid coloured by Engaged-completion and by avg turns (Starving override should pop out).")
 code(r"""
 # Sequential single-hue (magnitude), NOT a red-green rainbow: CVD-safe, and every cell
 # is annotated with value + n so small cells (esp. the HS3 column) are not over-read.
@@ -2538,7 +2654,7 @@ fig.suptitle("Fig 5 — Behavioural prioritisation: the Starving column collapse
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
 """)
 
-md("**Fig 6 — IPS decomposition** *(salience-mechanism context, not a drive result)*: weighted prox/cent/gaze composition of IPS; IPS vs effective threshold.")
+md("**Fig 6 — IPS decomposition** *(unit: salience target/face IPS rows, n = 5,142 target selections and 216,940 face-IPS events; mechanism context, not a drive result)*: weighted prox/cent/gaze composition of IPS; IPS vs effective threshold.")
 code(r"""
 w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","gaze"]
 SUBCOL={"prox":"#3A7CA5","cent":"#8E7CC3","gaze":"#CF4A33"}
@@ -2587,7 +2703,7 @@ fig.suptitle("Fig 6 — Salience: how IPS is composed, and the per-state hurdle 
 savefig(fig,"fig06_ips_decomposition"); plt.show()
 """)
 
-md("**Fig 7 — Starving recovery** *(exploratory, n=8 episodes)*: cumulative first-feed probability, with recovery status summarized in-plot. Thin n — read as directional, not a rate estimate.")
+md("**Fig 7 — Starving recovery** *(unit: Starving episode, n = 8 episodes across 4 runs; exploratory)*: cumulative first-feed probability, with recovery status summarized in-plot. Thin n — read as directional, not a rate estimate.")
 code(r"""
 ep=hs3_episodes.copy(); n=len(ep)
 n_feed=int(ep["received_feed"].sum())
@@ -2638,7 +2754,7 @@ fig.suptitle("Fig 7 — Starving recovery: time-to-first-feed",
 savefig(fig,"fig07_hs3_funnel"); plt.show()
 """)
 
-md("**Fig 8 — Remote-channel loop**: proactive pings by type and their response-to-ping rate (with bootstrap CI).")
+md("**Fig 8 — Remote-channel loop** *(unit: proactive Telegram ping, n = 234 pings across 12 subscribers; response window = 1 h)*: proactive pings by type and their response-to-ping rate (with bootstrap CI).")
 code(r"""
 ev=chat_events.copy().sort_values(["run_id","chat_id","timestamp_epoch"])
 kinds=["hs2_entry","hs3_proactive","hs3_recovery"]
@@ -2671,7 +2787,7 @@ fig.suptitle("Fig 8 — Remote loop: the deficit reaches users off-robot and dra
 savefig(fig,"fig08_remote_loop"); plt.show()
 """)
 
-md("**Fig 9 — Steady-state occupancy** (from B7): modelled stationary distribution vs empirical.")
+md("**Fig 9 — Steady-state occupancy** *(unit: CTMC state sojourn/transition reconstructed from 165,460 hunger events; n = 12 monitored runs)*: modelled stationary distribution vs empirical.")
 code(r"""
 pi=globals().get("_ctmc_pi",{})
 fig,ax=plt.subplots(figsize=(8,4.6))
@@ -2695,7 +2811,7 @@ if pi:
 savefig(fig,"fig09_steady_state"); plt.show()
 """)
 
-md("**Fig 10 — Per-person affinity trajectories across the whole experiment.**")
+md("**Fig 10 — Per-person affinity trajectories** *(unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events over 14 named people plus unknown)*: per-person affinity trajectories across the whole experiment.")
 code(r"""
 # Use B9's re-threaded affinity (merged identities get a single coherent EMA, not the stale
 # last-label value) rather than reloading the raw per-label log.
@@ -2787,10 +2903,12 @@ savefig(fig,"fig10_affinity_trajectories"); plt.show()
 # share comparison over 5 people, superseded by the inferential B10.3 test (prior affinity ->
 # next-day proactive approaches, person-clustered GEE) and Fig 13.
 
-md("""**Fig 12 — Role manipulation validation (B10.1)**: did the Phase-1 roles produce the
-intended feeding behaviour, and did it relax in Phase 2? Left: feed probability per
-interaction with exact 95% CIs. Right: meals per person-day with the feeder-vs-normal
-Poisson-GEE rate ratios.""")
+md("""**Fig 12 — Role manipulation validation (B10.1)** *(units: interaction and person-day;
+217 interactions, 14 named people, 8 days; controlled roles = 2 feeders + 2 no-feed in
+Phase 1)*: did the Phase-1 experimental labels produce the intended feeding behaviour, and
+did it relax in Phase 2? Left: feed probability per interaction with exact 95% CIs. Right:
+meals per person-day with the feeder-vs-normal Poisson-GEE rate ratios. Roles are external
+experiment metadata, not robot software inputs.""")
 code(r"""
 fig,(axL,axR)=plt.subplots(1,2,figsize=(12.6,4.9))
 _d=_b10_m10[_b10_m10["role"]!="unknown"]
@@ -2834,8 +2952,10 @@ fig.suptitle("Fig 12 — The Phase-1 role manipulation produced the intended beh
 savefig(fig,"fig12_role_validation"); plt.show()
 """)
 
-md("""**Fig 13 — The core RQ3 model (B10.2)**: engagement dose → learned affinity, moderated by
-role and phase. Left: the raw learning events with per-group fitted trends (descriptive).
+md("""**Fig 13 — The core RQ3 model (B10.2)** *(unit: learning update event; duration-linked
+subset n ≈ 97, fully observed dose checks use all learning-eligible events n = 205)*:
+engagement dose → learned affinity, moderated by external experiment role labels and phase.
+Left: the raw duration-linked learning events with per-group fitted trends (descriptive).
 Right: the mixed-model coefficients with 95% CIs — the inference actually reported.""")
 code(r"""
 fig,(axL,axR)=plt.subplots(1,2,figsize=(13.2,5.2),width_ratios=[1.05,1])
@@ -3003,6 +3123,8 @@ d_ap=(abl[(abl.target=='reached_ss4')&(abl.feature_set=='social+hunger')]['pr_au
       - abl[(abl.target=='reached_ss4')&(abl.feature_set=='social-only')]['pr_auc'].iloc[0])
 print(f"  -> adding hunger_state changes Engaged AUC by {d_auc:+.3f} and PR-AUC by {d_ap:+.3f}")
 """)
+
+md("**Fig D1 — ML sensitivity** *(unit: interaction, n = 217; grouped CV leaves out runs/persons)*: state-rank ablation showing the additional held-out signal from hunger state beyond social state. Interpretive only, not a confirmatory mechanism test.")
 
 code(r"""
 # --- Cross-validated sensitivity checks: no full-fit SHAP/permutation claims. ---
@@ -3306,6 +3428,7 @@ items = [
  ("success_criteria.csv", exists("success_criteria.csv")),
  ("results_summary.md", exists("results_summary.md")),
 	 ("bh_corrected_pvalues.csv", exists("bh_corrected_pvalues.csv")),
+	 ("small_cluster_sensitivity.csv", exists("small_cluster_sensitivity.csv")),
 	 ("rq3_model_results.csv", exists("rq3_model_results.csv")),
 	 ("rq3_missingness.csv", exists("rq3_missingness.csv")),
 	 ("ml_model_metrics.csv", exists("ml_model_metrics.csv")),

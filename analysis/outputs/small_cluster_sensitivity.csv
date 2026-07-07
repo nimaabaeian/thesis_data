@@ -1,0 +1,6 @@
+metric,primary,boot_lo,boot_median,boot_hi,successful_refits,unit
+B3_deficit_pursuit_OR,4.934957429383296,2.1333031953484736,4.412530908992634,8.017011554599822,1000,person-cluster bootstrap over interactions
+B4_starving_override_OR,0.03374579630746837,3.336241694820743e-11,0.028812739480199703,0.0752862234523917,1000,person-cluster bootstrap over interactions
+B10_role_meal_rate_RR,2.684782608695652,1.0,2.6590909090909083,8.439062499998013,1000,person-cluster bootstrap over person-days
+B10_duration_slope,0.1679251654074517,0.055198889108472794,0.16834689680776738,0.295878033361192,1000,person-cluster bootstrap over duration-linked learning events
+B10_prior_affinity_RR,1.545982205479621,1.1888434778619688,1.6528321406281221,2.7480313597978907,1000,person-cluster bootstrap over person-days
