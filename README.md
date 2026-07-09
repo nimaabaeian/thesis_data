@@ -69,18 +69,20 @@ not population estimates across robots, sites, or user groups.
 
 The study asks three connected questions.
 
-**RQ1: Does the orexigenic drive implement the operational functions of homeostasis?** These are:
-internal monitoring, deficit detection, deficit-to-action coupling, and priority reallocation.
-The first two are software verification checks. The empirical question is whether the internal
-deficit state changes behaviour.
+- **RQ1** - To what extent does the orexigenic drive instantiate the four operational functions
+  of classical homeostasis: (1) internal monitoring, (2) deficit detection,
+  (3) deficit-to-action-selection coupling, (4) behavioural priority reallocation?
+- **RQ2** - Does expressing an orexigenic deficit promote recovery-oriented engagement
+  sufficient to support reliable energy replenishment in an always-on social robot?
+- **RQ3** - Does the robot's **adaptive regulatory memory** (the learned per-person homeostatic
+  affinity) encode observed participant behaviour rather than uncontrolled drift, and is that
+  learned state subsequently expressed in the robot's allocation of proactive approaches?
 
-**RQ2: Does expressing a deficit help the robot recover energy in an always-on social setting?**
-This asks whether hunger signals lead to human engagement and feeding often enough to avoid
-persistent starvation.
-
-**RQ3: Does adaptive regulatory memory reflect observed behaviour rather than uncontrolled
-drift?** The robot learns a per-person homeostatic affinity. RQ3 tests whether that learned state
-tracks interaction history and is later used when the robot allocates proactive approaches.
+For RQ1, the first two functions are software verification checks. The empirical question is
+whether the internal deficit state changes behaviour. For RQ2, the key issue is whether hunger
+signals lead to human engagement and feeding often enough to avoid persistent starvation. For RQ3,
+the question is whether the learned per-person affinity tracks interaction history and is later
+used when the robot allocates proactive approaches.
 
 Two design facts shape the analysis.
 
