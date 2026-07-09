@@ -23,8 +23,7 @@ replenishment. The controller pipeline is:
 7. [RQ3: Does adaptive regulatory memory encode behaviour?](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour)
 8. [Machine-learning sensitivity check](#8-machine-learning-sensitivity-check)
 9. [Scorecard and synthesis](#9-scorecard-and-synthesis)
-10. [Reproducing the analysis](#10-reproducing-the-analysis)
-11. [Appendix A: Instrumentation verification](#appendix-a-instrumentation-verification)
+10. [Appendix A: Instrumentation verification](#appendix-a-instrumentation-verification)
 
 ---
 
@@ -409,38 +408,6 @@ the learned affinity state, and that state predicts later proactive allocation.
 The scope remains deliberately narrow. These are within-deployment findings for one robot at one
 site over 8 session-days. The next scientific step is replication with more people per controlled
 role and across additional sites.
-
----
-
-## 10. Reproducing the analysis
-
-The notebook is generated from [`analysis/build_notebook.py`](analysis/build_notebook.py):
-
-```bash
-make execute   # regenerate and execute analysis/orexigenic_analysis.ipynb
-make check     # validate execution state and identity redaction
-```
-
-Reproducibility notes:
-
-- Seed: `SEED=42`.
-- Database access is read-only.
-- Deterministic re-runs use `analysis/cache/*.parquet`.
-- Identities are pseudonymised as `P01`-`P14`.
-- Real-name and role maps live only in git-ignored `analysis/private/`.
-- `make check` scans published outputs for identity leaks.
-- Dependencies are pinned in [`analysis/requirements.txt`](analysis/requirements.txt).
-
-Key outputs:
-
-- [`results_summary.md`](analysis/outputs/results_summary.md)
-- [`verification_report.md`](analysis/outputs/verification_report.md)
-- [`rq3_model_results.csv`](analysis/outputs/rq3_model_results.csv)
-- [`rq3_missingness.csv`](analysis/outputs/rq3_missingness.csv)
-- [`rq3_affinity_repair_robustness.csv`](analysis/outputs/rq3_affinity_repair_robustness.csv)
-- [`rq3_memory_crosscheck.csv`](analysis/outputs/rq3_memory_crosscheck.csv)
-- [`bh_corrected_pvalues.csv`](analysis/outputs/bh_corrected_pvalues.csv)
-- [`success_criteria.csv`](analysis/outputs/success_criteria.csv)
 
 ---
 
