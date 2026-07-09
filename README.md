@@ -183,27 +183,115 @@ Aligning vision / salience / executive / chat streams sampled at very different 
 ## 3. Statistical approach
 
 The model choice is driven by two facts: **what kind of outcome is being analysed** and
-**whether observations are independent**. Most outcomes here are binary events, event counts,
+**whether observations are independent**. Outcomes here are binary events, event counts,
 continuous learning updates, or time spent in hunger states; and many observations repeat
-within the same people, runs and days. For that reason, **no confirmatory claim rests on
-row-independence tests** such as plain t-tests, ANOVA, chi-square tests, or unclustered
-correlations. Those tests would treat repeated observations from the same person/run as if
-they came from new independent participants.
+within the same people, runs and days. So **no confirmatory claim rests on row-independence
+tests** (plain t-tests, ANOVA, chi-square, unclustered correlations) — those would treat
+repeated observations from one person as new independent participants and understate the SEs.
+This section gives the compact mathematics, the variables, and how to read each coefficient.
 
-### Why each model was used
+### 3.1 Notation & variables
 
-| Purpose in this study | Outcome type | Model used | Why this model was chosen |
-|---|---|---|---|
-| Deficit-to-action conversion: does Hungry/Starving increase feeding pursuit? | Binary event per interaction: pursued feeding, yes/no | **Logistic GEE, clustered on person** | The outcome is binary, so logistic regression gives odds ratios. GEE keeps the interpretation population-level while using robust sandwich SEs for repeated observations within people. |
-| Starving override: does Starving suppress completed social engagement? | Binary event per interaction: Engaged vs not engaged | **Logistic GEE, clustered on person**, adjusted for social state | Same binary-outcome logic, with clustering because the same people contribute multiple interactions. Adjustment separates hunger-state override from the current social-state context. |
-| Role manipulation: did obligated feeders supply more meals per person-day? | Count outcome: number of meals | **Poisson GEE, clustered on person** | Meal supply is a count/rate, so Poisson regression estimates rate ratios. GEE protects the inference from repeated person-days belonging to the same participant. |
-| Downstream use of learning: does prior affinity increase next-day proactive approaches? | Count outcome: number of proactive approaches | **Poisson GEE, clustered on person** | The question is about a count of robot actions on the next day. A rate-ratio model is the natural scale, and clustering handles repeated days per person. |
-| Core affinity validation: does engagement dose predict `Δaffinity`, moderated by role/phase? | Continuous outcome: change in affinity after an update | **Linear mixed model with a person random intercept** | `Δaffinity` is continuous. The random intercept lets each person have their own baseline while estimating the common dose, role and phase effects. Cluster-robust OLS is reported as a companion check. |
-| No-feed role compliance | 0 feeds in the no-feed group during Phase 1 | **Exact Clopper-Pearson confidence interval** | Complete separation makes a logistic/Poisson GLM unstable or unidentifiable. Exact binomial intervals report the compliance result directly. |
-| Long-run reliability (supporting): what fraction of time is the robot Starving? | Time occupancy across Full/Hungry/Starving states | **Continuous-time Markov chain (CTMC)** with **run-level block bootstrap** | Reliability is about transitions and dwell times, not a per-row mean. CTMC estimates the steady-state occupancy implied by observed state changes; run-level bootstrap gives an interval that respects run-level clustering. Reported as a supporting observation (pooled, non-stationary process — see B7). |
-| Machine-learning sensitivity check | Held-out prediction of engagement | **Regularised logistic models with group-aware CV** | This is not confirmatory inference. It checks whether hunger adds out-of-sample signal beyond social state while leaving out whole runs or people to avoid leakage. |
+| Symbol | Meaning | Type / range |
+|---|---|---|
+| $i$ | person (the **cluster**), pseudonymised P01–P14 | index, $n=14$ |
+| $j$ | observation within person — an interaction, learning event, or person-day | index |
+| $t$ | time within a run (`monotonic_sec`) | seconds |
+| $Y_{ij}$ | binary behaviour: fed-pursuit (B3) / reached *Engaged* (B4) | $\{0,1\}$ |
+| $C_{ij}$ | count: meals per person-day (B10.1) / proactive approaches next day (B10.3) | $\{0,1,2,\dots\}$ |
+| $\Delta a_{ij}$ | change in learned affinity at a learning event (B10.2) | $[-2,2]$, continuous |
+| $D_{ij}$ | **deficit** indicator = $\mathbb{1}[\text{HS}\in\{\text{Hungry},\text{Starving}\}]$ (B3) | $\{0,1\}$ |
+| $S_{ij}$ | **Starving** indicator = $\mathbb{1}[\text{HS}=\text{Starving}]$ (B4) | $\{0,1\}$ |
+| $\text{HS}_{ij}$ | hunger state, ordinal | $1{<}2{<}3$ (Full/Hungry/Starving) |
+| $x_{ij}$ | engagement **dose**, z-scored: duration (primary), or $n_\text{turns}$ / active-energy-cost (confirmatory) | standardised |
+| $R_i$ | experimental **role** | {normal, feeder, no\_feed} |
+| $P_{ij}$ | **phase** | {P1, P2} |
+| $\mathbf z_{ij}$ | adjustment covariates (social state at approach; trigger mode; HS-at-start) | — |
+| $a_{i,d}$ | affinity of person $i$ at **end of day** $d$ (EMA, α=0.25) | $[-1,1]$ |
+| $u_i$ | person random intercept | $\mathcal N(0,\sigma_u^2)$ |
 
-### Why not the simpler textbook tests?
+### 3.2 The models — equations, estimands, interpretation
+
+**(a) Logistic GEE — B3 deficit→action, B4 Starving override.** Binary $Y_{ij}$ with
+population-averaged mean $\mu_{ij}=\Pr(Y_{ij}=1\mid\cdot)$ and a logit link:
+
+$$\operatorname{logit}(\mu_{ij})=\log\frac{\mu_{ij}}{1-\mu_{ij}}=\beta_0+\beta_1 D_{ij}+\boldsymbol\gamma^\top\mathbf z_{ij}.$$
+
+$\boldsymbol\beta$ solves the generalised estimating equations with an **exchangeable** working
+correlation $\mathbf R(\rho)$ within person and a **robust sandwich** covariance:
+
+$$\sum_{i=1}^{n}\mathbf D_i^\top\mathbf V_i^{-1}\big(\mathbf Y_i-\boldsymbol\mu_i\big)=\mathbf 0,\qquad
+\widehat{\operatorname{Cov}}(\hat{\boldsymbol\beta})=\mathbf A^{-1}\Big(\textstyle\sum_i\mathbf D_i^\top\mathbf V_i^{-1}\hat{\mathbf e}_i\hat{\mathbf e}_i^\top\mathbf V_i^{-1}\mathbf D_i\Big)\mathbf A^{-1},\ \ \mathbf A=\textstyle\sum_i\mathbf D_i^\top\mathbf V_i^{-1}\mathbf D_i.$$
+
+*Estimand:* odds ratio $\text{OR}=e^{\beta_1}$ — the multiplicative change in the odds of the
+behaviour for deficit vs Full (B3) or Starving vs not (B4), **marginal** over people and robust
+to within-person correlation. *Reads as:* B3 $e^{\beta_1}=4.9$ → a deficit multiplies feeding-
+pursuit odds ~5×; B4 $e^{\beta_1}=0.03$ → Starving cuts *Engaged* odds by ~97%. For B4, $\mathbf z$
+includes social state, so the override is separated from mere context.
+
+**(b) Poisson GEE — B10.1 meal rate, B10.3 downstream use.** Count $C_{ij}$ with mean
+$\lambda_{ij}$ and a log link, same GEE estimation (cluster = person):
+
+$$\log\lambda_{ij}=\beta_0+\beta_1\,\text{feeder}_i+\beta_2 P_{ij}+\beta_3(\text{feeder}_i\!\times\!P_{ij})\ \ (\text{B10.1});\qquad
+\log\lambda_{ij}=\beta_0+\beta_1\,a_{i,d-1}+\beta_2\,n^{\text{today}}_{ij}+\beta_3 P_{ij}\ \ (\text{B10.3}).$$
+
+*Estimand:* rate ratio $\text{RR}=e^{\beta_1}$. B10.1 → feeders' meal rate is $e^{\beta_1}=2.7\times$
+the unconstrained rate in Phase 1. B10.3 → each +1 affinity multiplies **next-day** proactive
+approaches by $1.55\times$; $n^{\text{today}}$ adjusts for today's activity, and using *prior*
+affinity makes the predictor strictly precede the outcome (leakage-free direction).
+
+**(c) Linear mixed model — B10.2 core dose→affinity.** One row per learning event; continuous
+$\Delta a_{ij}$ with a person random intercept:
+
+$$\Delta a_{ij}=\beta_0+\beta_1 x_{ij}+\beta_2 R_i+\beta_3 P_{ij}+\underbrace{\beta_4\,(x_{ij}\!\cdot\!R_i)+\beta_5\,(x_{ij}\!\cdot\!P_{ij})}_{\text{moderation}}+\boldsymbol\gamma^\top\mathbf z_{ij}+u_i+\varepsilon_{ij},\quad u_i\sim\mathcal N(0,\sigma_u^2),\ \varepsilon_{ij}\sim\mathcal N(0,\sigma^2).$$
+
+$u_i$ absorbs each person's stable baseline so $\beta_1$ is a *within-person* dose effect. Fitted
+by REML; a cluster-robust OLS companion covers the boundary case $\sigma_u^2\to0$ (expected with
+14 clusters). *Estimand:* $\beta_1$ = expected $\Delta a$ per +1 SD of dose for the reference
+(unconstrained, Phase 1) group $=+0.17$; $\beta_4$ (feeder×dose $=-0.15$) → feeders' affinity comes
+from *feeding*, not chat length; $\beta_5$ (phase×dose $=-0.08$) → the coupling weakens once roles
+lift. Duration is missing ~53% *differentially by phase*, so the fully-observed doses ($n_\text{turns}$,
+active-energy-cost) are the **primary** sign-agreement checks and duration is confirmatory.
+
+**(d) Continuous-time Markov chain — B7 reliability (supporting).** States
+$\mathcal S=\{\text{HS1},\text{HS2},\text{HS3}\}$. From transition counts $N_{sk}$ and total dwell
+time $T_s$ in state $s$, the generator $\mathbf Q$ and its stationary law $\boldsymbol\pi$ are
+
+$$\hat q_{sk}=\frac{N_{sk}}{T_s}\ (s\neq k),\quad q_{ss}=-\!\sum_{k\neq s}q_{sk};\qquad \boldsymbol\pi\mathbf Q=\mathbf 0,\ \ \textstyle\sum_s\pi_s=1,$$
+
+i.e. $\boldsymbol\pi$ is the left null-space of $\mathbf Q$. *Estimand:* $\pi_{\text{HS3}}$ =
+long-run Starving occupancy ($\approx1\%$); mean sojourn in $s$ is $-1/q_{ss}$. Uncertainty from a
+run-level **block bootstrap** (resample whole runs) cross-checked by a transition-level **Poisson
+bootstrap** ($N_{sk}^\ast\sim\text{Poisson}(N_{sk})$). *Caveat (why it stays supporting):* a
+time-homogeneous $\mathbf Q$ pools visited/idle runs and both phases, so $\pi_{\text{HS3}}$ is a
+pooled-process stationary fraction — an order-of-magnitude ceiling, not a calibrated rate.
+
+**(e) Exact Clopper–Pearson — no-feed compliance.** For $k$ feeds in $n$ trials the $1-\alpha$
+interval uses Beta quantiles $B(\cdot)$:
+
+$$p_L=B\!\left(\tfrac{\alpha}{2};\,k,\,n-k+1\right),\qquad p_U=B\!\left(1-\tfrac{\alpha}{2};\,k+1,\,n-k\right).$$
+
+With $k=0,\ n=15$: $p_L=0,\ p_U\approx0.22$. Used because complete separation ($k=0$) makes the
+logistic/Poisson MLE diverge — the exact binomial reports the compliance directly.
+
+### 3.3 Inference safeguards (with formulas)
+
+- **Cluster bootstrap** — resample the $n=14$ person-clusters with replacement $B{=}1000$–$5000$
+  times, refit, take percentile CIs of the estimand. Distribution-free companion to the GEE
+  sandwich; respects within-person dependence (`small_cluster_sensitivity.csv`).
+- **Multiplicity (Benjamini–Hochberg)** — within a family of $m$ ordered p-values
+  $p_{(1)}\le\dots\le p_{(m)}$, reject up to the largest $k$ with $p_{(k)}\le\frac{k}{m}\alpha$;
+  controls the false-discovery rate at $\alpha=0.05$. **Two pre-declared families** (RQ1/2 behaviour;
+  RQ3 adaptation); every evidential p-value sits in one — including B4, folded in for honest
+  book-keeping though led by its effect size (5/5 survive $q<0.05$). B1/B2 carry no p-values.
+- **Power (minimum detectable effect)** — simulation-based, not post-hoc: simulate outcomes under
+  the observed cluster sizes and ICC, sweep effect sizes, report the smallest detectable at 80%
+  power. This design detects ORs $\gtrsim3$ and Δaffinity slopes $\gtrsim0.075$/SD; role contrasts
+  (2 people/role) only very large effects.
+- **Small-n Starving** — 13 interactions / 8 episodes: lead with effect sizes + CIs, label
+  "directional", fit no covariate models on single-digit counts.
+
+### 3.4 Why not the simpler textbook tests?
 
 - **t-tests/ANOVA** are for independent continuous outcomes. Most headline outcomes here are
   binary, counts, time occupancy, or repeated continuous updates; using t-tests/ANOVA would
@@ -221,20 +309,6 @@ they came from new independent participants.
   count analyses are small, clustered rate-ratio questions handled with robust Poisson GEE and
   bootstrap checks. If strong overdispersion dominated a larger count analysis, negative
   binomial would be the natural alternative.
-
-Other safeguards:
-
-- **Multiplicity** → Benjamini-Hochberg **within two pre-declared families** (RQ1/2 behaviour;
-  RQ3 adaptation). **Every p-value used as evidence sits inside a declared family** — including the
-  small-n B4 Starving override, which is folded into the RQ1/2 family for honest book-keeping even
-  though its verdict is led by effect size + CI + bootstrap, not NHST (5/5 metrics survive q<0.05).
-  Implementation checks (B1/B2) get no inferential p-values at all.
-- **Power** → simulation-based **minimum detectable effects** under the observed clustering
-  (never post-hoc power): this design reliably detects ORs ≳ 3 and Δaffinity slopes ≳ 0.075
-  per SD; role contrasts (2 people/role) detect only very large effects.
-- **Small-n Starving results** → Starving is small-n (13 interactions, 8 episodes), so the
-  report leads with effect sizes + CIs, uses "directional" labels, and avoids covariate models
-  on single-digit episode counts.
 
 ---
 
