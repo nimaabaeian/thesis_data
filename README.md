@@ -212,8 +212,8 @@ that correlation is misspecified.
 
 **Logistic GEE — B3 (deficit→action), B4 (Starving override).** Binary outcome $y_{ij}\in\{0,1\}$
 (fed-here / reached-Engaged):
-$$\operatorname{logit}\Pr(y_{ij}=1)=\beta_0+\beta_1 D_{ij}+\boldsymbol\gamma^{\top}\mathbf s_{ij},
-\qquad \operatorname{corr}(y_{ij},y_{ij'})=\rho\ \text{(within person }i).$$
+$$\mathrm{logit}\,\Pr(y_{ij}=1)=\beta_0+\beta_1 D_{ij}+\boldsymbol\gamma^{\top}\mathbf s_{ij},
+\qquad \mathrm{corr}(y_{ij},y_{ij'})=\rho\ \text{(within person }i).$$
 $D_{ij}$ = deficit indicator (B3: Hungry+Starving vs Full) or Starving indicator (B4);
 $\mathbf s_{ij}$ = social-state controls. Effect reported as $\text{OR}=e^{\beta_1}$.
 
@@ -246,7 +246,7 @@ unidentifiable.
 
 **Affinity EMA — B9 (the learned quantity itself).** Per person, over their reward sequence:
 $$a\leftarrow a+\alpha\,(r_{\text{norm}}-a),\quad
-r_{\text{norm}}=\operatorname{clip}\!\big(\text{credit}/25,\,-1,\,1\big),$$
+r_{\text{norm}}=\mathrm{clip}\!\big(\text{credit}/25,\,-1,\,1\big),$$
 $\alpha=0.25$ on positive updates, $0.10$ on negative — an exponentially-weighted moving average
 of normalised homeostatic reward, driving the eligibility threshold in B9.
 
