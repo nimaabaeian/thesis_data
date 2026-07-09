@@ -15,22 +15,25 @@ def code(src): CELLS.append(("code", src.rstrip("\n")))
 # ==========================================================================
 # TITLE
 # ==========================================================================
-md(r"""# Orexigenic Drive & Always-On Homeostasis — Analysis
+md(r"""# Orexigenic Drive and Always-On Homeostatic Regulation — Analysis
 
 **System under study:** the *Orexigenic Drive* of the `alwaysOn-embodiedBehaviour`
-iCub controller (perception → salience → executive → remote/Telegram).
+iCub controller, analysed as a socially embedded, always-on embodied sensory-control loop linking
+perception → salience → executive regulation → remote/Telegram signalling.
 
 **Research questions**
 
-- **RQ1** — To what extent does the orexigenic drive fulfil the four functions of
+- **RQ1** — To what extent does the orexigenic drive instantiate the four operational
+  functions of
   classical homeostasis: (1) internal monitoring, (2) deficit detection,
-  (3) deficit-to-action conversion, (4) behavioural prioritisation?
+  (3) deficit-to-action-selection coupling, (4) behavioural priority reallocation?
 - **RQ2** — Does the expression of an orexigenic deficit promote recovery-oriented
   engagement sufficient to support reliable energy replenishment in an always-on
   social robot?
-- **RQ3** — Does the robot's **adaptive component** (per-person homeostatic affinity)
-  reflect *real* participant behaviour rather than arbitrary drift, and does what it learns
-  change its later behaviour? The **role manipulation is experiment metadata only**: roles
+- **RQ3** — Does the robot's **adaptive regulatory memory** (per-person homeostatic affinity)
+  encode observed participant behaviour rather than uncontrolled drift, and is that learned
+  state subsequently expressed in the robot's allocation of proactive approaches? The
+  **role manipulation is experiment metadata only**: roles
   were assigned by the researchers for validation and were never available to the robot or
   used by the software.
 
@@ -46,9 +49,24 @@ iCub controller (perception → salience → executive → remote/Telegram).
 > constraints were lifted and everyone behaved normally. The role map is private
 > (`analysis/private/role_phase.json`, pseudonymised on load). These roles are **external
 > experimental labels**, not controller inputs; RQ3 (analysis B10) uses them only after the
-> fact as a *manipulation check + validation* of the affinity learning. With only
+> fact as a *manipulation check and external validation* of the affinity learning. With only
 > **2 people per controlled role**, role contrasts are validation evidence with wide
 > uncertainty, not population inference.
+
+**Literature-aligned terminology.** The wording follows the state-of-the-art reference set:
+the robot is treated as **socially embedded** and structurally coupled with its human
+environment (Dautenhahn et al.); the deployment is an **always-on cognitive architecture**
+problem of continual perception, experience accumulation, and social-context awareness
+(Pasquali et al.); recovery signals are described as **proactive / mixed-initiative**
+behavioural allocation rather than passive notification (Moulin-Frier et al., Senft et al.);
+affinity is framed as **adaptive regulatory memory** because it is a user-history-conditioned
+update that changes later policy expression (Ahmad et al., Tanevska et al.); and the reliability
+claim is a **loop-level regulatory outcome**, not an isolated controller property. Drive-competition
+and behavioural-regulation work (Guerrero-Rosado & Verschure; Ngo et al.; Hulme et al.; Yoshida
+et al.) supports interpreting the orexigenic variable as an internal drive-function signal that
+biases recovery-oriented action selection. The study is careful not to overclaim allostasis: the
+implemented controller is threshold homeostatic, while the interpretation borrows allostatic
+vocabulary only for priority setting and regulatory cost.
 
 **Data-layout note (discovered, not assumed).** The eight dated folders under `data/`
 are **cumulative snapshots of one continuously-growing database** — each later folder
@@ -1212,7 +1230,7 @@ def cluster_bootstrap_effect(
     return (lo, mid, hi, len(vals))
 """)
 
-md(r"""> **Read B1–B2 as verification, not headline results.** The stomach level is a software
+md(r"""> **Read B1–B2 as implementation verification, not inferential results.** The stomach level is a software
 > integrator and the hunger label is derived from it by the same 60/25 thresholds, so
 > "drain matches nominal" (B1) and "transitions bracket the thresholds" (B2) hold *by
 > construction*. They confirm the monitoring/detection machinery is faithfully implemented;
@@ -1259,14 +1277,14 @@ print(f"Autonomy: {len(samp):,} background drain samples over {total_runtime_h:.
 passive_loss = -samp["level_delta"].clip(upper=0).sum()
 active_loss  = hunger_raw[hunger_raw["event_type"]=="active_cost"]["active_energy_cost"].sum()
 print(f"  (Level-loss split: {passive_loss:.0f} passive drain vs {active_loss:.0f} active interaction cost.)")
-# NOTE: the fitted drain rate == nominal with ~zero-width CI because the stomach level is a
+# NOTE: the fitted drain rate == nominal with a degenerate CI because the stomach level is a
 # software integrator — this CONFIRMS the monitoring machinery is faithfully implemented and
 # runs autonomously, it is not an independent empirical measurement. Genuine empirical weight
 # sits in RQ1-4 (override), RQ2-c (occupancy), the D1 ablation and B9.
 ok = (0.6*nominal <= eff <= 1.6*nominal) and gaps.median() < 30 and auto_frac > 0.99
 verdict("B1", f"{'Supported' if ok else 'Weakened'} (faithful implementation, not a measurement): "
         f"the drive is a software integrator that self-drains at exactly {eff/nominal:.2f}x nominal "
-        f"(zero-width CI — the tell) and samples every {gaps.median():.1f}s across {N_MONITORED} runs / "
+        f"(degenerate CI, as expected for a software integrator) and samples every {gaps.median():.1f}s across {N_MONITORED} runs / "
         f"{total_runtime_h:.0f} h, autonomously — incl. {N_MONITORED-N_INTERACT} runs with no visitors.",
         effect=eff, ci=(lo,hi), n=len(ds))
 """)
@@ -1305,23 +1323,23 @@ fl12, tot12 = flapping(m12, {"HS1","HS2"})
 fl23, tot23 = flapping(m23, {"HS2","HS3"})
 print(f"\nFlapping (rapid reversals <120s): Full/Hungry={fl12}/{tot12}, Hungry/Starving={fl23}/{tot23}")
 print("The chatbot's _stable_hs debounce (HS_DWELL_SEC=60s) exists precisely to absorb this.")
-# NOTE: accuracy is 1.00/1.00 by construction — the HS label IS derived from the level by the
+# NOTE: accuracy is 1.00/1.00 by implementation — the HS label IS derived from the level by the
 # same 60/25 thresholds, so this CONFIRMS the detection logic is faithfully implemented (and
 # the near-absence of flapping is the non-trivial part), not an independent measurement.
 ok = (np.nan_to_num(acc12,nan=1)>=0.9) and (np.nan_to_num(acc23,nan=1)>=0.9)
 verdict("B2", f"{'Supported' if ok else 'Weakened'} (faithful implementation, not a measurement): "
         f"labels are derived from level by the coded 60/25 thresholds, so transitions bracket them "
-        f"by construction (acc {np.nan_to_num(acc12):.2f}/{np.nan_to_num(acc23):.2f}); the non-trivial "
+        f"by implementation (acc {np.nan_to_num(acc12):.2f}/{np.nan_to_num(acc23):.2f}); the non-trivial "
         f"result is near-zero flapping ({fl12+fl23} reversals) around the boundaries.", n=len(tr))
 """)
 
-md(r"""### B3 — Deficit→action conversion: does a deficit change what the robot *does*?
+md(r"""### B3 — Deficit-to-action-selection coupling: does a deficit change behavioural allocation?
 
 **The right question and the right contrast.** RQ1-3 asks whether the orexigenic *deficit*
-changes behaviour — so the contrast is **no-deficit (Full/HS1) vs deficit (Hungry+Starving,
+changes the controller's action selection — so the contrast is **no-deficit (Full/HS1) vs deficit (Hungry+Starving,
 HS2+HS3)**, not Hungry-vs-Starving. **What the controller changes in a deficit** (read from
 `executiveControl.py`, `chatBot.py`, `prompts.json`) is an entire *proactive recovery
-repertoire* that is silent at Full: (i) the LLM **system overlay** flips to a hungry persona
+policy* that is absent at Full: (i) the LLM **system overlay** switches to a hungry persona
 (`system_overlay_hs2`, HS3 override); (ii) face-to-face **opener/follow-up/wind-down prompts**
 switch to `*_hs2` variants that inject hunger hints, and HS3 runs the `_run_hunger_tree`
 feed-seeking loop (`hunger_ask_feed`/`hunger_still_hungry`/`hunger_look_around`); (iii) the
@@ -1429,8 +1447,8 @@ from scipy.stats import chi2_contingency
 _chi, _chi_p, _dof, _exp = chi2_contingency(pd.crosstab(d["grp"], d["fed"]))
 print(f"    (descriptive row-level chi-square p={_chi_p:.2e}; framing 3%->67% is prompt-driven, reported descriptively)")
 
-verdict("B3", f"Supported: being in a deficit categorically changes what the robot does — it "
-        f"switches on a proactive recovery repertoire that is silent at Full. Face-to-face hunger "
+verdict("B3", f"Supported: deficit state is associated with a state-contingent shift in robot "
+        f"action selection. Face-to-face hunger "
         f"framing jumps {f_full*100:.0f}% -> {f_def*100:.0f}% (x{f_def/max(f_full,1e-9):.0f}); "
         f"feed-seeking speech acts go {int(sk.get('Full',0))} -> {int(sk.get('Deficit',0))} "
         f"(deficit-only); co-present feeding pursuit {g.loc['Full','feed_pursuit']:.2f} -> "
@@ -1438,14 +1456,14 @@ verdict("B3", f"Supported: being in a deficit categorically changes what the rob
         f"{ms.loc['Deficit','mean']:.0f}); and the remote channel fires {n_def_ping} proactive pings "
         f"in deficit vs {n_full_ping} at Full. Feeding-pursuit OR {b3_or:.1f} "
         f"[{b3_ci[0]:.1f},{b3_ci[1]:.1f}] (person-clustered GEE; bootstrap "
-        f"{_b3_boot[1]:.1f} [{_b3_boot[0]:.1f},{_b3_boot[2]:.1f}]). This is the action-conversion "
-        f"evidence: the deficit adds goal-directed recovery behaviour in both channels. "
+        f"{_b3_boot[1]:.1f} [{_b3_boot[0]:.1f},{_b3_boot[2]:.1f}]). This is the deficit-to-action-selection "
+        f"evidence: the deficit biases goal-directed recovery behaviour in both channels. "
         f"(Pings/feed-seeking are coded gates = faithful implementation; framing/pursuit/meal-size "
         f"are emergent measurements of how strongly the deficit reshapes behaviour.)",
         p=float(b3_p), n=len(d))
 """)
 
-md("### B4 — Behavioural prioritisation (the Starving override; centrepiece)")
+md("### B4 — Behavioural priority reallocation under Starving")
 
 code(r"""
 # B4: SSxHS crosstab of outcomes; test HS3 override (turns & ss4 collapse, feeding rises)
@@ -1491,7 +1509,8 @@ try:
           f"robust effect, not a precise estimate).")
     # Register the override p-value in the RQ1/2 BH family so EVERY p-value used as
     # evidence sits inside a declared family (no free-floating NHST). The verdict is still
-    # LED by the effect size + CI + bootstrap (small-n HS3); BH is book-keeping, not the claim.
+    # Led by the effect size + CI + bootstrap (small-n HS3); BH is multiplicity accounting,
+    # not the basis of the claim.
     PVALS["B4_starving_override"] = float(_g4.pvalues["starving"])
     _b4_boot = cluster_bootstrap_effect(
         d,
@@ -1515,9 +1534,10 @@ except Exception as e:
 override = (not np.isnan(dt) and dt < 0) and (np.nan_to_num(feed_hs3) >= feed_rest)
 _or_txt = (f"OR {_or4:.2f} [{_ci4[0]:.2f},{_ci4[1]:.2f}], person-clustered GEE; "
            f"bootstrap {_b4_boot[1]:.2f} [{_b4_boot[0]:.2f},{_b4_boot[2]:.2f}]") if '_or4' in dir() else "GEE n/a"
-verdict("B4", f"{'Supported' if override else 'Weakened'}: when Starving, conversation collapses "
-        f"(turns diff {dt:+.2f}, Engaged {ss4_hs3:.2f} vs {ss4_rest:.2f}; {_or_txt}) while feeding "
-        f"pursuit rises ({feed_hs3:.2f} vs {feed_rest:.2f}) — reprioritisation, not disengagement. "
+verdict("B4", f"{'Supported' if override else 'Weakened'}: when Starving, social-completion "
+        f"behaviour is strongly suppressed (turns diff {dt:+.2f}, Engaged {ss4_hs3:.2f} vs "
+        f"{ss4_rest:.2f}; {_or_txt}) while feeding pursuit rises ({feed_hs3:.2f} vs {feed_rest:.2f}) "
+        f"— priority reallocation toward recovery, not undifferentiated disengagement. "
         f"Starving n={len(hs3)} (small-n; directional).", n=len(d))
 """)
 
@@ -1624,7 +1644,7 @@ verdict("B6", f"{'Supported (exploratory)' if suff else 'Weakened'}: in the obse
         f"status check, not a population recovery rate or a guarantee. Overall reliability (RQ2-c) is "
         f"carried by the low long-run starvation occupancy (B7), not by these {n_ep} episodes nor by "
         f"the modest 21% remote ping-response rate: the robot seldom reached Starving because human "
-        f"engagement kept it fed.",
+        f"engagement maintained the regulatory loop.",
         effect=full_frac, n=n_ep)
 """)
 
@@ -1734,12 +1754,12 @@ try:
     verdict("B7", f"{'Supported' if reliable else 'Weakened'} (supporting reliability observation): modelled "
             f"long-run Starving occupancy is median {_b_lead[1]*100:.1f}% [95% {_b_lead[0]*100:.1f}, {_b_lead[2]*100:.1f}%] "
             f"(run-level block bootstrap; transition-level Poisson bootstrap "
-            f"{b[1]*100:.1f}% [{b[0]*100:.1f}, {b[2]*100:.1f}%] agrees) — i.e. the people "
-            f"kept the robot's energy in homeostasis, out of starvation ~{100-b[2]*100:.0f}-{100-b[0]*100:.0f}% "
-            f"of the time; no absorbing state. This is NOT a self-property of the controller: the transition "
-            f"rates are a record of how the humans actually behaved, so the reading is that human engagement, "
-            f"with demonstrated participation from the drive (see B5), reliably replenished the robot — the "
-            f"HRI loop closes and the solution works. Point est {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
+            f"{b[1]*100:.1f}% [{b[0]*100:.1f}, {b[2]*100:.1f}%] agrees) — i.e. human feeding "
+            f"responses maintained the robot outside Starving for ~{100-b[2]*100:.0f}-{100-b[0]*100:.0f}% "
+            f"of the time; no absorbing state. This is not a controller-only property: the transition "
+            f"rates record the coupled human-robot regulatory loop, so the interpretation is that human engagement, "
+            f"with demonstrated participation from the drive (see B5), reliably replenished the robot. "
+            f"The point estimate {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
             f"condition means the drive's exact causal share in the feeding is not isolated. "
             f"STATIONARITY CAVEAT: the CTMC is time-homogeneous, but the deployment is not — it pools "
             f"visited daytime runs, idle no-visitor runs, and Phase 1/2 into one generator, so the "
@@ -1755,19 +1775,19 @@ except Exception as e:
 
 md(r"""#### Reading B3 + B4 together: two thresholds, not a ramp
 
-These two analyses are **one coherent story**. The deficit switches on behaviour in two stages,
+These two analyses form a single regulatory-policy readout. The deficit changes behaviour in two stages,
 crossing two coded thresholds:
 
-- **At the deficit line (60, entering Hungry): the recovery repertoire turns on** (B3). Hunger
+- **At the deficit line (60, entering Hungry): action selection is biased toward the recovery policy** (B3). Hunger
   framing jumps **3% → 67%**, feed-seeking speech acts and proactive Telegram pings go from
-  ~0 to their full rate, feeding pursuit and meal size rise — a large, categorical change in
-  *what the robot does*.
-- **At the starving line (25, entering Starving): the social agenda is overridden** (B4).
-  Conversation collapses (turns 2.5 → 0.2, Engaged 0.68 → 0.08) as the `_run_hunger_tree`
+  ~0 to their full rate, feeding pursuit and meal size rise — a state-contingent change in
+  behavioural allocation.
+- **At the starving line (25, entering Starving): priority shifts away from social completion** (B4).
+  Conversation turns decrease sharply (2.5 → 0.2, Engaged 0.68 → 0.08) as the `_run_hunger_tree`
   feed-seeking loop takes over.
 
-The system is a **two-threshold controller**: the deficit *adds* recovery behaviour at 60 (B3)
-and *overrides* social behaviour at 25 (B4).
+The system is a **two-threshold controller**: the deficit *biases action selection toward* recovery behaviour at 60 (B3)
+and reallocates priority toward recovery at 25 (B4).
 """)
 
 code(r"""
@@ -1792,15 +1812,16 @@ def run_bh():
     return bh
 """)
 
-md(r"""### B9 — Adaptive personalization: affinity learning → IPS eligibility → HS2 targeting
+md(r"""### B9 — Adaptive regulatory memory: affinity learning → IPS eligibility → HS2 targeting
 
-The salience network runs a per-person **homeostatic learning** loop: after each interaction
-it updates a person's **affinity** — an EMA (α=0.25) of normalised drive reward — in [−1,+1].
+The salience network runs a per-person **adaptive regulatory-memory** loop: after each interaction
+it updates a person's **affinity** — an EMA (α=0.25) of normalised drive reward, operationally
+the controller's drive-reduction signal — in [−1,+1].
 **Important:** the three IPS component weights (`prox 0.5, cent 0.15, gaze 0.5`) are
 **fixed constants and do not learn**; what adapts is affinity, and affinity acts on IPS *only*
 through the per-person **eligibility threshold**
-`eff_thr = max(0.50, base_ss − 0.15·affinity)` — a person the drive has learned to like clears
-a lower bar. The chatbot reuses the same affinity: when **Hungry (HS2)** it proactively pings
+`eff_thr = max(0.50, base_ss − 0.15·affinity)` — a participant with a higher reward history
+clears a lower approach criterion. The chatbot reuses the same affinity: when **Hungry (HS2)** it proactively pings
 **only** subscribers whose learned affinity exceeds `PRIORITY_THRESHOLD_HS2 = 0.20`
 (with `MIN_INTERACTIONS_FOR_TRUST = 3`); when Starving (HS3) it reaches everyone. This cell
 verifies (a) convergence, (b) per-person reward variation, (c) the affinity→threshold coupling,
@@ -1890,9 +1911,9 @@ if len(hs2):
 
 # (e) EXTERNAL VALIDATION — re-threaded EMA vs the robot's own persisted memory.
 # memory/homeostatic_learning.json stores the affinity the robot ACTUALLY held per identity key —
-# an artifact INDEPENDENT of v_homeostatic_learning_changes_clean (the event log we re-thread).
+# an artefact independent of v_homeostatic_learning_changes_clean (the event log we re-thread).
 # Two cases, kept strictly separate (the split is in MEMORY, not the event log):
-#   * Un-forked people (one memory key): the re-thread must reproduce the stored value EXACTLY —
+#   * Un-forked people (one memory key): the re-thread must reproduce the stored value exactly —
 #     this is the clean external validation.
 #   * People the robot FORKED in memory under case/spelling variants of one name (up to 3 keys):
 #     the cleaned event log already CONSOLIDATES their events under one key, so the re-thread is a
@@ -1933,7 +1954,7 @@ try:
         _maxd = float(unf["abs_diff"].max()) if len(unf) else float("nan")
         print(f"\n(e) Memory cross-check ({SNAP} snapshot): matched {len(chk)}/{len(term)} learned people.")
         print(f"    VALIDATION — {len(unf)} people the robot stored under ONE identity: the re-threaded "
-              f"EMA reproduces the persisted memory EXACTLY (max |Δ|={_maxd:.4f}) — external confirmation "
+              f"EMA reproduces the persisted memory exactly (max |Δ|={_maxd:.4f}) — external confirmation "
               f"independent of the event log it was derived from.")
         if len(fk):
             _cons = bool(fk["updates_conserved"].all())
@@ -1956,32 +1977,34 @@ try:
 except Exception as _e:
     print("\n(e) Memory cross-check failed:", _e)
 
-verdict("B9", f"Supported: affinity learning converges (update {early:.2f}->{late:.2f}), "
-        f"reward-driven; it personalises IPS via the threshold "
-        f"(eff_thr=max(0.50,base-0.15*affinity), exact), giving high-affinity feeders up to "
-        f"~{(0.85-top['mean_thr'].min()):.2f} lower a bar; and gates HS2 pings to the "
-        f"{len(qualifies)}/{len(term)} people above affinity 0.20. Weights themselves are fixed."
+verdict("B9", f"Supported: the affinity update process attenuates over time "
+        f"(mean absolute update {early:.2f}->{late:.2f}) and is reward-coupled; it modulates "
+        f"salience selection through the eligibility threshold "
+        f"(eff_thr=max(0.50,base-0.15*affinity), exact), lowering the approach criterion for "
+        f"high-affinity feeders by up to ~{(0.85-top['mean_thr'].min()):.2f}; and it gates HS2 "
+        f"pings to the {len(qualifies)}/{len(term)} people above affinity 0.20. Perceptual IPS "
+        f"weights remain fixed."
         + (f" External validation: for the {globals()['_b9_memchk']['unforked']} people the robot "
            f"stored under one identity, the re-threaded EMA reproduces its own persisted memory "
-           f"EXACTLY (max |Δ|={globals()['_b9_memchk']['max_unforked']:.3f}; an artifact independent "
+           f"exactly (max |Δ|={globals()['_b9_memchk']['max_unforked']:.3f}; an artefact independent "
            f"of the event log); the {globals()['_b9_memchk']['forked']} people the robot forked in "
            f"memory are consolidated by the event log with update counts conserved, and the merge "
-           f"repairs up to {globals()['_b9_memchk']['max_fork_spread']:.2f} of affinity fragmentation."
+           f"reconciles up to {globals()['_b9_memchk']['max_fork_spread']:.2f} of affinity fragmentation."
            if globals().get('_b9_memchk') else ""),
         n=len(hlc))
 globals()["_b9_hlc"]=hlc   # B10 consumes the re-threaded learning events; nothing else is exported
 """)
 
-md(r"""### B10 — RQ3: does the adaptive component reflect *real* behaviour? (role × phase validation)
+md(r"""### B10 — RQ3: does adaptive regulatory memory encode observed behaviour? (role × phase validation)
 
-B9 verified the affinity *machinery*; B10 asks the scientific question: **is what the robot
-learned a record of real participant behaviour, or arbitrary drift?** The design gives us a
+B9 verified the affinity-update mechanism; B10 asks the inferential question: **does the learned
+regulatory state track socially embedded interaction history, or is it compatible with uncontrolled drift?** The design gives us a
 handle: in **Phase 1** (first 4 days) two participants were **obligated feeders**, two were
 **interact-but-never-feed**, everyone else unconstrained; in **Phase 2** (last 4 days) all
-constraints were lifted. Affinity is a coded EMA of homeostatic reward, so it cannot respond
-to anything *except* the rewards people actually delivered — the test is whether role, phase
-and engagement dose predict the learned values in the directions the design implies, and
-whether the learned values then change the robot's own later behaviour.
+constraints were lifted. Affinity is a coded EMA of homeostatic reward (drive reduction), so it cannot respond
+to anything *except* the rewards people delivered — the test is whether role, phase and
+engagement dose predict affinity updates in design-consistent directions, and whether the
+learned regulatory state is then behaviourally expressed in later proactive allocation.
 
 Four steps, each cluster-aware:
 1. **Manipulation check** — did the roles produce the intended feeding behaviour?
@@ -1990,8 +2013,8 @@ Four steps, each cluster-aware:
    pre-specified dose hierarchy (interaction **duration** where the salience link exists —
    it is differentially missing by phase — plus fully-observed `n_turns` and
    `active_energy_cost` as agreement checks).
-3. **Downstream consequence** (leakage-free) — does *prior* affinity predict the robot's
-   proactive approaches the **next day**, beyond how often it approached the person today?
+3. **Downstream expression** (leakage-free) — does *prior* affinity predict the robot's
+   proactive approaches the **next day**, beyond same-person activity today?
 4. **Sensitivity + detectable effects** — leave-one-person-out, dose-definition agreement,
    and simulation-based minimum detectable effects (no post-hoc power).
 
@@ -2191,8 +2214,8 @@ if _tp is not None:
           f"[{_sl['lo']:+.3f},{_sl['hi']:+.3f}] for unconstrained people (p={_sl['p']:.1e});")
     if _slr is not None:
         print(f"  x feeder moderation {_slr['coef']:+.3f} [{_slr['lo']:+.3f},{_slr['hi']:+.3f}] "
-              f"(p={_slr['p']:.3f}) — feeders' affinity came from *feeding*, not from long chats "
-              f"(long non-feeding chats cost the robot energy);")
+              f"(p={_slr['p']:.3f}) — in the obligated-feeder group, reward delivery dominated "
+              f"the update over chat duration (long non-feeding chats cost the robot energy);")
     if _slp is not None:
         print(f"  x Phase-2 moderation {_slp['coef']:+.3f} [{_slp['lo']:+.3f},{_slp['hi']:+.3f}] "
               f"(p={_slp['p']:.3f}) — the duration->affinity coupling weakened once roles lifted.")
@@ -2238,7 +2261,7 @@ if _tp is not None:
                           lo=float(_rs["lo"]), hi=float(_rs["hi"]), p=float(_rs["p"])))
         print(f"\n[affinity-repair robustness] excluded {int(len(_merged_pids))} merged identities "
               f"({int(_n_merged)} events); duration slope {float(_sl['coef']):+.3f} (full) vs "
-              f"{float(_rs['coef']):+.3f} (excluded) — {'STABLE' if _rs['coef']>0 and _rs['p']<0.05 else 'CHANGED'}.")
+              f"{float(_rs['coef']):+.3f} (excluded) — {'robust' if _rs['coef']>0 and _rs['p']<0.05 else 'changed'}.")
         globals()["_b10_nomerge"]={"coef":float(_rs['coef']),"lo":float(_rs['lo']),
                                    "hi":float(_rs['hi']),"p":float(_rs['p']),
                                    "people":int(_rob["people"]),"n":int(_rob["n"]),
@@ -2247,19 +2270,20 @@ if _tp is not None:
 globals()["_b10_R"]=R
 """)
 
-md(r"""#### B10.2r — Robustness: is the dose→affinity slope an artefact of the EMA repair?
+md(r"""#### B10.2r — Robustness: is the dose→affinity slope induced by the EMA repair?
 
 B9 **re-threads** the affinity EMA, and for identities merged by canonicalization the trajectory
-is partly *reconstructed* rather than logged — the one place data cleaning touches the RQ3 outcome
+is partly *reconstructed* rather than logged — the one place data harmonisation touches the RQ3 outcome
 variable. To rule out circularity, the cell above re-fits the **identical primary model** with every
 canonicalization-affected person removed (validated non-merged people reproduce the logged affinity
-to 1e-4, so their `d_aff` is genuine). The exported `rq3_affinity_repair_robustness.csv` shows the
-duration slope side-by-side; if it stays positive and significant, the effect is carried by
-non-reconstructed people and is not manufactured by the repair.""")
+to 1e-4, so their `d_aff` is directly validated). The exported
+`rq3_affinity_repair_robustness.csv` shows the duration slope side-by-side; persistence of the
+positive slope after exclusion indicates that the association is carried by non-reconstructed
+participants rather than induced by the repair.""")
 
-md(r"""#### B10.3 — Downstream consequence (leakage-free): prior affinity → next-day prioritisation
+md(r"""#### B10.3 — Downstream expression (leakage-free): prior affinity → next-day prioritisation
 
-If the learned affinity is behaviourally *used*, the robot should spend more proactive
+If learned affinity enters the controller's action-selection loop, the robot should allocate more proactive
 approaches on high-affinity people the **next day**, over and above how much it approached
 them today (activity/presence confound) and which phase it is. Predictors are strictly
 **prior** (affinity as of end of day *d*, outcome on day *d+1*), so nothing leaks backwards.""")
@@ -2400,18 +2424,20 @@ if len(sens_df):
 # (5) Verdict + BH over both families, now complete (B10 has registered its p-values).
 _mg=globals()["_b10_meal_gee"]; _pr=globals()["_b10_prior"]
 _sl=R["dur_pooled"]["table"].loc["z_duration_sec"]
-verdict("B10", f"Supported: the adaptation tracks real behaviour, not noise. Manipulation check — "
+verdict("B10", f"Supported: the adaptive regulatory memory tracks socially embedded interaction history and is "
+        f"subsequently expressed in proactive allocation. Manipulation check — "
         f"obligated feeders fed {_mg['rr']:.1f}x the unconstrained rate in Phase 1 "
         f"[{_mg['ci'][0]:.1f},{_mg['ci'][1]:.1f}] (bootstrap {_mg['boot'][1]:.1f} "
         f"[{_mg['boot'][0]:.1f},{_mg['boot'][2]:.1f}]) and the no-feed pair complied perfectly "
         f"(0 feeds in Phase 1), with the feeder excess shrinking {_mg['rr_p2']:.2f}x once roles "
-        f"lifted. Core model — +1 SD interaction duration predicts Δaffinity {_sl['coef']:+.2f} "
+        f"lifted. Core model — +1 SD interaction duration predicts affinity change {_sl['coef']:+.2f} "
         f"[{_sl['lo']:+.2f},{_sl['hi']:+.2f}] (bootstrap {globals()['_b10_duration_boot'][1]:+.2f} "
         f"[{globals()['_b10_duration_boot'][0]:+.2f},{globals()['_b10_duration_boot'][2]:+.2f}]) "
         f"for unconstrained people, moderated by role "
-        f"(feeders' affinity came from feeding, not chat length) and attenuated in Phase 2; "
-        f"all three dose definitions agree in sign; LOPO-stable. Consequence — prior affinity "
-        f"raises next-day proactive approaches {_pr['rr']:.2f}x per +1 affinity "
+        f"(for obligated feeders, reward delivery rather than chat duration dominated the update) "
+        f"and attenuated in Phase 2; all three dose definitions agree in sign; LOPO-stable. "
+        f"Downstream policy expression — prior affinity increases next-day proactive approaches "
+        f"{_pr['rr']:.2f}x per +1 affinity "
         f"[{_pr['ci'][0]:.2f},{_pr['ci'][1]:.2f}] (bootstrap {_pr['boot'][1]:.2f} "
         f"[{_pr['boot'][0]:.2f},{_pr['boot'][2]:.2f}]) beyond activity. Caveat: 2 people per "
         f"controlled role (validation, not population inference). "
@@ -2419,7 +2445,7 @@ verdict("B10", f"Supported: the adaptation tracks real behaviour, not noise. Man
            f"canonicalization-merged identities (whose affinity was partly reconstructed) leaves the "
            f"duration slope at {globals()['_b10_nomerge']['coef']:+.2f} "
            f"[{globals()['_b10_nomerge']['lo']:+.2f},{globals()['_b10_nomerge']['hi']:+.2f}] "
-           f"(p={globals()['_b10_nomerge']['p']:.1e}), so the effect is not an artefact of the EMA re-threading."
+           f"(p={globals()['_b10_nomerge']['p']:.1e}), so the association is not induced by the EMA re-threading."
            if '_b10_nomerge' in globals() else ""),
         n=len(h10))
 run_bh()
@@ -2434,7 +2460,8 @@ All figures use the HS status palette (Full green, Hungry amber, Starving red, N
 `stomachMonitor.py`'s colours, contrast-tuned to pass a categorical palette validator: lightness
 band, chroma floor, CVD separation) and are saved to `analysis/figures/` as PNG + SVG at
 ≥200 dpi. Marks carrying data always pair colour with a direct value label, so no reading
-depends on colour alone. Each figure has a caption tying it to a claim.
+depends on colour alone. Figure titles state the analytic claim; captions state the unit of
+analysis and whether the panel is confirmatory, diagnostic, or exploratory.
 """)
 
 md("**Fig 1 — Architecture recap** *(unit: logged module/table types, n = 4 source databases)*: perception → salience → executive → remote, annotated with the signals actually logged at each stage.")
@@ -2464,9 +2491,9 @@ ax.annotate("", (centers[1],0.50), (centers[2],0.50),
                             connectionstyle="arc3,rad=0.35"))
 ax.text((centers[1]+centers[2])/2, 0.135,
         "interaction_result RPC (homeostatic reward, energy cost)\n"
-        "closes the loop: drive reduction ↦ affinity / eligibility-threshold learning",
+        "socially embedded regulatory feedback: drive reduction ↦ affinity / eligibility-threshold learning",
         ha="center",fontsize=8,style="italic",color=_acc)
-ax.text(0.5,0.95,"Always-on embodied behaviour — data-logging pipeline",ha="center",fontsize=12,fontweight="bold",color=INK)
+ax.text(0.5,0.95,"Always-on socially embedded regulatory architecture — data-logging pipeline",ha="center",fontsize=12,fontweight="bold",color=INK)
 savefig(fig,"fig01_architecture"); plt.show()
 """)
 
@@ -2529,7 +2556,7 @@ handles=[Patch(fc=HS_PALETTE["HS1"],alpha=.4,label="Full (≥60)"),
          Line2D([0],[0],color=MUTED,lw=0.9,ls=":",label="restart"),
          Line2D([0],[0],marker="^",color=HS_ACCENT["HS1"],lw=0,label="meal (▲ size ∝ SMALL/MED/LARGE)")]
 fig.legend(handles=handles,loc="lower center",ncol=6,bbox_to_anchor=(0.5,-0.05),fontsize=9)
-fig.suptitle("Fig 2 — Orexigenic drive timeline per experiment day (8 days): autonomous drain, feeding recoveries, Starving episodes",
+fig.suptitle("Fig 2 — Orexigenic-drive dynamics per experiment day: autonomous drain, discrete replenishment, Starving sojourns",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig02_drive_timeline"); plt.show()
 """)
@@ -2588,7 +2615,7 @@ for s,(x,y) in pos.items():
 ax2.text(0.50,0.97,"worsening (drain)  →",ha="center",fontsize=8.5,color=MUTED,style="italic")
 ax2.text(0.50,0.06,"←  recovery (feeding)",ha="center",fontsize=8.5,color=MUTED,style="italic")
 ax2.set_title("State transitions — count on each edge, coloured by destination")
-fig.suptitle("Fig 3 — Deficit detection: state transitions fire precisely at 60 and 25",
+fig.suptitle("Fig 3 — Threshold implementation: drain-driven state transitions bracket 60 and 25",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig03_thresholds_transitions"); plt.show()
 """)
@@ -2635,7 +2662,7 @@ for gi,(g,c) in enumerate([("Full",FULL_C),("Deficit",DEF_C)]):
                      ha="center",fontsize=8.5,color=INK)
 axA.set_xticks(x); axA.set_xticklabels([s[0] for s in rate_specs],fontsize=9)
 axA.set_ylabel("rate"); axA.set_ylim(0,1.0); axA.grid(False); axA.legend(loc="upper right")
-axA.set_title("Recovery-action rates: Full vs deficit",fontsize=11)
+axA.set_title("Recovery-action rates by regulatory state",fontsize=11)
 
 _ev=chat_events.copy(); _prov=_ev[_ev["event_type"].isin(["hs2_entry","hs3_proactive"])]
 _prov = _prov.assign(action=_prov["event_type"].map({"hs2_entry":"Hungry Telegram ping",
@@ -2703,13 +2730,13 @@ axB.invert_yaxis()
 axB.legend(loc="upper left",bbox_to_anchor=(1.01,1.0),fontsize=8,frameon=False)
 axB.text(0.01,0.985,"thin line: stomach level (green/amber/red = state)",
          transform=axB.transAxes,ha="left",va="top",fontsize=8.2,color=MUTED)
-axB.set_title("When deficit-gated actions occur over time",fontsize=11)
-fig.suptitle("Fig 4 — Deficit→action: a deficit switches on the proactive recovery repertoire (Full vs Hungry+Starving)",
+axB.set_title("Temporal allocation of deficit-gated actions",fontsize=11)
+fig.suptitle("Fig 4 — Deficit-to-action-selection coupling: deficits bias recovery policy",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig04_deficit_action"); plt.show()
 """)
 
-md("**Fig 5 — State×Hunger prioritisation heatmap** *(unit: interaction, n = 217; Starving column n = 13)*: grid coloured by Engaged-completion and by avg turns (Starving override should pop out).")
+md("**Fig 5 — State×hunger priority-reallocation heatmap** *(unit: interaction, n = 217; Starving column n = 13)*: grid coloured by Engaged-completion and by average turns, with the low-n Starving column interpreted directionally.")
 code(r"""
 # Sequential single-hue (magnitude), NOT a red-green rainbow: CVD-safe, and every cell
 # is annotated with value + n so small cells (esp. the HS3 column) are not over-read.
@@ -2739,15 +2766,15 @@ def draw(ax,M,N,cmap,vmax,label,fmt):
 fig,(a1,a2)=plt.subplots(1,2,figsize=(13,4.6))
 N=ngrid()
 draw(a1,grid("reached_ss4"),N,"Greens",1.0,"P(reach Engaged)","{:.2f}")
-a1.set_ylabel("social state at start"); a1.set_title("Engaged-completion rate")
+a1.set_ylabel("social state at start"); a1.set_title("Engaged-completion probability")
 draw(a2,grid("n_turns"),N,"Purples",grid("n_turns").max().max(),"avg conversation turns","{:.1f}")
-a2.set_title("average conversation turns")
-fig.suptitle("Fig 5 — Behavioural prioritisation: the Starving column collapses while Full/Hungry sustain conversation",
+a2.set_title("Mean conversation turns")
+fig.suptitle("Fig 5 — Priority reallocation: Starving shifts behaviour away from social completion",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
 """)
 
-md("**Fig 6 — IPS decomposition** *(unit: salience target/face IPS rows, n = 5,142 target selections and 216,940 face-IPS events; mechanism context, not a drive result)*: weighted prox/cent/gaze composition of IPS; IPS vs effective threshold.")
+md("**Fig 6 — IPS decomposition** *(unit: salience target/face IPS rows, n = 5,142 target selections and 216,940 face-IPS events; mechanism context, not a drive result)*: weighted proximity/centrality/gaze composition of IPS and the effective eligibility threshold.")
 code(r"""
 w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","gaze"]
 # cool triple (validated): none of these collide with the reserved HS status colours
@@ -2793,12 +2820,12 @@ for i,ss in enumerate(ss_list):
 a2.set_xticks(range(4)); a2.set_xticklabels([SS_NAME[s] for s in ss_list])
 a2.set_ylabel("IPS at target selection"); a2.set_xlabel("social state")
 a2.set_title("IPS distribution vs eligibility threshold (dark bar)")
-fig.suptitle("Fig 6 — Salience: how IPS is composed, and the per-state hurdle it must clear",
+fig.suptitle("Fig 6 — Salience mechanism: IPS composition and state-specific eligibility thresholds",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig06_ips_decomposition"); plt.show()
 """)
 
-md("**Fig 7 — Starving recovery** *(unit: Starving episode, n = 8 episodes across 4 runs; exploratory)*: cumulative first-feed probability, with recovery status summarized in-plot. Thin n — read as directional, not a rate estimate.")
+md("**Fig 7 — Starving recovery episodes** *(unit: Starving episode, n = 8 episodes across 4 runs; exploratory)*: cumulative first-feed probability, with recovery status summarized in-plot. The sample is too small for calibrated recovery-rate estimation.")
 code(r"""
 ep=hs3_episodes.copy(); n=len(ep)
 n_feed=int(ep["received_feed"].sum())
@@ -2844,12 +2871,12 @@ if len(ep):
             bbox=dict(boxstyle="round,pad=0.34",fc="white",ec=HS_PALETTE["HS1"],lw=0.9,alpha=0.94))
 ax.set_xlabel("seconds since Starving entry"); ax.set_ylabel("cumulative P(first feed)")
 ax.set_ylim(0,1.02); ax.grid(False); ax.legend(loc="lower right", bbox_to_anchor=(0.78,0.05))
-fig.suptitle("Fig 7 — Starving recovery: time-to-first-feed",
+fig.suptitle("Fig 7 — Starving episodes: time to first feed",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig07_hs3_funnel"); plt.show()
 """)
 
-md("**Fig 8 — Remote-channel loop** *(unit: proactive Telegram ping, n = 234 pings across 12 subscribers; response window = 1 h)*: response-to-ping rate by ping type (bootstrap 95% CI; n on each bar). A separate counts panel would repeat the n labels, so there isn't one.")
+md("**Fig 8 — Remote-channel regulatory signal** *(unit: proactive Telegram ping, n = 234 pings across 12 subscribers; response window = 1 h)*: response-to-ping rate by ping type (bootstrap 95% CI; n on each bar). A separate counts panel would repeat the n labels.")
 code(r"""
 ev=chat_events.copy().sort_values(["run_id","chat_id","timestamp_epoch"])
 kinds=["hs2_entry","hs3_proactive","hs3_recovery"]
@@ -2873,12 +2900,12 @@ for k in kinds:
 bars_with_ci(ax,[klabel[k] for k in kinds],es,los,his,[kcol[k] for k in kinds],
              n_labels=ns,small_flag=[x<20 for x in ns])
 ax.set_ylim(0,1); ax.set_ylabel("P(user reply within 1 h)")
-ax.set_title(f"Fig 8 — Remote loop: proactive pings reach users off-robot and draw replies\n"
+ax.set_title(f"Fig 8 — Remote regulatory signal: proactive pings and user replies\n"
              f"({sum(ns)} pings; rate per ping type, bootstrap 95% CI, n on bars)",fontsize=12)
 savefig(fig,"fig08_remote_loop"); plt.show()
 """)
 
-md("**Fig 9 — Steady-state occupancy** *(unit: CTMC state sojourn/transition reconstructed from 165,460 hunger events; n = 12 monitored runs)*: modelled stationary distribution vs empirical.")
+md("**Fig 9 — Pooled CTMC occupancy** *(unit: CTMC state sojourn/transition reconstructed from 165,460 hunger events; n = 12 monitored runs)*: modelled stationary distribution vs empirical occupancy. This is a supporting regulatory-loop outcome, not a controller-only property.")
 code(r"""
 pi=globals().get("_ctmc_pi",{})
 fig,ax=plt.subplots(figsize=(8,4.6))
@@ -2912,13 +2939,13 @@ if pi:
     from matplotlib.ticker import PercentFormatter
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     ax.set_ylabel("long-run occupancy"); ax.set_ylim(0,0.65); ax.grid(False); ax.legend()
-    ax.set_title(f"Fig 9 — Long-run occupancy: Starving ≈ {pi['HS3']*100:.1f}%{_ttl_ci}\n"
-                 f"(supporting observation — outcome of the human feeding loop, not a controller self-property)",
+    ax.set_title(f"Fig 9 — Pooled long-run occupancy: Starving ≈ {pi['HS3']*100:.1f}%{_ttl_ci}\n"
+                 f"(supporting loop-level outcome, not a controller-only property)",
                  fontsize=12)
 savefig(fig,"fig09_steady_state"); plt.show()
 """)
 
-md("**Fig 10 — Per-person affinity trajectories** *(unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events over 14 named people plus unknown)*: per-person affinity trajectories across the whole experiment.")
+md("**Fig 10 — Per-person homeostatic-affinity trajectories** *(unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events over 14 named people plus unknown)*: learned affinity trajectories across the whole experiment.")
 code(r"""
 # Use B9's re-threaded affinity (merged identities get a single coherent EMA, not the stale
 # last-label value) rather than reloading the raw per-label log.
@@ -3001,11 +3028,11 @@ if len(hlc) and "affinity_after" in hlc.columns:
     ax.set_ylim(_ymin,1.06)
     ax.set_xlabel("experiment time (days from first logged affinity update)")
     ax.set_ylabel("learned affinity (EMA of normalised reward)")
-    ax.set_title("Coloured by Phase-1 role (controlled people + top unconstrained labelled); the rest in grey",fontsize=12)
+    ax.set_title("Phase-1 role labels highlight the validation contrast; remaining participants provide context",fontsize=12)
     ax.grid(True,axis="y")
 else:
     ax.text(0.5,0.5,"no affinity trajectory data",ha="center")
-fig.suptitle("Fig 10 — Adaptive personalisation: affinity trajectories over the whole experiment",
+fig.suptitle("Fig 10 — Adaptive regulatory memory: homeostatic-affinity trajectories across the deployment",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig10_affinity_trajectories"); plt.show()
 """)
@@ -3014,7 +3041,7 @@ savefig(fig,"fig10_affinity_trajectories"); plt.show()
 # share comparison over 5 people, superseded by the inferential B10.3 test (prior affinity ->
 # next-day proactive approaches, person-clustered GEE) and Fig 13.
 
-md("""**Fig 12 — Role manipulation validation (B10.1)** *(units: interaction and person-day;
+md("""**Fig 12 — Role-manipulation validation (B10.1)** *(units: interaction and person-day;
 217 interactions, 14 named people, 8 days; controlled roles = 2 feeders + 2 no-feed in
 Phase 1)*: did the Phase-1 experimental labels produce the intended feeding behaviour, and
 did it relax in Phase 2? Left: feed probability per interaction with exact 95% CIs. Right:
@@ -3037,7 +3064,7 @@ axL.set_ylabel("P(meal during interaction)"); axL.set_ylim(-0.03,0.85)
 for r in ROLE_ORDER:
     axL.plot([],[],"o",color=ROLE_COLOR[r],label=ROLE_LABEL[r])
 axL.legend(loc="upper right",fontsize=8.6)
-axL.set_title("Feeding per interaction — exact 95% CIs",fontsize=11.5)
+axL.set_title("Feed probability per interaction — exact 95% CIs",fontsize=11.5)
 
 _pdm=(_d.groupby(["person_id","day_rome","phase","role"],observed=True)
         .agg(meals=("meals_eaten_count","sum")).reset_index())
@@ -3058,12 +3085,12 @@ axR.text(0.985,0.97,(f"feeder vs unconstrained (Poisson GEE, cluster=person)\n"
 axR.set_xticks([0,1]); axR.set_xticklabels(["Phase 1 (roles active)","Phase 2 (unconstrained)"])
 axR.set_ylabel("meals per person-day")
 axR.set_title("Meal supply per person-day — model-estimated contrast",fontsize=11.5)
-fig.suptitle("Fig 12 — The Phase-1 role manipulation produced the intended behaviour (and relaxed in Phase 2)",
+fig.suptitle("Fig 12 — Phase-1 role manipulation validates the feeding-behaviour contrast",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig12_role_validation"); plt.show()
 """)
 
-md("""**Fig 13 — The core RQ3 model (B10.2)** *(unit: learning update event; duration-linked
+md("""**Fig 13 — Core RQ3 dose-response model (B10.2)** *(unit: learning update event; duration-linked
 subset n ≈ 97, fully observed dose checks use all learning-eligible events n = 205)*:
 engagement dose → learned affinity, moderated by external experiment role labels and phase.
 Left: the raw duration-linked learning events with per-group fitted trends (descriptive).
@@ -3083,9 +3110,9 @@ for role in ROLE_ORDER:
                  ls="--" if role=="no_feed" else "-",zorder=4)
 axL.axhline(0,color=MUTED,ls=":",lw=1)
 axL.set_xlabel("interaction duration (z-scored, salience-linked events)")
-axL.set_ylabel("Δ affinity at the learning event")
+axL.set_ylabel("affinity change at the learning event")
 axL.legend(loc="upper left",fontsize=8.4)
-axL.set_title("Learning events + per-role trends (descriptive)",fontsize=11.5)
+axL.set_title("Duration-linked learning events and per-role trends",fontsize=11.5)
 
 # Right: MixedLM coefficients (primary model) + dose-agreement slopes.
 _t=_b10_R["dur_pooled"]["table"]
@@ -3108,10 +3135,10 @@ for (lab,co,lo,hi,p),yy in zip(_rows,_y):
                  xytext=(6,0),va="center",fontsize=8.2,color=_c)
 axR.axvline(0,color=MUTED,ls=":",lw=1)
 axR.set_yticks(_y); axR.set_yticklabels([r[0] for r in _rows],fontsize=9)
-axR.set_xlabel("effect on Δaffinity per +1 SD dose (95% CI)")
-axR.set_title("Mixed model: Δaffinity ~ dose x role + dose x phase + (1|person)",fontsize=11.5)
+axR.set_xlabel("effect on affinity change per +1 SD dose (95% CI)")
+axR.set_title("Mixed model: affinity change ~ dose x role + dose x phase + (1|person)",fontsize=11.5)
 axR.margins(x=0.30)
-fig.suptitle("Fig 13 — Engagement dose predicts learned affinity, moderated by role and phase (RQ3 core model)",
+fig.suptitle("Fig 13 — Engagement dose predicts affinity updates, moderated by role and phase",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig13_affinity_dose"); plt.show()
 """)
@@ -3119,13 +3146,14 @@ savefig(fig,"fig13_affinity_dose"); plt.show()
 # ==========================================================================
 # PHASE D — MACHINE LEARNING (interpretive, n~200)
 # ==========================================================================
-md(r"""## Phase D — Machine learning (interpretive, sized to n≈200 interactions)
+md(r"""## Phase D — Machine learning sensitivity analysis (n≈200 interactions)
 
 Regularised models with **group-aware CV** (leave-one-run-out / leave-one-person-out).
-No deep learning. ML is **descriptive**; confirmatory weight sits in Phase B.
+No deep learning. ML is **descriptive**; confirmatory weight sits in the cluster-aware
+inferential models in Phase B.
 """)
 
-md("### D1 — What drives engagement (group-CV sensitivity, not full-fit explanations)")
+md("### D1 — Does hunger state add held-out engagement signal? (group-CV sensitivity)")
 code(r"""
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import GradientBoostingClassifier
@@ -3264,8 +3292,9 @@ print(drop_df.round(4).to_string(index=False))
 # Two panels. With only two features (social, hunger), the drop-column chart repeats the
 # ablation numbers, so it is not drawn: its one non-redundant quantity (the AUC cost of
 # removing SOCIAL state) is reported as a sentence inside the ablation panel instead.
-fig=plt.figure(figsize=(12.6,5.2))
-gs=fig.add_gridspec(1,2,width_ratios=[1.05,1.0],wspace=0.28)
+fig=plt.figure(figsize=(12.6,5.8), constrained_layout=False)
+gs=fig.add_gridspec(1,2,width_ratios=[1.05,1.0],wspace=0.34,
+                    left=0.07, right=0.98, bottom=0.12, top=0.77)
 a1=fig.add_subplot(gs[0,0]); a3=fig.add_subplot(gs[0,1])
 
 # (1) Ablation: social state with and without hunger_state.
@@ -3302,15 +3331,15 @@ a3.set_xticks(x); a3.set_xticklabels([f"{n}\n(n={int(by.loc[h,'n']) if pd.notna(
                                       for h,n in zip(HS_ORDER,HS_NAMES)],fontsize=9)
 a3.set_ylim(0,1.0); a3.set_ylabel("P(reach Engaged)"); a3.grid(False)
 a3.legend(frameon=False,fontsize=8,loc="upper right")
-a3.set_title("Held-out predictions track the Starving collapse",fontsize=11,pad=8)
+a3.set_title("Held-out predictions track Starving-state social-completion suppression",fontsize=11,pad=8)
 fig.suptitle("Fig D1 — ML sensitivity: orexigenic drive vs social state",
-             fontsize=13,fontweight="semibold",y=1.02)
+             fontsize=13,fontweight="semibold",y=0.95)
 savefig(fig,"figD1_ml_sensitivity"); plt.show()
-RESULTS["D1"]={"verdict":f"adding hunger changes Engaged AUC by {d_auc:+.3f} and PR-AUC by {d_ap:+.3f}; "
+RESULTS["D1"]={"verdict":f"adding hunger state changes Engaged-prediction AUC by {d_auc:+.3f} and PR-AUC by {d_ap:+.3f}; "
                f"drop-column CV ranks hunger_state #{hs_rank_pos}/{len(X_cols)} "
                f"(AUC loss {hs_auc_loss:+.3f}, PR-AUC loss {hs_ap_loss:+.3f}). "
-               f"Social state dominates, so ML is treated as sensitivity evidence, "
-               f"not a confirmatory mechanism test."}
+               f"Social state remains dominant, so ML is treated as out-of-sample sensitivity evidence, "
+               f"not as a confirmatory mechanism test."}
 """)
 
 # D2 (standalone survival readout) removed: it duplicated B6/Fig 7's KM evidence, and a
@@ -3364,12 +3393,12 @@ def outcome_of(key):
 rows = [
  ("RQ1-1","Internal monitoring continuous & autonomous","B1"),
  ("RQ1-2","Deficit detection correct (60/25 thresholds)","B2"),
- ("RQ1-3","Deficit→action conversion is real, not cosmetic","B3"),
- ("RQ1-4","Behavioural prioritisation (drive outranks social agenda)","B4"),
+ ("RQ1-3","Deficit-to-action-selection coupling is behaviourally expressed","B3"),
+ ("RQ1-4","Behavioural priority reallocation under Starving","B4"),
  ("RQ2-a","Deficit expression elicits recovery behaviour","B5"),
  ("RQ2-b","Observed Starving episodes resolve by feeding","B6"),
- ("RQ2-c","Replenishment reliable (always-on, long-run)","B7"),
- ("RQ3","Adaptive affinity reflects real behaviour (role manipulation, dose, downstream use)","B10"),
+ ("RQ2-c","Replenishment is reliable at the loop level (always-on, pooled long-run)","B7"),
+ ("RQ3","Adaptive regulatory memory tracks interaction history and is expressed downstream","B10"),
 ]
 sc = []
 for cid, claim, key in rows:
@@ -3410,7 +3439,7 @@ try:
                 f"RQ3 adaptation). **{len(_surv)}/{len(_bh)}** metrics survive at q<0.05: "
                 f"{', '.join(_surv) if _surv else 'none'}. Every p-value used as evidence is inside "
                 f"a declared family — including the small-n B4 Starving override, which is added to the "
-                f"RQ1/2 family for honest multiplicity book-keeping but is still LED by its effect size "
+                f"RQ1/2 family for transparent multiplicity accounting but is still led by its effect size "
                 f"+ CI + bootstrap rather than by NHST. Implementation checks (B1/B2) carry no "
                 f"inferential p-values by design (see `bh_corrected_pvalues.csv`).")
 except Exception:
@@ -3424,12 +3453,12 @@ try:
     _d1_pr_base = float(abl[(abl.target=="reached_ss4")&(abl.feature_set=="social-only")]["pr_auc"].iloc[0])
     _d1_pr_hung = float(abl[(abl.target=="reached_ss4")&(abl.feature_set=="social+hunger")]["pr_auc"].iloc[0])
     _d1_pr_delta = _d1_pr_hung - _d1_pr_base
-    _d1_line = (f"- D1 grouped-CV ablation: adding hunger changes Engaged-prediction AUC "
+    _d1_line = (f"- D1 grouped-CV ablation: adding hunger state changes Engaged-prediction AUC "
                 f"{_d1_base:.3f}→{_d1_hung:.3f} ({_d1_delta:+.3f}) and PR-AUC "
                 f"{_d1_pr_base:.3f}→{_d1_pr_hung:.3f} ({_d1_pr_delta:+.3f}); B9: affinity "
-                f"learning converges and gates Hungry-state proactive pings to feeders.")
+                f"learning attenuates over time and gates Hungry-state proactive pings by affinity.")
 except Exception:
-    _d1_line = "- D1 grouped-CV ablation: see `ml_ablation.csv`; B9: affinity learning converges and gates Hungry-state proactive pings to feeders."
+    _d1_line = "- D1 grouped-CV ablation: see `ml_ablation.csv`; B9: affinity learning attenuates over time and gates Hungry-state proactive pings by affinity."
 _n_feed = int(hs3_episodes["received_feed"].sum())
 _n_escape = int(hs3_episodes["escaped_starving_by_feeding"].sum())
 _n_full = int(hs3_episodes["recovered_to_full_by_feeding"].sum())
@@ -3443,36 +3472,36 @@ try:
 except Exception:
     _meal_line = "- Meal size by deficit: see B5 feeding table (graded expression)."
 L+=["## Reading of the four homeostatic functions", "",
-    "- **RQ1-1 monitoring & RQ1-2 detection** are *faithful-implementation* results, not empirical "
+    "- **RQ1-1 monitoring & RQ1-2 detection** are *implementation-verification* results, not empirical "
     "measurements: the stomach level is a software integrator and the HS labels are derived from it "
-    "by the same thresholds, so drain=nominal (zero-width CI) and 1.00/1.00 bracketing hold by "
-    "construction. The non-trivial parts are the dense autonomous sampling and near-zero flapping.",
-    "- **The drive is a two-threshold controller, not a ramp** (B3+B4 read together). At the deficit "
-    "line (60, entering Hungry) the recovery repertoire turns ON (B3): being in a deficit vs Full flips "
+    "by the same thresholds, so drain=nominal (degenerate CI, as expected for a software integrator) "
+    "and 1.00/1.00 bracketing hold by implementation. The non-trivial parts are the dense autonomous "
+    "sampling and near-zero flapping.",
+    "- **The drive is a two-threshold regulatory policy, not a smooth ramp** (B3+B4 read together). At the deficit "
+    "line (60, entering Hungry) action selection is biased toward the recovery policy (B3): deficit vs Full shifts "
     "hunger framing 3%->67%, activates feed-seeking acts and proactive Telegram pings (0 at Full -> 172 "
-    "in deficit), and raises feeding pursuit 0.15->0.43 and meal size 21->31 — a large categorical change "
-    "in what the robot does across face-to-face and remote channels. "
-    "At the starving line (25) the social agenda is OVERRIDDEN (B4): conversation collapses (turns "
-    "2.5->0.2, Engaged 0.68->0.08). The empirical weight is here, in RQ2-c, the D1 ablation, and B9 — "
+    "in deficit), and increases feeding pursuit 0.15->0.43 and meal size 21->31 — a state-contingent "
+    "change in behavioural allocation across face-to-face and remote channels. "
+    "At the starving line (25), the controller reallocates priority away from social completion (B4): "
+    "turns decrease 2.5->0.2 and Engaged completion 0.68->0.08. The empirical weight is here, in RQ2-c, the D1 ablation, and B9 — "
     "not in RQ1-1/1-2.",
-    "- **RQ2 — the HRI loop closes.** Across the deployment the people "
-    "kept the robot fed in response to its hunger signalling, so its energy stayed in homeostasis and it "
-    "was out of starvation ~99% of the time (B7). That low occupancy is the *outcome* of human engagement, "
-    "not a self-property of the controller — the solution works to keep an always-on robot's energy "
-    "regulated. Caveat: single condition (the drive's exact causal share in the feeding is not isolated) "
+    "- **RQ2 — the HRI regulatory loop closes at the deployment level.** Across the deployment, "
+    "human feeding responses to hunger signalling kept the robot's energy within the regulated range and it "
+    "was out of starvation ~99% of the time (B7). That low occupancy is a *loop-level outcome* of human engagement, "
+    "not a controller-only property. Caveat: single condition (the drive's exact causal share in the feeding is not isolated) "
     "and feeding concentrated among a few users (D4).",""]
 L+=["## Key quantities", "",
     f"- Passive drain: exactly 1.00x nominal (software integrator); dense sampling (median gap 2.3 s) "
     f"across {hunger_raw['run_id'].nunique()} monitored runs, {interactions['run_id'].nunique()} with visitors.",
     f"- Long-run Starving occupancy (RQ2-c, supporting observation): bootstrap median {_ci[1]*100:.1f}% "
-    f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — the people kept the robot's energy in homeostasis, out "
-    f"of starvation ~{100-_ci[2]*100:.0f}%+ of the time (outcome of the working HRI loop, not a controller self-property). "
+    f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — human feeding responses kept the robot's energy "
+    f"out of starvation ~{100-_ci[2]*100:.0f}%+ of the time (loop-level outcome, not a controller-only property). "
     f"Stationarity caveat: a time-homogeneous CTMC pools visited/idle runs and both phases, so read this "
     f"as a conservative order-of-magnitude ceiling, not a calibrated rate (idle drain-only runs push it up).",
     f"- Observed Starving episodes: {_n_feed}/{len(hs3_episodes)} received a feed, "
     f"{_n_escape}/{len(hs3_episodes)} escaped Starving via feeding, and "
     f"{_n_full}/{len(hs3_episodes)} recovered to Full via feeding. This is exploratory; reliability is "
-    f"carried by the low occupancy above (human engagement keeping the robot fed), not by these episodes "
+    f"carried by the low occupancy above (human engagement maintaining the regulatory loop), not by these episodes "
     f"or the modest 21% ping-response rate.",
     _meal_line,
     _d1_line,]
@@ -3482,9 +3511,9 @@ try:
     L.append(f"- RQ3 (B10): Phase-1 manipulation validated (feeders {_mg['rr']:.1f}x meal rate "
              f"[{_mg['ci'][0]:.1f},{_mg['ci'][1]:.1f}]; no-feed pair 0 feeds); +1 SD interaction "
              f"duration -> Δaffinity {_sl['coef']:+.2f} [{_sl['lo']:+.2f},{_sl['hi']:+.2f}] "
-             f"(role/phase-moderated, dose-definitions agree); prior affinity raises next-day "
+             f"(role/phase-moderated, dose-definitions agree); prior affinity increases next-day "
              f"proactive approaches {_pr['rr']:.2f}x [{_pr['ci'][0]:.2f},{_pr['ci'][1]:.2f}] — "
-             f"the adaptation reflects real behaviour and changes robot behaviour (2 people per "
+             f"the adaptive regulatory memory tracks interaction history and is behaviourally expressed (2 people per "
              f"controlled role: validation, not population inference).")
 except Exception:
     L.append("- RQ3 (B10): see notebook B10 for the role/phase validation of affinity learning.")
@@ -3509,24 +3538,24 @@ print("wrote outputs/results_summary.md")
 md("### Final findings vs RQ1 / RQ2 / RQ3")
 code(r"""
 print("="*78)
-print("FINDINGS — single-condition, always-on drive.")
+print("FINDINGS — single-condition, always-on orexigenic regulatory loop.")
 print("="*78)
 def g(k,default="(n/a)"): return RESULTS.get(k,{}).get("verdict",default)
 print("\nRQ1 — Four functions of homeostasis:")
 print("  (1) internal monitoring :", g("B1"))
 print("  (2) deficit detection   :", g("B2"))
-print("  (3) deficit→action      :", g("B3"))
-print("      + active-cost table shows graded metabolic price scales with action")
-print("        (conversation 3.6 >> greeting 0.8) — evidence for behavioural coupling, not a label-only effect.")
-print("  (4) prioritisation      :", g("B4"))
-print("\nAdaptive personalization mechanism (B9):", g("B9"))
-print("\nRQ2 — Deficit expression → reliable replenishment:")
+print("  (3) deficit-to-action-selection coupling :", g("B3"))
+print("      + active-cost table shows that action categories carry different regulatory costs")
+print("        (conversation 3.6 >> greeting 0.8) — behavioural coupling, not label-only state reporting.")
+print("  (4) priority reallocation      :", g("B4"))
+print("\nAdaptive regulatory-memory mechanism (B9):", g("B9"))
+print("\nRQ2 — Deficit expression and loop-level replenishment:")
 print("  (a) elicits recovery    :", g("B5"))
 print("  (b) observed recovery   :", g("B6"))
 print("  (c) reliability         :", g("B7"))
-print("\nRQ3 — Adaptation reflects real behaviour (B10):", g("B10"))
+print("\nRQ3 — Adaptive regulatory memory tracks interaction history and is expressed downstream (B10):", g("B10"))
 print("\nSmall-n caveats: Starving episodes and proactive Starving interactions are single-digit;")
-print("those results are DIRECTIONAL evidence, reported with n and bootstrap CIs, not proof.")
+print("those results are directional evidence, reported with n and bootstrap CIs, not calibrated rates.")
 """)
 
 md("### Final output checklist")
