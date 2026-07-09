@@ -1493,6 +1493,10 @@ try:
           f"p={_g4.pvalues['starving']:.1e} — Starving cuts the odds of a completed "
           f"conversation by ~{(1-_or4)*100:.0f}% (small-n HS3: read as a large, directionally "
           f"robust effect, not a precise estimate).")
+    # Register the override p-value in the RQ1/2 BH family so EVERY p-value used as
+    # evidence sits inside a declared family (no free-floating NHST). The verdict is still
+    # LED by the effect size + CI + bootstrap (small-n HS3); BH is book-keeping, not the claim.
+    PVALS["B4_starving_override"] = float(_g4.pvalues["starving"])
     _b4_boot = cluster_bootstrap_effect(
         d,
         "person_id",
@@ -1740,7 +1744,14 @@ try:
             f"rates are a record of how the humans actually behaved, so the reading is that human engagement, "
             f"with demonstrated participation from the drive (see B5), reliably replenished the robot — the "
             f"HRI loop closes and the solution works. Point est {pi[2]*100:.1f}% is fragile, so we lead with the interval; single "
-            f"condition means the drive's exact causal share in the feeding is not isolated.", n=int(cnt.values.sum()))
+            f"condition means the drive's exact causal share in the feeding is not isolated. "
+            f"STATIONARITY CAVEAT: the CTMC is time-homogeneous, but the deployment is not — it pools "
+            f"visited daytime runs, idle no-visitor runs, and Phase 1/2 into one generator, so the "
+            f"'long-run occupancy' is the stationary fraction of a pooled process, not of any single real "
+            f"operating regime. The pooling is conservative here (idle runs contribute drain/down-transitions "
+            f"with no feeding counterpart, pushing Starving UP), so the true visited-regime occupancy is if "
+            f"anything lower; read the interval as an order-of-magnitude ceiling, not a calibrated rate.",
+            n=int(cnt.values.sum()))
 except Exception as e:
     print("stationary solve failed:", e)
     verdict("B7", "Inconclusive: could not solve stationary distribution.", n=int(cnt.values.sum()))
@@ -2127,8 +2138,53 @@ if _tp is not None:
                             boot_hi=_dur_boot[2], successful_refits=_dur_boot[3],
                             unit="person-cluster bootstrap over duration-linked learning events"))
     globals()["_b10_duration_boot"]=[_dur_boot[0],_dur_boot[1],_dur_boot[2]]
+
+    # --- ROBUSTNESS: affinity-repair circularity check --------------------------
+    # B9 RE-THREADS the affinity EMA. For people whose identity was merged by
+    # canonicalization (case/spelling variants), the trajectory is partly RECONSTRUCTED
+    # rather than logged, so a critic could argue the dose->affinity slope is manufactured
+    # by the repair. Re-fit the PRIMARY model with every canonicalization-affected person
+    # EXCLUDED (validated non-merged people reproduce the logged affinity to 1e-4, so their
+    # d_aff is not reconstructed). If the slope survives, the effect is not a repair artefact.
+    # "Merged" = any canonical identity named in the private canon map; pseudonymized so no
+    # real name appears in the notebook or its outputs.
+    _merged_names = {v for v in CANON_IDENTITY.values()
+                     if isinstance(v, str) and v.strip().lower() not in PSEUDONYM_PRESERVE}
+    _merged_pids  = {pseudonymize(n) for n in _merged_names}
+    _n_merged = h10["person_id"].isin(_merged_pids).sum()
+    _rob = fit_mix(h10[~h10["person_id"].isin(_merged_pids)],
+                   "d_aff ~ z_duration_sec*C(role) + z_duration_sec*C(phase) "
+                   "+ C(hunger_state_start) + C(trigger_mode)",
+                   "ROBUSTNESS: canonicalization-merged people excluded", "z_duration_sec")
+    R["dur_nomerge"] = _rob
+    _rows=[dict(model="primary (all named people)", people=int(_tp is not None and R["dur_pooled"]["people"]),
+                n_events=int(R["dur_pooled"]["n"]), duration_slope=float(_sl["coef"]),
+                lo=float(_sl["lo"]), hi=float(_sl["hi"]), p=float(_sl["p"]))]
+    if _rob.get("table") is not None and "z_duration_sec" in _rob["table"].index:
+        _rs=_rob["table"].loc["z_duration_sec"]
+        _rows.append(dict(model="robustness (merged people excluded)", people=int(_rob["people"]),
+                          n_events=int(_rob["n"]), duration_slope=float(_rs["coef"]),
+                          lo=float(_rs["lo"]), hi=float(_rs["hi"]), p=float(_rs["p"])))
+        print(f"\n[affinity-repair robustness] excluded {int(len(_merged_pids))} merged identities "
+              f"({int(_n_merged)} events); duration slope {float(_sl['coef']):+.3f} (full) vs "
+              f"{float(_rs['coef']):+.3f} (excluded) — {'STABLE' if _rs['coef']>0 and _rs['p']<0.05 else 'CHANGED'}.")
+        globals()["_b10_nomerge"]={"coef":float(_rs['coef']),"lo":float(_rs['lo']),
+                                   "hi":float(_rs['hi']),"p":float(_rs['p']),
+                                   "people":int(_rob["people"]),"n":int(_rob["n"]),
+                                   "n_excluded_people":int(len(_merged_pids))}
+    pd.DataFrame(_rows).to_csv(OUT_DIR / "rq3_affinity_repair_robustness.csv", index=False)
 globals()["_b10_R"]=R
 """)
+
+md(r"""#### B10.2r — Robustness: is the dose→affinity slope an artefact of the EMA repair?
+
+B9 **re-threads** the affinity EMA, and for identities merged by canonicalization the trajectory
+is partly *reconstructed* rather than logged — the one place data cleaning touches the RQ3 outcome
+variable. To rule out circularity, the cell above re-fits the **identical primary model** with every
+canonicalization-affected person removed (validated non-merged people reproduce the logged affinity
+to 1e-4, so their `d_aff` is genuine). The exported `rq3_affinity_repair_robustness.csv` shows the
+duration slope side-by-side; if it stays positive and significant, the effect is carried by
+non-reconstructed people and is not manufactured by the repair.""")
 
 md(r"""#### B10.3 — Downstream consequence (leakage-free): prior affinity → next-day prioritisation
 
@@ -2287,7 +2343,13 @@ verdict("B10", f"Supported: the adaptation tracks real behaviour, not noise. Man
         f"raises next-day proactive approaches {_pr['rr']:.2f}x per +1 affinity "
         f"[{_pr['ci'][0]:.2f},{_pr['ci'][1]:.2f}] (bootstrap {_pr['boot'][1]:.2f} "
         f"[{_pr['boot'][0]:.2f},{_pr['boot'][2]:.2f}]) beyond activity. Caveat: 2 people per "
-        f"controlled role (validation, not population inference).",
+        f"controlled role (validation, not population inference). "
+        + (f"Repair-robustness — excluding the {globals()['_b10_nomerge']['n_excluded_people']} "
+           f"canonicalization-merged identities (whose affinity was partly reconstructed) leaves the "
+           f"duration slope at {globals()['_b10_nomerge']['coef']:+.2f} "
+           f"[{globals()['_b10_nomerge']['lo']:+.2f},{globals()['_b10_nomerge']['hi']:+.2f}] "
+           f"(p={globals()['_b10_nomerge']['p']:.1e}), so the effect is not an artefact of the EMA re-threading."
+           if '_b10_nomerge' in globals() else ""),
         n=len(h10))
 run_bh()
 """)
@@ -3249,9 +3311,11 @@ try:
     _bh_line = (f"P-values come from cluster-aware models (person-clustered GEE / mixed models) and are "
                 f"Benjamini–Hochberg-corrected **within two pre-declared families** (RQ1/2 behaviour; "
                 f"RQ3 adaptation). **{len(_surv)}/{len(_bh)}** metrics survive at q<0.05: "
-                f"{', '.join(_surv) if _surv else 'none'}. Implementation checks (B1/B2) carry no "
-                f"inferential p-values by design. Small-n Starving results are still led with effect "
-                f"sizes + CIs rather than NHST (see `bh_corrected_pvalues.csv`).")
+                f"{', '.join(_surv) if _surv else 'none'}. Every p-value used as evidence is inside "
+                f"a declared family — including the small-n B4 Starving override, which is added to the "
+                f"RQ1/2 family for honest multiplicity book-keeping but is still LED by its effect size "
+                f"+ CI + bootstrap rather than by NHST. Implementation checks (B1/B2) carry no "
+                f"inferential p-values by design (see `bh_corrected_pvalues.csv`).")
 except Exception:
     _bh_line = "See `bh_corrected_pvalues.csv` for the Benjamini–Hochberg-corrected metric families."
 L+=["", "## Multiple-comparison note", "", _bh_line, ""]
@@ -3305,7 +3369,9 @@ L+=["## Key quantities", "",
     f"across {hunger_raw['run_id'].nunique()} monitored runs, {interactions['run_id'].nunique()} with visitors.",
     f"- Long-run Starving occupancy (RQ2-c, headline): bootstrap median {_ci[1]*100:.1f}% "
     f"[95% {_ci[0]*100:.1f}, {_ci[2]*100:.1f}%] — the people kept the robot's energy in homeostasis, out "
-    f"of starvation ~{100-_ci[2]*100:.0f}%+ of the time (outcome of the working HRI loop, not a controller self-property).",
+    f"of starvation ~{100-_ci[2]*100:.0f}%+ of the time (outcome of the working HRI loop, not a controller self-property). "
+    f"Stationarity caveat: a time-homogeneous CTMC pools visited/idle runs and both phases, so read this "
+    f"as a conservative order-of-magnitude ceiling, not a calibrated rate (idle drain-only runs push it up).",
     f"- Observed Starving episodes: {_n_feed}/{len(hs3_episodes)} received a feed, "
     f"{_n_escape}/{len(hs3_episodes)} escaped Starving via feeding, and "
     f"{_n_full}/{len(hs3_episodes)} recovered to Full via feeding. This is exploratory; reliability is "
@@ -3325,6 +3391,26 @@ try:
              f"controlled role: validation, not population inference).")
 except Exception:
     L.append("- RQ3 (B10): see notebook B10 for the role/phase validation of affinity learning.")
+try:
+    _scope_runs = hunger_raw['run_id'].nunique()
+    _scope_people = int(hlc['person_id'].nunique()) if 'hlc' in globals() else globals().get('_b9_hlc', pd.DataFrame()).get('person_id', pd.Series(dtype=object)).nunique()
+    _scope_days = hunger_raw['day_rome'].nunique() if 'day_rome' in hunger_raw.columns else 8
+except Exception:
+    _scope_runs, _scope_people, _scope_days = "?", "?", 8
+L+=["", "## Scope & next study", "",
+    f"- **Scope of generalization.** One robot, one site, {_scope_days} session-days, "
+    f"{_scope_runs} runs, {_scope_people} named people (convenience sample). Every result is a "
+    f"within-deployment characterization of *this* HRI loop; none of it is a population estimate "
+    f"across robots, sites, or user cohorts. Read the effect sizes as existence-and-magnitude "
+    f"evidence for this system, not as calibrated rates that transfer.",
+    "- **The one experiment that would settle causation.** The governing limitation is the absence "
+    "of a drive-off arm: with a single always-on condition, the drive's causal share in the feeding "
+    "(and therefore in the low Starving occupancy, B7) cannot be separated from people simply being "
+    "responsive to a robot. The decisive next study is a **drive-off / drive-ablated control arm** "
+    "(same robot, same protocol, orexigenic signalling suppressed) — this converts RQ2 from 'the loop "
+    "closes' (an outcome) into an identified causal estimate of the drive's contribution. Secondary "
+    "next steps: more people per controlled role (RQ3 currently rests on 2/role) and a multi-site "
+    "replication to probe generalization."]
 (OUT_DIR/"results_summary.md").write_text("\n".join(L))
 print("wrote outputs/results_summary.md")
 """)
@@ -3369,6 +3455,7 @@ items = [
 	 ("small_cluster_sensitivity.csv", exists("small_cluster_sensitivity.csv")),
 	 ("rq3_model_results.csv", exists("rq3_model_results.csv")),
 	 ("rq3_missingness.csv", exists("rq3_missingness.csv")),
+	 ("rq3_affinity_repair_robustness.csv", exists("rq3_affinity_repair_robustness.csv")),
 	 ("ml_model_metrics.csv", exists("ml_model_metrics.csv")),
 	 ("ml_ablation.csv", exists("ml_ablation.csv")),
 	 ("ml_ablation_delta.csv", exists("ml_ablation_delta.csv")),
