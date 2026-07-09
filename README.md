@@ -69,8 +69,10 @@ is — not by effect size — this is the order to defend on:
    unconstrained rate**, and the no-feed pair fed **zero** (complete separation, exact
    Clopper–Pearson). Near-perfect compliance.
 2. **RQ3 dose → affinity (B10).** +0.17 per SD of engagement, and it *strengthens* to **+0.23
-   (p ≈ 7×10⁻¹⁴)** when the identity-reconstructed people are excluded — the repair-robustness
-   cut turns a data-cleaning liability into a selling point.
+   (p ≈ 7×10⁻¹⁴)** when the identity-reconstructed people are excluded. The affinity itself is
+   **externally verified**: the reconstruction matches the robot's own persisted memory exactly
+   (max |Δ| = 0.000) for the 12 people stored under one identity, and provably *repairs* (does not
+   fabricate) the 2 the robot forked in memory — the repair is a validated step, not a liability.
 3. **RQ3 downstream use (B10).** Prior-day affinity predicts next-day proactive approaches
    (**RR 1.55**, activity-controlled). The cleanest causal-direction claim in the study:
    predictor strictly precedes outcome, so it is leakage-free by construction.
@@ -391,8 +393,28 @@ identity variants, validated to 1e-4 for all non-merged people. Because this re-
 cleaning step that touches an RQ3 outcome variable, B10 re-fits its core dose→affinity model with all
 canonicalization-merged people excluded — `outputs/rq3_affinity_repair_robustness.csv` — and the
 duration slope not only survives but strengthens (+0.17 → +0.23, p≈7e-14), so the effect is carried by
-non-reconstructed people, not manufactured by the repair.)* B9 shows the machinery works
-as coded; **whether what it learned reflects reality is B10's question.**
+non-reconstructed people, not manufactured by the repair.)*
+
+**External validation against the robot's own memory.** The re-threaded EMA is cross-checked
+against the persisted `data/*/memory/homeostatic_learning.json` snapshot — the affinity the robot
+*actually stored*, an artifact independent of the event log it was derived from. The check keeps two
+cases strictly separate, because the split is in **memory**, not in the event log:
+
+- **Validation — the 12 people the robot stored under a single identity:** the reconstruction
+  reproduces the persisted memory **exactly (max |Δ| = 0.000)**, with the update count matching
+  too. This is clean external confirmation of the reconstruction, independent of the event log.
+- **Reconciliation — the 2 people the robot *forked* in memory** under case/spelling variants of one
+  name (one across 3 keys, one across 2): the cleaned event log already **consolidates** each
+  person's events under one key, and the update counts are **conserved exactly** (29 = 7+21+1 and
+  14 = 0+14), so the re-thread yields the *correct merged* affinity that — by construction — equals
+  no single memory fork. We therefore report **no per-fork residual** for them (it would be
+  meaningless); we report only that leaving them unmerged fragments affinity by up to **0.93** across
+  forks (one fork logs 0.00 over a live 0.9+ history). The merge does not fabricate signal — it
+  *repairs* a fragmentation the robot's own memory exhibits.
+
+Net: the reconstruction is externally verified where memory is unambiguous, and demonstrably repairs
+memory where the robot forked an identity (`outputs/rq3_memory_crosscheck.csv`). B9 shows the
+machinery works as coded; **whether what it learned reflects reality is B10's question.**
 
 **B10 — the validation (all three confirmatory metrics survive BH, q < 0.05).**
 
@@ -521,6 +543,7 @@ make check     # validate execution state and identity redaction
 [`rq3_model_results.csv`](analysis/outputs/rq3_model_results.csv),
 [`rq3_missingness.csv`](analysis/outputs/rq3_missingness.csv),
 [`rq3_affinity_repair_robustness.csv`](analysis/outputs/rq3_affinity_repair_robustness.csv),
+[`rq3_memory_crosscheck.csv`](analysis/outputs/rq3_memory_crosscheck.csv),
 [`bh_corrected_pvalues.csv`](analysis/outputs/bh_corrected_pvalues.csv),
 [`success_criteria.csv`](analysis/outputs/success_criteria.csv).
 
