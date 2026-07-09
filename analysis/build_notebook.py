@@ -39,8 +39,9 @@ perception → salience → executive regulation → remote/Telegram signalling.
 
 > **Fixed design fact (single condition).** The drive was **always on** for the whole
 > study. RQ2 is identified from the **within-drive graded deficit**
-> (Full → Hungry → Starving) and from the **proactive vs reactive**
-> contrast. *The graded deficit is the manipulation.*
+> (Full → Hungry → Starving) and from the **proactive / mixed-initiative vs reactive**
+> contrast. *The graded deficit is the manipulation; the orexigenic state is treated as
+> an internal drive-function signal that biases recovery-oriented action selection.*
 
 > **Second design fact (two phases, role manipulation).** The deployment ran in **two
 > 4-day phases**. In **Phase 1** (first four experiment days) participants had assigned
@@ -52,21 +53,6 @@ perception → salience → executive regulation → remote/Telegram signalling.
 > fact as a *manipulation check and external validation* of the affinity learning. With only
 > **2 people per controlled role**, role contrasts are validation evidence with wide
 > uncertainty, not population inference.
-
-**Literature-aligned terminology.** The wording follows the state-of-the-art reference set:
-the robot is treated as **socially embedded** and structurally coupled with its human
-environment (Dautenhahn et al.); the deployment is an **always-on cognitive architecture**
-problem of continual perception, experience accumulation, and social-context awareness
-(Pasquali et al.); recovery signals are described as **proactive / mixed-initiative**
-behavioural allocation rather than passive notification (Moulin-Frier et al., Senft et al.);
-affinity is framed as **adaptive regulatory memory** because it is a user-history-conditioned
-update that changes later policy expression (Ahmad et al., Tanevska et al.); and the reliability
-claim is a **loop-level regulatory outcome**, not an isolated controller property. Drive-competition
-and behavioural-regulation work (Guerrero-Rosado & Verschure; Ngo et al.; Hulme et al.; Yoshida
-et al.) supports interpreting the orexigenic variable as an internal drive-function signal that
-biases recovery-oriented action selection. The study is careful not to overclaim allostasis: the
-implemented controller is threshold homeostatic, while the interpretation borrows allostatic
-vocabulary only for priority setting and regulatory cost.
 
 **Data-layout note (discovered, not assumed).** The eight dated folders under `data/`
 are **cumulative snapshots of one continuously-growing database** — each later folder
@@ -2670,10 +2656,7 @@ _prov = _prov.assign(action=_prov["event_type"].map({"hs2_entry":"Hungry Telegra
                      hs_state=_prov["hs"])
 _ac=hunger_raw[hunger_raw["event_type"]=="active_cost"].copy()
 _seek=_ac[_ac["stimulus_label"].isin(["hunger_ask_feed","hunger_still_hungry","hunger_look_around"])].copy()
-_seek = _seek.assign(action=_seek["stimulus_label"].map({
-                        "hunger_ask_feed":"Face-to-face ask-feed",
-                        "hunger_still_hungry":"Face-to-face still-hungry",
-                        "hunger_look_around":"Face-to-face look-around"}),
+_seek = _seek.assign(action="Face-to-face feeding request",
                      hs_state=_seek["hunger_state_before"].fillna(_seek["hunger_state_after"]))
 _events = pd.concat([
     _prov[["timestamp_epoch","day_rome","action","hs_state"]],
@@ -2688,9 +2671,7 @@ _events["y"]=_events["day_rome"].map(day_to_y)
 styles={
     "Hungry Telegram ping":("o",HS_ACCENT["HS2"],64),
     "Starving Telegram ping":("o",HS_ACCENT["HS3"],72),
-    "Face-to-face ask-feed":("^","#7A4EAB",92),
-    "Face-to-face still-hungry":("s","#7A4EAB",84),
-    "Face-to-face look-around":("D","#7A4EAB",84),
+    "Face-to-face feeding request":("^","#7A4EAB",92),
 }
 for day in days:
     dd=hunger_raw[hunger_raw["day_rome"]==day]
@@ -2718,10 +2699,6 @@ for action,(marker,color,size) in styles.items():
     if len(sub):
         axB.scatter(sub["minute"],sub["y"],s=size,marker=marker,color=color,
                     edgecolor="white",linewidth=1.0,alpha=0.94,label=f"{action} (n={len(sub)})",zorder=3)
-_nondef=_events[_events["hs_group"]!="Deficit"]
-if len(_nondef):
-    axB.scatter(_nondef["minute"],_nondef["y"],s=130,facecolors="none",edgecolors=HS_PALETTE["HS1"],
-                linewidth=2.0,label=f"non-deficit edge case (n={len(_nondef)})",zorder=4)
 axB.set_yticks(range(len(days))); axB.set_yticklabels(days,fontsize=8.5)
 axB.set_xlabel("minutes into experiment day (wall-clock)")
 axB.set_ylabel("experiment day")

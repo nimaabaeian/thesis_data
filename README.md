@@ -46,8 +46,9 @@ functions (3) and (4): B3 and B4.
 ### Two design facts that shape everything
 
 **First: the drive was always on.** RQ2 is identified from within the always-on data: the
-**graded deficit** (Full → Hungry → Starving) is the manipulation, and the **proactive vs
-reactive** contrast tests whether the drive *initiates* recovery.
+**graded deficit** (Full → Hungry → Starving) is the manipulation, and the
+**proactive / mixed-initiative vs reactive** contrast tests whether the internal
+drive-function signal initiates recovery-oriented engagement.
 
 **Second: two 4-day phases with a participant role manipulation.** In **Phase 1** (first four
 experiment days) two participants were **obligated feeders**, two were told to **interact but
@@ -57,28 +58,6 @@ the learning against. These roles are external experimental labels, not controll
 role map is private (`analysis/private/role_phase.json`); published outputs carry pseudonyms and
 role labels only. With **2 people per controlled role**, role contrasts are manipulation
 validation with wide uncertainty — never population inference.
-
-### Literature-aligned vocabulary
-
-The terminology is aligned with the reference corpus rather than generic software wording:
-
-- **Socially embedded / interaction-aware robot** follows Dautenhahn et al.: the robot is analysed
-  as structurally coupled with a human social environment, not as an isolated controller.
-- **Always-on cognitive architecture** follows Pasquali et al.: the relevant unit is continual
-  perception, experience accumulation, and social-context awareness in a dynamic environment.
-- **Proactive / mixed-initiative behaviour** follows Moulin-Frier et al. and Senft et al.: hunger
-  signalling is treated as robot-initiated action allocation, not merely messaging.
-- **Adaptive regulatory memory** follows adaptive HRI work such as Ahmad et al. and Tanevska et al.:
-  per-person affinity is a user-history-conditioned state that changes later policy expression.
-- **Drive competition / action selection** follows Guerrero-Rosado & Verschure, Ngo et al.,
-  Hulme et al., and Yoshida et al.: the orexigenic variable is interpreted as an internal
-  drive-function signal that biases recovery-oriented action selection; because this dataset
-  analyses one implemented drive, the claim remains a threshold homeostatic policy rather than
-  multi-drive allostatic orchestration.
-- **Loop-level regulation** borrows cautiously from homeostasis/allostasis literature
-  (Sterling; Bettinger & Friston): B7 is a coupled human-robot regulatory outcome, while the
-  implemented controller remains a threshold homeostatic policy rather than a full predictive
-  allostatic controller.
 
 ### Evidential hierarchy — what carries the claims
 
@@ -98,10 +77,10 @@ effect size — the hierarchy is:
 3. **RQ3 downstream expression (B10).** Prior-day affinity predicts next-day proactive approaches
    (**RR 1.55**, activity-controlled). The cleanest causal-direction claim in the study:
    predictor strictly precedes outcome, so it is leakage-free by construction.
-4. **RQ1 behavioural coupling (B3 + B4).** Deficit → feeding-pursuit **OR 4.9** and Starving →
+4. **RQ1 action-selection coupling (B3 + B4).** Deficit → feeding-pursuit **OR 4.9** and Starving →
    social-completion suppression **OR 0.03** — both person-clustered GEE, bootstrap-confirmed,
    both inside the BH family. This is the behavioural readout that the regulatory state changes
-   action allocation.
+   action selection.
 
 **What *not* to stake the defense on:**
 
@@ -114,7 +93,7 @@ effect size — the hierarchy is:
 
 ### The answers, up front
 
-**RQ1 — the drive is a *threshold* regulatory policy.** Monitoring and detection are
+**RQ1 — the drive is a *threshold* homeostatic policy.** Monitoring and detection are
 implementation-verification facts (Appendix A). The load-bearing results are behavioural: at the
 deficit line the robot biases action selection toward a **proactive recovery policy** absent at Full — hunger framing
 3% → 67%, feed-seeking acts and proactive Telegram pings 1 → 20 and 0 → 172, feeding pursuit
