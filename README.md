@@ -44,10 +44,9 @@ functions (3) and (4): B3 and B4.
 
 ### Two design facts that shape everything
 
-**First: the drive was always on.** There is **no drive-off control condition** and none is
-invented. RQ2 is identified from within the always-on data: the **graded deficit**
-(Full → Hungry → Starving) is the manipulation, and the **proactive vs reactive** contrast
-tests whether the drive *initiates* recovery.
+**First: the drive was always on.** RQ2 is identified from within the always-on data: the
+**graded deficit** (Full → Hungry → Starving) is the manipulation, and the **proactive vs
+reactive** contrast tests whether the drive *initiates* recovery.
 
 **Second: two 4-day phases with a participant role manipulation.** In **Phase 1** (first four
 experiment days) two participants were **obligated feeders**, two were told to **interact but
@@ -87,10 +86,6 @@ is — not by effect size — this is the order to defend on:
   non-stationary process, and downstream of human behaviour. Never phrase it as "the drive keeps
   itself fed."
 - **B1/B2** are true by construction (Appendix A): instrumentation verification.
-- **The single always-on condition** means every "the drive *causes* X" is confounded with
-  "people are responsive to a robot." The defense is (a) outcome language for RQ2 ("the loop
-  closes"), and (b) naming the **drive-off control** as the explicit next study — stated before a
-  committee asks (see §8).
 
 ### The answers, up front
 
@@ -347,7 +342,7 @@ co-present interactions are 83% reply-bearing when proactive vs 42% reactive.
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
 *Fig 8 — unit: proactive Telegram ping, n = 234 across 12 subscribers; response window = 1 h.
-Proactive pings by type and their response-to-ping rates with bootstrap CIs.*
+Response-to-ping rate by ping type, bootstrap 95% CIs, ping counts as n-labels on the bars.*
 
 **B6 — observed Starving episodes (exploratory, n = 8, one sentence).** All 8 Starving episodes
 received a feed, escaped Starving, and recovered to Full via feeding (median time-to-first-feed
@@ -510,16 +505,11 @@ human engagement, with demonstrated participation from the drive, kept the robot
 starvation ~99% of the time — an outcome of people feeding a signalling robot, not a controller
 self-property.
 
-**Scope & the next study.** Everything above is a within-deployment characterization of *one*
+**Scope & next steps.** Everything above is a within-deployment characterization of *one*
 robot at *one* site over 8 session-days (12 runs, 14 named people, convenience sample) — existence-
 and-magnitude evidence for this HRI loop, not population estimates that transfer across robots,
-sites, or cohorts. The governing limitation is structural: with a single always-on condition, the
-drive's causal share in the feeding (hence in B7's low Starving occupancy) cannot be separated from
-people simply being responsive to a robot. The decisive next study is a **drive-off / drive-ablated
-control arm** — same robot, same protocol, orexigenic signalling suppressed — which converts RQ2
-from "the loop closes" (an outcome) into an identified causal estimate of the drive's contribution.
-Secondary next steps: more people per controlled role (RQ3 rests on 2/role) and a multi-site
-replication for generalization.
+sites, or cohorts. Next steps: more people per controlled role (RQ3 rests on 2/role) and a
+multi-site replication for generalization.
 
 ---
 
