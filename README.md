@@ -73,15 +73,16 @@ The study asks three connected questions.
   (3) deficit-to-action-selection coupling, (4) behavioural priority reallocation?
 - **RQ2** - Does expressing an orexigenic deficit promote recovery-oriented engagement
   sufficient to support reliable energy replenishment in an always-on social robot?
-- **RQ3** - Does the robot's **adaptive regulatory memory** (the learned per-person homeostatic
-  affinity) encode observed participant behaviour rather than uncontrolled drift, and is that
-  learned state subsequently expressed in the robot's allocation of proactive approaches?
+- **RQ3** - Does the robot's learned memory of past interactions reflect participants' behaviour,
+  and does that memory influence how the robot engages with people later?
 
 For RQ1, the first two functions are software verification checks. The empirical question is
 whether the internal deficit state changes behaviour. For RQ2, the key issue is whether hunger
 signals lead to human engagement and feeding often enough to avoid persistent starvation. For RQ3,
-the question is whether the learned per-person affinity tracks interaction history and is later
-used when the robot allocates proactive approaches.
+this is tested by asking whether the robot's **adaptive regulatory memory** (the learned
+per-person homeostatic affinity) encodes observed participant behaviour rather than uncontrolled
+drift, and whether that learned state is subsequently expressed in the robot's allocation of
+proactive approaches.
 
 Two design facts shape the analysis.
 
