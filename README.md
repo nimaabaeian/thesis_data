@@ -14,20 +14,37 @@ replenishment. The controller pipeline is:
 
 ## Contents
 
+**Part I — Summary**
+
 1. [Main findings](#1-main-findings)
+
+**Part II — Background and methods**
+
 2. [Research questions and study design](#2-research-questions-and-study-design)
 3. [Data and analysis pipeline](#3-data-and-analysis-pipeline)
 4. [How to read the statistics](#4-how-to-read-the-statistics)
+
+**Part III — Results**
+
 5. [RQ1: Does a deficit change behaviour?](#5-rq1-does-a-deficit-change-behaviour)
 6. [RQ2: Does deficit expression close the recovery loop?](#6-rq2-does-deficit-expression-close-the-recovery-loop)
 7. [RQ3: Does adaptive regulatory memory encode behaviour?](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour)
 8. [Machine-learning sensitivity check](#8-machine-learning-sensitivity-check)
+
+**Part IV — Synthesis**
+
 9. [Scorecard and synthesis](#9-scorecard-and-synthesis)
-10. [Appendix A: Instrumentation verification](#appendix-a-instrumentation-verification)
+
+**Part V — Appendices**
+
+- [Appendix A: Instrumentation verification](#appendix-a-instrumentation-verification)
+- [Corrections](#corrections)
 
 ---
 
-## 1. Main findings
+## Part I — Summary
+
+### 1. Main findings
 
 The analysis supports all three research questions, with different levels of evidential
 strength.
@@ -64,7 +81,9 @@ not population estimates across robots, sites, or user groups.
 
 ---
 
-## 2. Research questions and study design
+## Part II — Background and methods
+
+### 2. Research questions and study design
 
 The study asks three connected questions.
 
@@ -111,7 +130,7 @@ The evidence is ordered as follows:
 
 ---
 
-## 3. Data and analysis pipeline
+### 3. Data and analysis pipeline
 
 The robot logged four asynchronous streams: `vision`, `salience_network`, `executive_control`,
 and `chat_bot`. The `data/` folders contain eight dated snapshots. A key preparation finding was
@@ -151,7 +170,7 @@ checks for RQ3.
 
 ---
 
-## 4. How to read the statistics
+### 4. How to read the statistics
 
 The models were chosen to match the outcome being analysed and the repeated-observation
 structure of the data. Many observations come from the same people, runs, or days, so the
@@ -178,13 +197,15 @@ interpretation rather than by complex covariate models.
 
 ---
 
-## 5. RQ1: Does a deficit change behaviour?
+## Part III — Results
+
+### 5. RQ1: Does a deficit change behaviour?
 
 Monitoring and threshold detection are described in [Appendix A](#appendix-a-instrumentation-verification)
 because they verify the implementation. RQ1's empirical test is whether the internal deficit
 state changes action selection.
 
-### B3: Deficit-to-action coupling
+#### B3: Deficit-to-action coupling
 
 The main contrast is Full versus deficit, where deficit combines Hungry and Starving. The result
 is a state-contingent shift toward recovery.
@@ -201,7 +222,7 @@ The coded rows show that the controller exposes a different action repertoire wh
 The co-present pursuit and meal-size rows show how that state change is expressed in behaviour.
 
 The inferential anchor is a person-clustered logistic GEE:
-`fed_here ~ deficit + C(initial_state)`. Deficit increases the odds of feeding pursuit by
+`fed01 ~ deficit` (see [Corrections](#corrections)). Deficit increases the odds of feeding pursuit by
 **OR 4.9 [2.6, 9.5]**, p about 2e-6; leave-one-person-out OR range 4.1-6.1.
 
 **Verdict: supported.** The deficit state biases action selection toward goal-directed recovery.
@@ -212,7 +233,7 @@ The inferential anchor is a person-clustered logistic GEE:
 deficit-gated action events. Recovery-action rates Full vs deficit are shown with bootstrap CIs,
 and deficit-gated actions are plotted on the stomach-level timeline.*
 
-### B4: Starving priority reallocation
+#### B4: Starving priority reallocation
 
 The next question is whether the more severe Starving state merely reduces activity or actively
 changes priorities. The evidence supports priority reallocation toward recovery.
@@ -236,12 +257,12 @@ until Starving shifts priority away from social completion.*
 
 ---
 
-## 6. RQ2: Does deficit expression close the recovery loop?
+### 6. RQ2: Does deficit expression close the recovery loop?
 
 RQ1 shows that the robot changes behaviour when energy is low. RQ2 asks whether those signals are
 followed by human engagement and replenishment in deployment.
 
-### B5: Deficit expression elicits recovery behaviour
+#### B5: Deficit expression elicits recovery behaviour
 
 Meal size increases with deficit severity: **Full 21, Hungry 29, Starving 43**. Proactive
 Telegram pings receive replies within 1 hour at **0.21 [0.15, 0.26]** overall, and 0.26 for
@@ -256,7 +277,7 @@ reply rates are modest.
 *Fig 8 - unit: proactive Telegram ping, n = 234 across 12 subscribers; response window = 1 hour.
 Bars show response-to-ping rates with bootstrap 95% CIs.*
 
-### B6: Observed Starving episodes
+#### B6: Observed Starving episodes
 
 All 8 observed Starving episodes received a feed, escaped Starving, and recovered to Full via
 feeding. Median time to first feed was 21 seconds.
@@ -264,7 +285,7 @@ feeding. Median time to first feed was 21 seconds.
 This is an operational status check, not a population recovery rate. Reliability is better
 summarised by the occupancy result in B7.
 
-### B7: Long-run loop reliability
+#### B7: Long-run loop reliability
 
 A continuous-time Markov chain fitted to Full, Hungry, and Starving transitions gives modelled
 long-run **Starving occupancy of 1.0% [0.2%, 3.1%]** using the run-level block bootstrap. A
@@ -289,13 +310,13 @@ mean Starving sojourn is 163 s.*
 
 ---
 
-## 7. RQ3: Does adaptive regulatory memory encode behaviour?
+### 7. RQ3: Does adaptive regulatory memory encode behaviour?
 
 RQ3 links the controller mechanism to an external validation test. First, the report verifies what
 the robot learns. Then it asks whether the learned state tracks experimentally induced
 interaction histories and predicts later robot behaviour.
 
-### B9: Mechanism verification
+#### B9: Mechanism verification
 
 The salience network implements per-person adaptive regulatory memory as **homeostatic affinity**:
 an exponentially weighted moving average of normalised homeostatic reward, bounded in [-1, +1].
@@ -322,7 +343,7 @@ Because this identity repair touches an RQ3 outcome, the core dose-to-affinity m
 excluding the reconstructed people. The result strengthens from +0.17 to **+0.23** (p about
 7e-14), so the dose-affinity association is not manufactured by the repair.
 
-### B10: External validation
+#### B10: External validation
 
 The Phase-1 role manipulation provides the main test of whether affinity tracks behaviour.
 
@@ -367,7 +388,7 @@ per-role trends, and mixed-model coefficients with 95% CIs.*
 
 ---
 
-## 8. Machine-learning sensitivity check
+### 8. Machine-learning sensitivity check
 
 The machine-learning analysis is a sensitivity check, not a confirmatory model. Its purpose is to
 ask whether hunger state adds held-out predictive information beyond social state.
@@ -386,7 +407,9 @@ pattern.*
 
 ---
 
-## 9. Scorecard and synthesis
+## Part IV — Synthesis
+
+### 9. Scorecard and synthesis
 
 | Claim | Source | Outcome |
 |---|---|---|
@@ -412,7 +435,9 @@ role and across additional sites.
 
 ---
 
-## Appendix A: Instrumentation verification
+## Part V — Appendices
+
+### Appendix A: Instrumentation verification
 
 B1 and B2 are kept separate from the main empirical results because they verify that the logged
 data behaves as the controller source specifies. They are not independent inferential tests.
@@ -429,6 +454,23 @@ not flap around the boundary.
 
 **Reading:** the instrumentation behaves exactly as coded. The empirical homeostasis claims rest
 on the behavioural and learning results in RQ1-RQ3.
+
+---
+
+### Corrections
+
+**B3 model formula.** An earlier version of this README stated the B3 inferential anchor as
+`fed_here ~ deficit + C(initial_state)`. The code (`analysis/build_notebook.py`) actually fits
+`fed01 ~ deficit` — a person-clustered logistic GEE with no `initial_state` covariate. `fed01` is
+a binary feeding-pursuit indicator local to the B3 co-present-interaction table; `fed_here` is a
+separate variable (`meals_eaten_count > 0`) used later, in B5. The two were conflated in the
+write-up. The `C(initial_state)` covariate does appear in the notebook, but as part of the B4
+model (`reached_ss4 ~ starving + C(initial_state)`), not B3.
+
+The reported effect size, CI, and p-value (OR 4.9 [2.6, 9.5], p about 2e-6, LOPO range 4.1-6.1)
+match the notebook's actual `fed01 ~ deficit` output, so the B3 verdict is unaffected. Only the
+formula text and variable name were stale; they have been corrected in place above rather than
+silently rewritten, per the note in this section.
 
 ![Drive timeline](analysis/figures/fig02_drive_timeline.png)
 
