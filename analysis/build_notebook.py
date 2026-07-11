@@ -1638,14 +1638,14 @@ md(r"""### B7 — Reliability: continuous-time Markov steady-state occupancy
 
 > **Note on transition counts.** These CTMC counts are built from *every* `hunger_raw`
 > state-change (including drain crossings in the idle, no-visitor runs), so the deficit-entry
-> edges (Full→Hungry, Hungry→Starving) are larger here than in the Fig 3 graph, which is drawn
-> from `v_hs_transitions`. The recovery edges (Hungry→Full, Starving→Hungry, Starving→Full) match,
-> so the Starving-row denominator (~17) is the same in both.""")
+> edges (Full→Hungry, Hungry→Starving) are larger here than in `v_hs_transitions`. The recovery
+> edges (Hungry→Full, Starving→Hungry, Starving→Full) match, so the Starving-row denominator
+> (~17) is the same in both.""")
 
 code(r"""
 # B7: fit CTMC generator over HS1/HS2/HS3 from transitions + dwell times; steady-state.
 # NB: counts here come from all hunger_raw state-changes (incl. idle-run drain crossings),
-# so down-crossing counts exceed the v_hs_transitions graph in Fig 3; recovery edges match.
+# so down-crossing counts exceed v_hs_transitions; recovery edges match.
 states = ["HS1","HS2","HS3"]
 # Build per-run state sojourns from hunger_raw ordered timeline (vectorised on
 # state-change points only, so it is O(transitions) not O(samples)).
@@ -2450,39 +2450,6 @@ depends on colour alone. Figure titles state the analytic claim; captions state 
 analysis and whether the panel is confirmatory, diagnostic, or exploratory.
 """)
 
-md("**Fig 1 — Architecture recap** *(unit: logged module/table types, n = 4 source databases)*: perception → salience → executive → remote, annotated with the signals actually logged at each stage.")
-code(r"""
-# Colour carries no data here (four stages, one flow), so the boxes are a single
-# neutral surface and the ONE feedback edge — the point of the figure — is the only accent.
-fig, ax = plt.subplots(figsize=(12, 4.2)); ax.axis("off")
-ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-stages = [
-    ("Vision\n(vision.db)", "landmark_events\n gaze / attention / zone\n faces_in_frame"),
-    ("Salience\n(salience_network.db)", "face_ips_events\n IPS = w·[prox,cent,gaze]\n target_selections, attempts"),
-    ("Executive\n(executive_control.db)", "HungerModel drain/feed\n interactions + turns\n hunger_level_events"),
-    ("Remote/Telegram\n(chat_bot.db)", "hs2_entry / hs3_proactive\n hs3_recovery\n chat_messages"),
-]
-x = 0.02; centers = []
-for i,(name, sig) in enumerate(stages):
-    ax.add_patch(plt.Rectangle((x,0.50),0.20,0.34, fc="#EEF1F4", ec=INK, lw=1.1))
-    ax.text(x+0.10,0.67,name,ha="center",va="center",fontsize=10,fontweight="bold",color=INK)
-    ax.text(x+0.10,0.44,sig,ha="center",va="top",fontsize=7.5,color=MUTED)
-    centers.append(x+0.10)
-    if i<3: ax.annotate("",(x+0.235,0.67),(x+0.20,0.67),arrowprops=dict(arrowstyle="-|>",lw=1.8,color=INK))
-    x += 0.245
-# The feedback edge (executive -> salience): the loop the study is about.
-_acc = HS_ACCENT["HS1"]
-ax.annotate("", (centers[1],0.50), (centers[2],0.50),
-            arrowprops=dict(arrowstyle="-|>",lw=1.8,color=_acc,
-                            connectionstyle="arc3,rad=0.35"))
-ax.text((centers[1]+centers[2])/2, 0.135,
-        "interaction_result RPC (homeostatic reward, energy cost)\n"
-        "socially embedded regulatory feedback: drive reduction ↦ affinity / eligibility-threshold learning",
-        ha="center",fontsize=8,style="italic",color=_acc)
-ax.text(0.5,0.95,"Always-on socially embedded regulatory architecture — data-logging pipeline",ha="center",fontsize=12,fontweight="bold",color=INK)
-savefig(fig,"fig01_architecture"); plt.show()
-""")
-
 md("""**Fig 2 — Drive timeline per day** *(unit: hunger-level event, n = 165,460 events across
 12 monitored runs / 8 days)*: one panel per experiment day. The drive `run_id`/`monotonic` clock resets on every restart, so a day can
 contain several runs (4 restarts on 2026-06-15, 2 on 2026-06-18); we stitch a day's runs
@@ -2545,65 +2512,6 @@ fig.legend(handles=handles,loc="lower center",ncol=6,bbox_to_anchor=(0.5,-0.05),
 fig.suptitle("Fig 2 — Orexigenic-drive dynamics per experiment day: autonomous drain, discrete replenishment, Starving sojourns",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig02_drive_timeline"); plt.show()
-""")
-
-md("**Fig 3 — Thresholds / transitions** *(unit: hunger-state transition, n = 146 transitions)*: level-at-transition histograms vs 60/25 lines + HS state-transition diagram with observed counts.")
-code(r"""
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.6, 4.6), gridspec_kw={"width_ratios":[1.25,1.05]})
-tr = hs_transitions
-# Detection is exact for DRAIN-driven falls: they cross the threshold continuously, so
-# the level straddles 60/25 within one sample. Feeding-driven RISES are discrete meals
-# that overshoot the threshold (they are recoveries, not detection) — shown separately.
-dn = tr[tr["level_delta"]<0]                                   # drain/cost-driven falls (detection)
-up = tr[tr["level_delta"]>0]                                   # feeding-driven rises (recovery)
-# For falls, plot the tight bracket [after, before] around the crossed threshold.
-dn60 = dn[dn[["from_state","to_state"]].apply(lambda r:set(r)=={"HS1","HS2"},axis=1)]
-dn25 = dn[dn[["from_state","to_state"]].apply(lambda r:set(r)=={"HS2","HS3"},axis=1)]
-bins=np.linspace(0,100,51)
-# Histogram colours are deliberately NEUTRAL (gray/blue) so the amber/red threshold
-# lines are the only warm accents — data colour never collides with threshold colour.
-ax1.hist(dn["stomach_level_before"],bins=bins,color="#8A94A0",alpha=0.75,
-         label=f"level just before the fall (n={len(dn)})")
-ax1.hist(dn["stomach_level_after"],bins=bins,color="#3A7CA5",alpha=0.65,
-         label=f"level just after the fall (n={len(dn)})")
-for lvl,txt,col,xoff in [(60,"threshold 60",HS_ACCENT["HS2"],-2.2),(25,"threshold 25",HS_ACCENT["HS3"],2.2)]:
-    ax1.axvline(lvl,color=col,lw=2,ls="--")
-    ax1.annotate(txt, xy=(lvl, ax1.get_ylim()[1]*0.70), xytext=(lvl+xoff, ax1.get_ylim()[1]*0.70),
-                 ha="left" if xoff>0 else "right", va="center", fontsize=8.8, color=col,
-                 fontweight="bold", bbox=dict(boxstyle="round,pad=0.22",fc="white",ec=col,lw=0.7,alpha=0.92))
-ax1.set_xlabel("stomach level (%) around the transition"); ax1.set_ylabel("drain-driven transitions")
-ax1.legend(loc="upper right",fontsize=8.5)   # x>65 is empty — no collision possible
-ax1.set_title("Drain-driven transitions straddle 60/25 within one sample\n(feeding rises overshoot — see Fig 2)",fontsize=11)
-# State-transition graph: states on ONE left->right deficit axis; worsening arcs above,
-# recovery arcs below; each edge coloured by its DESTINATION state with the count ON the arc.
-ax2.set_axis_off(); ax2.set_xlim(0,1); ax2.set_ylim(0.02,1.02)
-pos={"HS1":(0.14,0.52),"HS2":(0.50,0.52),"HS3":(0.86,0.52)}
-counts=tr.groupby(["from_state","to_state"]).size(); mx=counts.max()
-# Empirically (matplotlib arc3 sign): NEGATIVE rad bows a rightward edge UP and a leftward
-# edge DOWN — so one negative constant puts worsening arcs above the nodes and recovery
-# arcs below. Long edges get extra curvature so they clear the middle node.
-RAD=-0.30
-for (a,b),c in counts.items():
-    if a not in pos or b not in pos or a==b: continue
-    (x1,y0),(x2,_)=pos[a],pos[b]; d=x2-x1
-    rad_eff = RAD*(1.25 if abs(d)>0.5 else 1.0)
-    ax2.annotate("",pos[b],pos[a],zorder=1,
-        arrowprops=dict(arrowstyle="-|>",mutation_scale=16,lw=1+3*c/mx,
-                        color=HS_ACCENT[b],alpha=0.9,
-                        connectionstyle=f"arc3,rad={rad_eff}",shrinkA=20,shrinkB=20))
-    apex_y = y0 - rad_eff*d/2                      # quadratic-Bezier midpoint of the drawn arc
-    ax2.text((x1+x2)/2, apex_y, f"{int(c)}", fontsize=10, ha="center", va="center",
-             color=HS_ACCENT[b], fontweight="bold", zorder=4,
-             bbox=dict(boxstyle="circle,pad=0.18",fc="white",ec=HS_ACCENT[b],lw=0.9,alpha=0.98))
-for s,(x,y) in pos.items():
-    ax2.add_patch(plt.Circle((x,y),0.105,fc=HS_PALETTE[s],ec="white",lw=2,zorder=2))
-    ax2.text(x,y,HS_NAME[s],ha="center",va="center",fontweight="bold",color=INK,zorder=3,fontsize=10)
-ax2.text(0.50,0.97,"worsening (drain)  →",ha="center",fontsize=8.5,color=MUTED,style="italic")
-ax2.text(0.50,0.06,"←  recovery (feeding)",ha="center",fontsize=8.5,color=MUTED,style="italic")
-ax2.set_title("State transitions — count on each edge, coloured by destination")
-fig.suptitle("Fig 3 — Threshold implementation: drain-driven state transitions bracket 60 and 25",
-             fontsize=13,fontweight="semibold")
-savefig(fig,"fig03_thresholds_transitions"); plt.show()
 """)
 
 md("""**Fig 4 — Deficit → action (RQ1-3)** *(units: 367 interaction turns, 710 chat messages,
@@ -2749,108 +2657,6 @@ a2.set_title("Mean conversation turns")
 fig.suptitle("Fig 5 — Priority reallocation: Starving shifts behaviour away from social completion",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
-""")
-
-md("**Fig 6 — IPS decomposition** *(unit: salience target/face IPS rows, n = 5,142 target selections and 216,940 face-IPS events; mechanism context, not a drive result)*: weighted proximity/centrality/gaze composition of IPS and the effective eligibility threshold.")
-code(r"""
-w=CONST["BASELINE_WEIGHTS"]; SUB=["prox","cent","gaze"]
-# cool triple (validated): none of these collide with the reserved HS status colours
-SUBCOL={"prox":"#2E7DB8","cent":"#9A66D6","gaze":"#0F9B8E"}
-s=ips.dropna(subset=[f"{k}_score" for k in SUB]).copy()
-contrib={k:(s[f"{k}_score"]*w[k]).mean() for k in SUB}
-fig,(a1,a2)=plt.subplots(1,2,figsize=(13,4.4),gridspec_kw={"width_ratios":[0.82,1.2]})
-left=0.0
-total=sum(contrib.values())
-for k in SUB:
-    v=contrib[k]
-    a1.barh(["mean IPS"],[v],left=left,color=SUBCOL[k],edgecolor="white",linewidth=1.6,height=0.46,zorder=3)
-    label=f"{k}\nw={w[k]}\n{v:.2f}"
-    a1.text(left+v/2,0,label,ha="center",va="center",color="white",fontsize=9,fontweight="bold")
-    left+=v
-a1.set_xlabel("mean weighted IPS contribution")
-a1.set_xlim(0,total*1.14)
-a1.set_ylim(-0.6,0.6)
-a1.grid(axis="x",alpha=0.16)
-a1.set_title("Mean IPS composition\nweighted contribution only",fontsize=11)
-a1.text(total*1.02,0,f"total\n{total:.2f}",ha="left",va="center",fontsize=9,color=INK,fontweight="bold")
-# IPS distribution by social state vs thresholds (violin + threshold marks)
-tsel=load_view("salience","v_target_selections_clean")
-ss_list=["ss1","ss2","ss3","ss4"]
-data=[tsel[tsel["ss"]==ss]["ips"].dropna().values for ss in ss_list]
-parts=a2.violinplot([d for d in data if len(d)],positions=[i for i,d in enumerate(data) if len(d)],
-                    showmedians=True,widths=0.8)
-for pc in parts["bodies"]: pc.set_facecolor("#8E7CC3"); pc.set_alpha(0.45); pc.set_edgecolor(MUTED)
-for key in ["cmedians","cmaxes","cmins","cbars"]:
-    if key in parts: parts[key].set_edgecolor(MUTED)
-for i,ss in enumerate(ss_list):
-    thr=CONST["SS_THRESHOLDS"].get(ss)
-    if thr is not None:
-        # threshold marks in neutral INK — red is reserved for Starving in this report
-        a2.hlines(thr,i-0.4,i+0.4,color=INK,lw=2.5,zorder=5)
-        ha = "right" if i == len(ss_list)-1 else "left"
-        x_text = i-0.34 if i == len(ss_list)-1 else i+0.34
-        a2.annotate(f"thr {thr:.2f}", xy=(i,thr), xytext=(x_text,thr+0.035),
-                    ha=ha, va="bottom", fontsize=8, color=INK, fontweight="bold",
-                    arrowprops=dict(arrowstyle="-",color=INK,lw=0.8,alpha=0.75),
-                    bbox=dict(boxstyle="round,pad=0.18",fc="white",ec=INK,lw=0.6,alpha=0.92),
-                    zorder=6)
-a2.set_xticks(range(4)); a2.set_xticklabels([SS_NAME[s] for s in ss_list])
-a2.set_ylabel("IPS at target selection"); a2.set_xlabel("social state")
-a2.set_title("IPS distribution vs eligibility threshold (dark bar)")
-fig.suptitle("Fig 6 — Salience mechanism: IPS composition and state-specific eligibility thresholds",
-             fontsize=13,fontweight="semibold")
-savefig(fig,"fig06_ips_decomposition"); plt.show()
-""")
-
-md("**Fig 7 — Starving recovery episodes** *(unit: Starving episode, n = 8 episodes across 4 runs; exploratory)*: cumulative first-feed probability, with recovery status summarized in-plot. The sample is too small for calibrated recovery-rate estimation.")
-code(r"""
-ep=hs3_episodes.copy(); n=len(ep)
-n_feed=int(ep["received_feed"].sum())
-n_escape=int(ep["escaped_starving_by_feeding"].sum())
-n_full=int(ep["recovered_to_full_by_feeding"].sum())
-fig,ax=plt.subplots(1,1,figsize=(10.8,4.8))
-ttf=ep["time_to_first_feed_sec"].dropna()
-try:
-    from lifelines import KaplanMeierFitter
-    km = ep.copy()
-    km["dur"] = km["time_to_first_feed_sec"].fillna(km["episode_duration_sec"])
-    km["event"] = km["received_feed"].astype(int)
-    km = km[km["dur"] > 0]
-    kmf = KaplanMeierFitter().fit(km["dur"], km["event"], label="first feed")
-    sf = kmf.survival_function_["first feed"]
-    ci = kmf.confidence_interval_
-    ax.step(sf.index, 1 - sf.values, where="post", color=HS_ACCENT["HS1"], lw=2.6)
-    lo = 1 - ci.iloc[:,1].values; hi = 1 - ci.iloc[:,0].values
-    ax.fill_between(ci.index, lo, hi, step="post", color=HS_PALETTE["HS1"], alpha=0.25)
-    if np.isfinite(kmf.median_survival_time_):
-        ax.axvline(kmf.median_survival_time_, color=INK, ls="--", lw=1.4,
-                   label=f"KM median {kmf.median_survival_time_:.0f} s (censoring-adjusted)")
-except Exception:
-    vals_ecdf = np.sort(ttf.values)
-    if len(vals_ecdf):
-        ax.step(vals_ecdf, np.arange(1, len(vals_ecdf)+1)/len(vals_ecdf),
-                where="post", color=HS_ACCENT["HS1"], lw=2.2)
-ax.axvline(CONST["FEED_WAIT_TIMEOUT_SEC"], color=MUTED, ls=":", lw=1.4,
-           label="8 s feed-wait timeout")
-if len(ep):
-    ttf_med=ttf.median() if len(ttf) else np.nan
-    ttf_max=ttf.max() if len(ttf) else np.nan
-    status = (
-        f"recovery status (n={n})\n"
-        f"fed: {n_feed}/{n}\n"
-        f"escaped Starving: {n_escape}/{n}\n"
-        f"recovered to Full: {n_full}/{n}\n"
-        f"raw median first feed: {ttf_med:.0f} s\n"
-        f"max: {ttf_max:.0f} s"
-    )
-    ax.text(0.985,0.055,status,transform=ax.transAxes,ha="right",va="bottom",
-            fontsize=9.2,color=INK,
-            bbox=dict(boxstyle="round,pad=0.34",fc="white",ec=HS_PALETTE["HS1"],lw=0.9,alpha=0.94))
-ax.set_xlabel("seconds since Starving entry"); ax.set_ylabel("cumulative P(first feed)")
-ax.set_ylim(0,1.02); ax.grid(False); ax.legend(loc="lower right", bbox_to_anchor=(0.78,0.05))
-fig.suptitle("Fig 7 — Starving episodes: time to first feed",
-             fontsize=13,fontweight="semibold")
-savefig(fig,"fig07_hs3_funnel"); plt.show()
 """)
 
 md("**Fig 8 — Remote-channel regulatory signal** *(unit: proactive Telegram ping, n = 234 pings across 12 subscribers; response window = 1 h)*: response-to-ping rate by ping type (bootstrap 95% CI; n on each bar). A separate counts panel would repeat the n labels.")
@@ -3266,52 +3072,18 @@ hs_ap_loss=float(drop_df.loc[drop_df.feature=="hs_rank","pr_auc_loss"].iloc[0])
 print("\nDrop-column importance (leave-one-run-out AUC/PR-AUC loss):")
 print(drop_df.round(4).to_string(index=False))
 
-# Two panels. With only two features (social, hunger), the drop-column chart repeats the
-# ablation numbers, so it is not drawn: its one non-redundant quantity (the AUC cost of
-# removing SOCIAL state) is reported as a sentence inside the ablation panel instead.
-fig=plt.figure(figsize=(12.6,5.8), constrained_layout=False)
-gs=fig.add_gridspec(1,2,width_ratios=[1.05,1.0],wspace=0.34,
-                    left=0.07, right=0.98, bottom=0.12, top=0.77)
-a1=fig.add_subplot(gs[0,0]); a3=fig.add_subplot(gs[0,1])
-
-# (1) Ablation: social state with and without hunger_state.
-ab=abl[abl.target=="reached_ss4"].set_index("feature_set").loc[["social-only","social+hunger"]]
-_pr_base=float(d["reached_ss4"].mean())         # PR-AUC baseline = prevalence, NOT 0.5
-x=np.arange(len(ab)); w=0.34
-a1.bar(x-w/2,ab["auc"],w,label="AUC",color=INK,alpha=0.86)
-a1.bar(x+w/2,ab["pr_auc"],w,label="PR-AUC",color="#3A7CA5",alpha=0.82)
-a1.axhline(0.5,color=INK,lw=1,ls=":",alpha=0.7,label="AUC chance = 0.50")
-a1.axhline(_pr_base,color="#3A7CA5",lw=1,ls=":",alpha=0.8,label=f"PR-AUC baseline = {_pr_base:.2f} (prevalence)")
-a1.set_xticks(x); a1.set_xticklabels(["social only","+ hunger"],fontsize=9)
-a1.set_ylim(0.45,1.03); a1.set_ylabel("held-out score"); a1.grid(False)
-a1.set_title(f"Ablation: hunger adds modest held-out signal\nAUC {ab['auc'].iloc[0]:.3f}→{ab['auc'].iloc[1]:.3f} ({d_auc:+.3f})")
-a1.legend(frameon=False,fontsize=8,loc="upper left",bbox_to_anchor=(0.02,0.84))  # clear of both dotted baselines and the bars
-for i,row in enumerate(ab.itertuples()):
-    a1.text(i-w/2,row.auc+0.012,f"{row.auc:.2f}",ha="center",fontsize=8)
-    a1.text(i+w/2,row.pr_auc+0.012,f"{row.pr_auc:.2f}",ha="center",fontsize=8,color="#3A7CA5")
+# Out-of-fold readout by hunger state: do held-out predictions reproduce the B4 Starving
+# suppression? Reported as a table — with two features the numbers carry the whole result.
 ss_auc_loss=float(drop_df.loc[drop_df.feature=="ss_rank","auc_loss"].iloc[0])
-a1.text(0.03,0.965,f"for scale: removing SOCIAL state instead costs {ss_auc_loss:+.3f} AUC\n"
-        f"(hunger ranks #{hs_rank_pos}/{len(X_cols)} — social dominates)",
-        transform=a1.transAxes,ha="left",va="top",fontsize=8.2,color=MUTED,style="italic")
-
-# (2) Calibration-style readout by hunger state using only out-of-fold predictions.
+print(f"\nFor scale: removing SOCIAL state costs {ss_auc_loss:+.3f} AUC "
+      f"(hunger ranks #{hs_rank_pos}/{len(X_cols)} — social dominates).")
 d2=d.copy(); d2["p_ss4_oof"]=oof; d2=d2[d2["p_ss4_oof"].notna()]
 by=d2.groupby("hunger_state_start").agg(
-    pred=("p_ss4_oof","mean"), obs=("reached_ss4","mean"), n=("reached_ss4","size")
+    oof_pred=("p_ss4_oof","mean"), observed=("reached_ss4","mean"), n=("reached_ss4","size")
 ).reindex(HS_ORDER)
-x=np.arange(len(HS_ORDER)); w=0.36
-a3.bar(x-w/2,by["pred"],w,label="OOF model P(Engaged)",
-       color=[HS_PALETTE[h] for h in HS_ORDER],edgecolor="white",linewidth=1.0)
-a3.bar(x+w/2,by["obs"],w,label="observed rate",color=[HS_PALETTE[h] for h in HS_ORDER],
-       alpha=0.43,hatch="//",edgecolor=MUTED,linewidth=0.8)
-a3.set_xticks(x); a3.set_xticklabels([f"{n}\n(n={int(by.loc[h,'n']) if pd.notna(by.loc[h,'n']) else 0})"
-                                      for h,n in zip(HS_ORDER,HS_NAMES)],fontsize=9)
-a3.set_ylim(0,1.0); a3.set_ylabel("P(reach Engaged)"); a3.grid(False)
-a3.legend(frameon=False,fontsize=8,loc="upper right")
-a3.set_title("Held-out predictions track Starving-state social-completion suppression",fontsize=11,pad=8)
-fig.suptitle("Fig D1 — ML sensitivity: orexigenic drive vs social state",
-             fontsize=13,fontweight="semibold",y=0.95)
-savefig(fig,"figD1_ml_sensitivity"); plt.show()
+by.index=[HS_NAME[h] for h in HS_ORDER]
+print("\nOut-of-fold P(reach Engaged) vs observed rate, by hunger state at start:")
+print(by.round(3).to_string())
 RESULTS["D1"]={"verdict":f"adding hunger state changes Engaged-prediction AUC by {d_auc:+.3f} and PR-AUC by {d_ap:+.3f}; "
                f"drop-column CV ranks hunger_state #{hs_rank_pos}/{len(X_cols)} "
                f"(AUC loss {hs_auc_loss:+.3f}, PR-AUC loss {hs_ap_loss:+.3f}). "
@@ -3319,7 +3091,7 @@ RESULTS["D1"]={"verdict":f"adding hunger state changes Engaged-prediction AUC by
                f"not as a confirmatory mechanism test."}
 """)
 
-# D2 (standalone survival readout) removed: it duplicated B6/Fig 7's KM evidence, and a
+# D2 (standalone survival readout) removed: it duplicated B6's episode evidence, and a
 # Cox fit on 8 episodes is not research-grade. D5 (framing/mediation) removed: path a is
 # prompt-driven (true by construction, already shown descriptively in B3), path b is
 # temporally leaked, and the one leakage-free signal (ping->reply) already lives in B5.
@@ -3559,11 +3331,10 @@ items = [
 	 ("ml_ablation_delta.csv", exists("ml_ablation_delta.csv")),
 	 ("ml_dropcolumn_importance.csv", exists("ml_dropcolumn_importance.csv")),
 	]
-for n in ["fig01_architecture","fig02_drive_timeline","fig03_thresholds_transitions",
-          "fig04_deficit_action","fig05_prioritisation_heatmap",
-          "fig06_ips_decomposition","fig07_hs3_funnel","fig08_remote_loop","fig09_steady_state",
+for n in ["fig02_drive_timeline","fig04_deficit_action","fig05_prioritisation_heatmap",
+          "fig08_remote_loop","fig09_steady_state",
           "fig10_affinity_trajectories","fig12_role_validation",
-          "fig13_affinity_dose","figD1_ml_sensitivity"]:
+          "fig13_affinity_dose"]:
     items.append((n, fig_exists(n)))
 print("FINAL OUTPUT CHECKLIST")
 for name, st in items:

@@ -1,6 +1,6 @@
 # Orexigenic drive — results summary
 
-_Generated 2026-07-10 00:25. Single always-on condition. Unit = run (10 runs, 8 days, 217 interactions). Two-phase participant design: Phase 1 (first 4 days) had assigned roles (2 obligated feeders, 2 interact-no-feed, rest unconstrained); Phase 2 (last 4 days) unconstrained — used by B10/RQ3._
+_Generated 2026-07-11 18:28. Single always-on condition. Unit = run (10 runs, 8 days, 217 interactions). Two-phase participant design: Phase 1 (first 4 days) had assigned roles (2 obligated feeders, 2 interact-no-feed, rest unconstrained); Phase 2 (last 4 days) unconstrained — used by B10/RQ3._
 
 ## Verification gate
 

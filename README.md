@@ -397,13 +397,8 @@ Using group-aware cross-validation on about 200 interaction rows, adding hunger 
 Engaged prediction AUC from **0.669 to 0.757** (+0.088) and PR-AUC by **+0.068**. Drop-column
 cross-validation ranks hunger behind social state, meaning social context remains the stronger
 predictor. Out-of-fold predictions reproduce the Starving suppression pattern, which
-corroborates B4 but does not prove it.
-
-![ML sensitivity](analysis/figures/figD1_ml_sensitivity.png)
-
-*Fig D1 - unit: interaction, n = 217; grouped CV leaves out runs or people. Hunger adds held-out
-signal, social state dominates, and out-of-fold predictions track the Starving suppression
-pattern.*
+corroborates B4 but does not prove it. The unit is the interaction (n = 217), and the grouped
+cross-validation leaves out whole runs or people.
 
 ---
 
