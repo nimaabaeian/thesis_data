@@ -323,14 +323,20 @@ an exponentially weighted moving average of normalised homeostatic reward, bound
 In plain terms, people who help reduce the robot's deficit can become easier for the robot to
 select proactively later.
 
-The mechanism behaves as coded:
+The mechanism behaves as coded. Each check below is reproduced in
+[`b9_mechanism_check.csv`](analysis/outputs/b9_mechanism_check.csv).
 
-- Affinity updates converge over time: mean absolute update falls from 0.10 to 0.06.
-- Perceptual IPS weights stay fixed; learning acts through the per-person eligibility threshold:
-  `eff_thr = max(0.50, base_ss - 0.15 * affinity)`.
-- The threshold reconstruction matches logged values to 1e-4.
-- High-affinity people can receive up to about a 0.14 lower approach threshold.
-- Hungry-state pings are gated to the 11 of 14 people above affinity 0.20.
+| Check | Value | n |
+|---|---|---:|
+| Affinity updates converge (mean absolute update, early to late) | 0.103 -> 0.062 | 205 updates |
+| Perceptual IPS weights are constant, so learning does not touch them | 1 distinct weight combination | 216,940 events |
+| `eff_thr = max(0.50, base_ss - 0.15 * affinity)` matches logged values | max absolute error 0.0000 | 3,378 selections |
+| Eligibility discount for the highest-affinity person, against the 0.85 base | 0.143 lower threshold | 14 people |
+| Hungry-state pings gated to people above affinity 0.20 | 11 of 14 people | 14 people |
+
+Learning therefore acts on selection only through the per-person eligibility threshold, never
+through perception. The per-person affinity-to-threshold profile behind rows 3 and 4 is in
+[`b9_eligibility_profile.csv`](analysis/outputs/b9_eligibility_profile.csv).
 
 The affinity reconstruction was also checked against the robot's persisted
 `homeostatic_learning.json` memory. For the 12 people stored under one identity, the
@@ -443,9 +449,23 @@ biological measurement. The non-trivial operational result is dense autonomous s
 every 2.3 seconds across 12 runs / 46 hours, including two runs with no visitors.
 
 **B2: deficit detection.** Hunger labels are derived from the coded thresholds: Full to Hungry at
-60, and Hungry to Starving at 25. Transitions bracket those thresholds with 1.00/1.00 accuracy.
-The useful check is that there were zero rapid reversals at either threshold, so the labels do
-not flap around the boundary.
+60, and Hungry to Starving at 25. Detection is the drain-driven fall, where the level crosses the
+threshold continuously; feeding-driven rises are discrete meals that overshoot, so they are
+recovery rather than detection and are counted separately.
+
+| Threshold | Transitions | Drain falls | Bracket accuracy | Widest bracket | Rapid reversals (<120 s) |
+|---|---:|---:|---:|---:|---:|
+| 60 (Full / Hungry) | 121 | 49 | 1.00 | 3.6 | 0 |
+| 25 (Hungry / Starving) | 14 | 8 | 1.00 | 3.6 | 0 |
+
+Accuracy of 1.00 is true by implementation, because the label is computed from the level by the
+same thresholds. The informative columns are the last two. The widest bracket is 3.6 stomach
+points, which is one drain sample, so the label is never caught more than a single sampling step
+away from the coded boundary. And there were zero rapid reversals at either threshold, so the
+labels do not flap. Values come from
+[`b2_detection_check.csv`](analysis/outputs/b2_detection_check.csv); the observed transition
+counts per edge are in
+[`b2_transition_counts.csv`](analysis/outputs/b2_transition_counts.csv).
 
 **Reading:** the instrumentation behaves exactly as coded. The empirical homeostasis claims rest
 on the behavioural and learning results in RQ1-RQ3.

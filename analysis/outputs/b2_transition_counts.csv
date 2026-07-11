@@ -1,0 +1,6 @@
+from_state,to_state,n
+Full,Hungry,49
+Hungry,Full,72
+Hungry,Starving,8
+Starving,Full,11
+Starving,Hungry,6

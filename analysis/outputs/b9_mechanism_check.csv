@@ -1,0 +1,8 @@
+check,value,n,passes
+"affinity update converges (mean |update|, early -> late)",0.103 -> 0.062,205,True
+IPS component weights are constant (learning does not touch them),1 distinct weight combo,216940,True
+"eff_thr = max(0.50, base_ss - 0.15*affinity) matches logged values (max abs err)",0.0000,3378,True
+eligibility discount for the highest-affinity person (vs ss4 base 0.85),0.143,3378,True
+HS2 proactive pings gated to people above affinity 0.20,11/14 people,14,True
+"re-threaded EMA vs robot's persisted memory, un-forked people (max abs diff)",0.0000,12,True
+forked identities: update counts conserved by the merge,conserved,2,True

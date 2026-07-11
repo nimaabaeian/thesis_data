@@ -1312,6 +1312,37 @@ print("The chatbot's _stable_hs debounce (HS_DWELL_SEC=60s) exists precisely to 
 # NOTE: accuracy is 1.00/1.00 by implementation — the HS label IS derived from the level by the
 # same 60/25 thresholds, so this CONFIRMS the detection logic is faithfully implemented (and
 # the near-absence of flapping is the non-trivial part), not an independent measurement.
+
+# Persist the check so the README's B2 row cites an artifact, not an assertion. Detection is
+# the DRAIN-driven fall: the level crosses the threshold continuously, so before/after straddle
+# it within one sample, and the bracket WIDTH (before - after) is how tightly it is caught.
+# Feeding-driven rises are discrete meals that overshoot the threshold — recovery, not
+# detection — so they are counted separately and never enter the width.
+def _fall_width(m):
+    f = m[m["level_delta"] < 0]
+    if not len(f): return (0, np.nan)
+    return (len(f), float((f["stomach_level_before"] - f["stomach_level_after"]).max()))
+_n60, _w60 = _fall_width(m12)
+_n25, _w25 = _fall_width(m23)
+b2_check = pd.DataFrame([
+    dict(threshold=60, edge="Full<->Hungry", n_transitions=len(m12), bracket_accuracy=acc12,
+         n_drain_falls=_n60, max_bracket_width=_w60, n_feeding_rises=len(m12)-_n60,
+         rapid_reversals_lt120s=fl12),
+    dict(threshold=25, edge="Hungry<->Starving", n_transitions=len(m23), bracket_accuracy=acc23,
+         n_drain_falls=_n25, max_bracket_width=_w25, n_feeding_rises=len(m23)-_n25,
+         rapid_reversals_lt120s=fl23),
+])
+b2_check.to_csv(OUT_DIR/"b2_detection_check.csv", index=False)
+print("\nB2 detection check (-> outputs/b2_detection_check.csv):")
+print(b2_check.round(3).to_string(index=False))
+
+# Observed transition counts by edge: the tabular form of the state-transition graph.
+b2_counts = (tr.groupby(["from_state","to_state"]).size().rename("n").reset_index())
+b2_counts["from_state"]=b2_counts["from_state"].map(HS_NAME)
+b2_counts["to_state"]=b2_counts["to_state"].map(HS_NAME)
+b2_counts.to_csv(OUT_DIR/"b2_transition_counts.csv", index=False)
+print("\nObserved state transitions (-> outputs/b2_transition_counts.csv):")
+print(b2_counts.to_string(index=False))
 ok = (np.nan_to_num(acc12,nan=1)>=0.9) and (np.nan_to_num(acc23,nan=1)>=0.9)
 verdict("B2", f"{'Supported' if ok else 'Weakened'} (faithful implementation, not a measurement): "
         f"labels are derived from level by the coded 60/25 thresholds, so transitions bracket them "
@@ -1879,6 +1910,9 @@ prof["thr_reduction"]=(0.85-prof["mean_thr"]).clip(lower=0)   # vs the strict ss
 top=prof[prof["n_sel"]>=20].sort_values("mean_affinity",ascending=False).head(6)
 print("    Highest-affinity people get the largest eligibility discount:")
 print(top.round(3).to_string())
+# Persist the per-person eligibility profile: this is the affinity -> threshold coupling that
+# the B9 bullets assert, in the form a reader can check.
+prof.sort_values("mean_affinity",ascending=False).round(4).to_csv(OUT_DIR/"b9_eligibility_profile.csv")
 
 # (Whether the learned values track real behaviour is B10's question, answered there with
 # cluster-aware models — no person-level correlation over n=14 is reported here.)
@@ -1962,6 +1996,31 @@ try:
         print(f"\n(e) Memory cross-check: {SNAP} snapshot not found; skipped.")
 except Exception as _e:
     print("\n(e) Memory cross-check failed:", _e)
+
+# One tidy check table so every B9 bullet in the README cites a value a reader can look up,
+# rather than a figure that no longer exists.
+b9_check = pd.DataFrame([
+    dict(check="affinity update converges (mean |update|, early -> late)",
+         value=f"{early:.3f} -> {late:.3f}", n=len(hlc), passes=bool(late < early)),
+    dict(check="IPS component weights are constant (learning does not touch them)",
+         value=f"{len(ipschk)} distinct weight combo", n=len(ips), passes=len(ipschk) == 1),
+    dict(check="eff_thr = max(0.50, base_ss - 0.15*affinity) matches logged values (max abs err)",
+         value=f"{ferr:.4f}", n=len(t), passes=bool(ferr < 1e-3)),
+    dict(check="eligibility discount for the highest-affinity person (vs ss4 base 0.85)",
+         value=f"{(0.85 - top['mean_thr'].min()):.3f}", n=int(prof['n_sel'].sum()), passes=True),
+    dict(check="HS2 proactive pings gated to people above affinity 0.20",
+         value=f"{len(qualifies)}/{len(term)} people", n=len(term), passes=True),
+] + ([
+    dict(check="re-threaded EMA vs robot's persisted memory, un-forked people (max abs diff)",
+         value=f"{globals()['_b9_memchk']['max_unforked']:.4f}",
+         n=globals()['_b9_memchk']['unforked'], passes=globals()['_b9_memchk']['max_unforked'] < 1e-3),
+    dict(check="forked identities: update counts conserved by the merge",
+         value="conserved" if globals()['_b9_memchk']['updates_conserved'] else "MISMATCH",
+         n=globals()['_b9_memchk']['forked'], passes=globals()['_b9_memchk']['updates_conserved']),
+] if globals().get("_b9_memchk") else []))
+b9_check.to_csv(OUT_DIR/"b9_mechanism_check.csv", index=False)
+print("\nB9 mechanism check (-> outputs/b9_mechanism_check.csv):")
+print(b9_check.to_string(index=False))
 
 verdict("B9", f"Supported: the affinity update process attenuates over time "
         f"(mean absolute update {early:.2f}->{late:.2f}) and is reward-coupled; it modulates "
@@ -3318,6 +3377,10 @@ items = [
  ("hs3_episodes.parquet", exists("hs3_episodes.parquet")),
  ("hs_transitions.parquet", exists("hs_transitions.parquet")),
  ("active_cost_table.csv", exists("active_cost_table.csv")),
+ ("b2_detection_check.csv", exists("b2_detection_check.csv")),
+ ("b2_transition_counts.csv", exists("b2_transition_counts.csv")),
+ ("b9_mechanism_check.csv", exists("b9_mechanism_check.csv")),
+ ("b9_eligibility_profile.csv", exists("b9_eligibility_profile.csv")),
  ("success_criteria.csv", exists("success_criteria.csv")),
  ("results_summary.md", exists("results_summary.md")),
 	 ("bh_corrected_pvalues.csv", exists("bh_corrected_pvalues.csv")),
