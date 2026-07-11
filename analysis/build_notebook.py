@@ -2787,94 +2787,92 @@ if pi:
 savefig(fig,"fig09_steady_state"); plt.show()
 """)
 
-md("**Fig 10 — Per-person homeostatic-affinity trajectories** *(unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events over 14 named people plus unknown)*: learned affinity trajectories across the whole experiment.")
+md("""**Fig 10 — Homeostatic-affinity trajectories, faceted by Phase-1 role** *(unit: learning
+update event, n = 205 learning-eligible RQ3 events over 14 named people)*: one panel per
+assigned role, sharing both axes. Thin lines are individual people; the bold line is the role
+mean of the currently-held affinity. Faceting replaces the 14-line overlay: the panel carries
+identity, so colour never has to separate more series than it can.""")
 code(r"""
 # Use B9's re-threaded affinity (merged identities get a single coherent EMA, not the stale
 # last-label value) rather than reloading the raw per-label log.
 hlc=globals()["_b9_hlc"].copy()
-fig,ax=plt.subplots(figsize=(12.2,5.8))
-
-# --- 1-D label declutter: spread label y-positions so names never overlap ---
-def declutter(ys, gap, ymin, ymax):
-    if len(ys)==0: return np.asarray([])
-    order=np.argsort(ys); s=np.sort(np.asarray(ys,float))
-    for i in range(1,len(s)):                       # push apart upward
-        if s[i]-s[i-1]<gap: s[i]=s[i-1]+gap
-    if s[-1]>ymax:                                  # then slide the whole stack to fit
-        s-=(s[-1]-ymax)
-        for i in range(len(s)-2,-1,-1):
-            if s[i+1]-s[i]<gap: s[i]=s[i+1]-gap
-    s=np.clip(s,ymin,ymax); out=np.empty_like(s); out[order]=s; return out
-
 meals_by=(master.assign(fed=pd.to_numeric(master["meals_eaten_count"],errors="coerce").fillna(0))
                 .groupby("user_key")["fed"].sum())
-if len(hlc) and "affinity_after" in hlc.columns:
-    hlc=hlc.sort_values(["person_id","timestamp_epoch"])
-    # named people only: "unknown" is the unrecognised-face placeholder (no stable affinity).
-    named=hlc[(hlc["person_id"]!="unknown") & hlc["affinity_after"].notna()].copy()
-    named["experiment_day"]=(named["timestamp_epoch"]-named["timestamp_epoch"].min())/86400.0
-    term=(named.groupby("person_id").tail(1)[["person_id","affinity_after","experiment_day"]]
-          .rename(columns={"affinity_after":"terminal_affinity"}))
-    order=(term.assign(meals=term["person_id"].map(meals_by).fillna(0))
-              .sort_values(["terminal_affinity","meals"],ascending=[False,False])["person_id"].tolist())
-    # Colour = Phase-1 ROLE (the design variable, B10), not an arbitrary rainbow.
-    # Highlighted (labelled) trajectories: all controlled people + the top unconstrained
-    # people by terminal affinity; remaining unconstrained people form a grey backdrop.
-    named["role"]=named["person_id"].map(role_of)
-    controlled=[p for p in order if named[named.person_id==p]["role"].iloc[0]!="normal"]
-    top_norm=[p for p in order if p not in controlled][:4]
-    highlight=controlled+top_norm; context=[p for p in order if p not in highlight]
-    for pid in context:                              # backdrop: thin grey, no markers, no labels
-        g=named[named["person_id"]==pid]
-        ax.plot(g["experiment_day"].values,g["affinity_after"].values,
-                lw=0.8,color=GRID,alpha=0.55,zorder=2)
-    ends=[]                                          # (name, colour, x_end, y_end, terminal_affinity)
-    for pid in highlight:
-        g=named[named["person_id"]==pid]
-        c=ROLE_COLOR[g["role"].iloc[0]]
-        xv=g["experiment_day"].values; yv=g["affinity_after"].values
-        ls="-" if g["role"].iloc[0]!="no_feed" else "--"
-        ax.plot(xv,yv,marker="o",ms=3.0,lw=1.7,color=c,alpha=0.9,ls=ls,zorder=4)
-        ends.append([str(pid), c, xv[-1], yv[-1], yv[-1]])
-    xmax=float(named["experiment_day"].max())
-    # Phase boundary: first Phase-2 learning event on the experiment-day axis.
-    _p2=named[~named["day_rome"].astype(str).isin(PHASE1_DAYS)]
-    if len(_p2):
-        _xb=float(_p2["experiment_day"].min())-0.02
-        ax.axvline(_xb,color=INK,lw=1.1,ls=(0,(4,3)),alpha=0.65,zorder=3)
-        ax.text(_xb-0.07,1.01,"Phase 1 — roles",ha="right",va="bottom",fontsize=8.6,color=MUTED)
-        ax.text(_xb+0.07,1.01,"Phase 2 — unconstrained",ha="left",va="bottom",fontsize=8.6,color=MUTED)
-    ax.axhline(0,color=MUTED,ls=":",lw=1,zorder=1)
-    # y-limits follow the DATA (affinity never went much below 0 in this deployment);
-    # the old fixed [-1,1] range left the whole lower half of the figure empty.
-    _ymin=min(-0.08, float(named["affinity_after"].min())-0.05)
+named=hlc[(hlc["person_id"]!="unknown") & hlc["affinity_after"].notna()].copy()
+named=named.sort_values(["person_id","timestamp_epoch"])
+named["experiment_day"]=(named["timestamp_epoch"]-named["timestamp_epoch"].min())/86400.0
+named["role"]=named["person_id"].map(role_of)
+# Feeds delivered DURING PHASE 1 — the window in which the role actually constrained the
+# person. A whole-deployment total would credit the no-feed pair with post-lift feeds and
+# contradict B10's "0 feeds in Phase 1" compliance result.
+_p1m=master[master["day_rome"].astype(str).isin(PHASE1_DAYS)]
+p1_meals_by=(_p1m.assign(fed=pd.to_numeric(_p1m["meals_eaten_count"],errors="coerce").fillna(0))
+                 .groupby("user_key")["fed"].sum())
+
+# Phase boundary on the experiment-day axis: first Phase-2 learning event.
+_p2=named[~named["day_rome"].astype(str).isin(PHASE1_DAYS)]
+xbound=float(_p2["experiment_day"].min())-0.02 if len(_p2) else np.nan
+xmax=float(named["experiment_day"].max())
+
+# Role mean of the CURRENTLY-HELD affinity: forward-fill each person onto a common grid, then
+# average. A mean over update events alone would be biased by who happened to interact that day.
+grid=np.linspace(0,xmax,80)
+def role_mean(sub):
+    cols=[]
+    for _,g in sub.groupby("person_id"):
+        x=g["experiment_day"].values; y=g["affinity_after"].values
+        idx=np.searchsorted(x,grid,side="right")-1          # last known value at each grid point
+        col=np.where(idx>=0, y[np.clip(idx,0,len(y)-1)], np.nan)   # NaN before a person's 1st update
+        cols.append(col)
+    return np.nanmean(np.vstack(cols),axis=0) if cols else np.full_like(grid,np.nan)
+
+PANELS=[("feeder","Obligated feeders — required to feed in Phase 1"),
+        ("no_feed","No-feed pair — asked to interact, never to feed"),
+        ("normal","Unconstrained — no instruction either way")]
+fig,axes=plt.subplots(3,1,figsize=(11.4,8.8),sharex=True,sharey=True,layout="constrained")
+_ymin=min(-0.08,float(named["affinity_after"].min())-0.05)
+for ax,(role,title) in zip(axes,PANELS):
+    sub=named[named["role"]==role]
+    c=ROLE_COLOR[role]; ls="--" if role=="no_feed" else "-"
     ax.axhspan(0,1.06,color=HS_PALETTE["HS1"],alpha=0.045,zorder=0)
     ax.axhspan(_ymin,0,color=HS_PALETTE["HS3"],alpha=0.035,zorder=0)
-    # place de-collided terminal name+meal labels in a right-margin column, with leader lines
-    lab_y=declutter([e[3] for e in ends], gap=0.062, ymin=_ymin+0.03, ymax=1.0)
-    lx=xmax+0.55
-    for (name,c,xe,ye,_),ly in zip(ends,lab_y):
-        mk=int(meals_by.get(name,0))
-        ax.plot([xe,lx],[ye,ly],color=c,lw=0.75,alpha=0.55,zorder=2)         # leader
-        ax.text(lx+0.08,ly,f"{name} · {mk:g} feeds",va="center",ha="left",
-                fontsize=8.3,color=c,fontweight="medium")
-    for r in ROLE_ORDER:
-        ax.plot([],[],lw=1.7,color=ROLE_COLOR[r],ls="--" if r=="no_feed" else "-",
-                label=f"Phase-1 role: {ROLE_LABEL[r]}")
-    if len(context):
-        ax.plot([],[],lw=0.8,color=GRID,alpha=0.55,
-                label=f"{len(context)} other recognised people")
-    # legend outside (below): with the tightened y-range every inside corner has data
-    fig.legend(loc="outside lower center",ncol=4,frameon=False,fontsize=8.3)
-    ax.set_xlim(0,lx+1.65)
-    ax.set_ylim(_ymin,1.06)
-    ax.set_xlabel("experiment time (days from first logged affinity update)")
-    ax.set_ylabel("learned affinity (EMA of normalised reward)")
-    ax.set_title("Phase-1 role labels highlight the validation contrast; remaining participants provide context",fontsize=12)
-    ax.grid(True,axis="y")
-else:
-    ax.text(0.5,0.5,"no affinity trajectory data",ha="center")
-fig.suptitle("Fig 10 — Adaptive regulatory memory: homeostatic-affinity trajectories across the deployment",
+    ax.axhline(0,color=MUTED,ls=":",lw=1,zorder=1)
+    if np.isfinite(xbound):
+        ax.axvline(xbound,color=INK,lw=1.1,ls=(0,(4,3)),alpha=0.65,zorder=3)
+    people=sub["person_id"].unique()
+    for pid in people:                                  # thin: one line per person
+        g=sub[sub["person_id"]==pid]
+        ax.plot(g["experiment_day"],g["affinity_after"],lw=1.0,color=c,alpha=0.5,ls=ls,
+                marker="o",ms=2.4,zorder=3)
+    ax.plot(grid,role_mean(sub),lw=2.6,color=c,ls=ls,zorder=5,solid_capstyle="round")
+    # Direct-label the endpoints, but only where they cannot collide: the two controlled
+    # panels have 2 people each; in the 10-person panel label just the top 3 by terminal value.
+    term=sub.groupby("person_id").tail(1)[["person_id","experiment_day","affinity_after"]]
+    show=term.sort_values("affinity_after",ascending=False).head(2 if role!="normal" else 3)
+    for _,r in show.iterrows():
+        _tot=int(meals_by.get(r["person_id"],0))
+        ax.annotate(f"{r['person_id']} · {_tot} {'meal' if _tot==1 else 'meals'} in total",
+                    xy=(r["experiment_day"],r["affinity_after"]),
+                    xytext=(6,0),textcoords="offset points",va="center",ha="left",
+                    fontsize=8.2,color=c,fontweight="medium")
+    _p1f=int(p1_meals_by.reindex(people).fillna(0).sum())
+    ax.set_title(f"{title}   (n={len(people)} {'person' if len(people)==1 else 'people'}; "
+                 f"{_p1f} {'meal' if _p1f==1 else 'meals'} delivered while the role held, in Phase 1)",
+                 loc="left",fontsize=10.4,color=INK,pad=6)
+    ax.grid(True,axis="y"); ax.set_ylabel("learned affinity")
+axes[0].set_xlim(0,xmax*1.17); axes[0].set_ylim(_ymin,1.06)
+if np.isfinite(xbound):
+    # Phase labels go INSIDE the top panel, straddling the boundary line: placed above the axes
+    # they collide with the panel title.
+    for _x,_ha,_t in [(xbound-0.12,"right","Phase 1 — roles assigned"),
+                      (xbound+0.12,"left","Phase 2 — constraints lifted")]:
+        axes[0].text(_x,_ymin+0.06,_t,ha=_ha,va="bottom",fontsize=8.6,color=MUTED,
+                     bbox=dict(boxstyle="round,pad=0.2",fc="white",ec="none",alpha=0.85))
+axes[0].plot([],[],lw=1.0,color=MUTED,alpha=0.6,label="individual person")
+axes[0].plot([],[],lw=2.6,color=MUTED,label="role mean (currently-held affinity)")
+fig.legend(loc="outside lower center",ncol=2,frameon=False,fontsize=8.6)
+axes[-1].set_xlabel("experiment time (days from first logged affinity update)")
+fig.suptitle("Fig 10 — Adaptive regulatory memory: affinity separates by assigned role, then relaxes",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig10_affinity_trajectories"); plt.show()
 """)

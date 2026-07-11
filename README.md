@@ -376,9 +376,11 @@ allocation. The result is not consistent with purely uncontrolled drift in this 
 
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
-*Fig 10 - unit: learning update event, n = 239 raw updates / 205 learning-eligible RQ3 events
-over 14 named people plus unknown. Trajectories are coloured by Phase-1 role; the dashed line
-marks the phase boundary.*
+*Fig 10 - unit: learning update event, n = 205 learning-eligible events over 14 named people.
+One panel per Phase-1 role, sharing both axes: thin lines are individual people, the bold line
+is the role mean of the currently-held affinity, and the dashed vertical marks the phase
+boundary. Meal counts in the panel titles are Phase-1 meals, the window in which the role
+actually constrained the person.*
 
 ![Role validation](analysis/figures/fig12_role_validation.png)
 
