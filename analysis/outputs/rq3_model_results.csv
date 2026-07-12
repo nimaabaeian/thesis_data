@@ -1,12 +1,15 @@
 model,term,coef,p,lo,hi
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),Intercept,0.05352428151486411,0.1064060901434845,-0.0114505023402992,0.11849906537002741
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(role)[T.feeder],-0.035703785538246886,0.5485746770581204,-0.15235397368190676,0.08094640260541297
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(role)[T.no_feed],-0.025122960863790088,0.6631590430246437,-0.1381741430195599,0.08792822129197975
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(phase)[T.P2],-0.05315412517789594,0.08543913617380486,-0.1137252889545389,0.007417038598747032
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(hunger_state_start)[T.HS2],0.07361211165190601,0.02341408673649795,0.009958852024802303,0.13726537127900973
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),C(hunger_state_start)[T.HS3],0.04172110507333686,0.5555937867581023,-0.09701664678934348,0.1804588569360172
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec,0.1679251654074517,1.629672051035867e-13,0.12330452395752062,0.21254580685738278
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(role)[T.feeder],-0.15020466878692462,0.006050063847360632,-0.25745048793291775,-0.04295884964093148
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(role)[T.no_feed],-0.0699960625945904,0.23674518425812308,-0.18594791899928442,0.04595579381010362
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),z_duration_sec:C(phase)[T.P2],-0.07995698346456237,0.011607080413314708,-0.14204924678008773,-0.01786472014903702
-d_aff ~ duration*role + duration*phase + HS + trigger + (1|person),person_id Var,0.0862590240602822,0.33777932513646347,-0.09011406296741163,0.262632111087976
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),Intercept,0.14882357053410744,0.0006234885105473914,0.06356398406231738,0.2340831570058975
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(role)[T.feeder],0.07116762899408514,0.43795147017492964,-0.10866181862560077,0.2509970766137711
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(role)[T.no_feed],-0.14756448976973946,0.11767421482736123,-0.3324162758927767,0.037287296353297805
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(phase)[T.P2],-0.0011042650511014853,0.9554918881720459,-0.03988329040465149,0.03767476030244852
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(hunger_state_start)[T.HS2],0.025781013497761036,0.18283280628474097,-0.01215194209275371,0.06371396908827578
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(hunger_state_start)[T.HS3],-0.0068777140770804445,0.8650612943253368,-0.08620260778830868,0.07244717963414779
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(trigger_mode)[T.reactive],0.016877634743743673,0.5204618849562607,-0.0345973534762142,0.06835262296370154
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns,0.0406677758503474,0.0014169198732650852,0.015690392645372916,0.06564515905532188
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(role)[T.feeder],-0.04974793209541278,0.03770854076249882,-0.09666984657502142,-0.00282601761580413
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(role)[T.no_feed],-0.017070788066189654,0.6874775202173407,-0.10024190953160274,0.06610033339922343
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(phase)[T.P2],-0.025815438654258758,0.23490952779882635,-0.06841271058170253,0.016781833273185023
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),fed,0.13935908405757277,1.5774432977035446e-08,0.09104091147089056,0.187677256644255
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),affinity_before,-0.3892727316033089,2.2945271068559334e-18,-0.476550146867067,-0.3019953163395508
+d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),person_id Var,0.9653271157468345,0.08662677791187537,-0.13887103463664163,2.0695252661303107

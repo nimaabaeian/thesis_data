@@ -28,7 +28,50 @@ def scan_text(text: str, pattern: re.Pattern) -> set[str]:
     return {m.group(0).lower() for m in pattern.finditer(text)}
 
 
+# Raw Telegram user IDs are 9-10 digit integers. They are stable, real-world personal
+# identifiers — as identifying as a name, and trivially reversible by anyone who has messaged
+# that account — but a name-based scan cannot see them. A per-subscriber table exported straight
+# from `chat_id` would have published them. Subscribers are pseudonymised to S## codes in the
+# notebook; this catches any regression of that.
+#
+# The match must be a WHOLE FIELD VALUE, never a substring. Hex run_ids and 12-digit float
+# timestamps are full of incidental 9-digit runs, and matching those would drown the real signal
+# in false positives (it did, on the first attempt).
+TELEGRAM_ID = re.compile(r"[1-9]\d{8,9}(?:\.0)?")
+
+# Epoch timestamps are also 10 digits and are legitimate analysis data. Anything a plausible
+# unix time (2001-2033) is a timestamp, not a user ID.
+_EPOCH_LO, _EPOCH_HI = 1_000_000_000, 2_000_000_000
+
+
+def scan_id_values(values) -> set[str]:
+    """Flag whole values that ARE a raw numeric user ID."""
+    hits = set()
+    for v in values:
+        s = str(v).strip()
+        if not TELEGRAM_ID.fullmatch(s):
+            continue
+        n = int(s.removesuffix(".0"))
+        if _EPOCH_LO <= n <= _EPOCH_HI:
+            continue          # an epoch timestamp, not a user ID
+        hits.add(s)
+    return hits
+
+
+def csv_fields(text: str):
+    """Every comma/newline-delimited field in a CSV, as whole values."""
+    for line in text.splitlines():
+        for field in line.split(","):
+            yield field.strip()
+
+
 def find_leaks(nb_path: Path) -> list[tuple[str, str]]:
+    """Scan every publishable surface for BOTH real names and raw numeric user IDs.
+
+    The name scan alone is not sufficient: `chat_id` is a raw Telegram user ID, is not a name,
+    and was not covered by IDENTITY_COLS. It reached an exported per-subscriber table. Both
+    classes of identifier are checked here.
+    """
     analysis_dir = nb_path.resolve().parent
     names = real_names(analysis_dir / "private")
     if not names:
@@ -39,26 +82,40 @@ def find_leaks(nb_path: Path) -> list[tuple[str, str]]:
         re.IGNORECASE,
     )
     leaks: list[tuple[str, str]] = []
-    # 1. The notebook itself: cell sources AND outputs.
-    for hit in scan_text(nb_path.read_text(), pattern):
-        leaks.append((str(nb_path), hit))
+
+    def scan_names(where: str, text: str) -> None:
+        for hit in scan_text(text, pattern):
+            leaks.append((where, f"name:{hit}"))
+
+    def scan_ids(where: str, values) -> None:
+        for hit in scan_id_values(values):
+            leaks.append((where, f"raw-user-id:{hit}"))
+
+    # 1. The notebook itself: cell sources AND outputs. Names only — the JSON is full of base64
+    #    image payloads and coordinate arrays, and there is no notion of a "field" in it.
+    scan_names(str(nb_path), nb_path.read_text())
+
     # 2. Published side files: outputs/ (text + parquet) and figures/ (svg text).
     for f in sorted((analysis_dir / "outputs").glob("*")):
         if f.suffix in (".csv", ".md", ".txt", ".json"):
-            for hit in scan_text(f.read_text(errors="replace"), pattern):
-                leaks.append((str(f), hit))
+            text = f.read_text(errors="replace")
+            scan_names(str(f), text)
+            if f.suffix == ".csv":
+                scan_ids(str(f), csv_fields(text))
         elif f.suffix == ".parquet":
             import pandas as pd
 
             df = pd.read_parquet(f)
             for c in df.columns:
+                vals = df[c].dropna().unique()
                 if df[c].dtype == object:
-                    blob = "\n".join(df[c].dropna().astype(str).unique())
-                    for hit in scan_text(blob, pattern):
-                        leaks.append((f"{f}:{c}", hit))
+                    scan_names(f"{f}:{c}", "\n".join(map(str, vals)))
+                # Float columns are durations/timestamps, never identities; only integer-like or
+                # string columns can carry a raw user ID.
+                if not pd.api.types.is_float_dtype(df[c]):
+                    scan_ids(f"{f}:{c}", vals)
     for f in sorted((analysis_dir / "figures").glob("*.svg")):
-        for hit in scan_text(f.read_text(errors="replace"), pattern):
-            leaks.append((str(f), hit))
+        scan_names(str(f), f.read_text(errors="replace"))
     return leaks
 
 

@@ -1,495 +1,574 @@
 # Orexigenic Drive and Always-On Homeostatic Regulation
 
 This report explains the analysis in
-[`analysis/orexigenic_analysis.ipynb`](analysis/orexigenic_analysis.ipynb). It is written for
-readers who want to understand the study logic, the main results, and the strength of the
-evidence without needing to inspect every model.
+[`analysis/orexigenic_analysis.ipynb`](analysis/orexigenic_analysis.ipynb). Every number below is
+read from the regenerated artifacts in [`analysis/outputs/`](analysis/outputs/); none is typed by
+hand.
 
 The system under study is the *Orexigenic Drive* in the `alwaysOn-embodiedBehaviour` iCub
 controller. The drive continuously tracks internal energy, detects hunger states, changes the
-robot's behaviour when energy is low, and uses social and remote interaction to seek
-replenishment. The controller pipeline is:
+robot's behaviour when energy is low, and uses social and remote interaction to seek replenishment:
 
-`perception -> salience -> executive regulation -> remote/Telegram signalling`.
+`perception -> salience -> executive regulation -> remote/Telegram signalling`
+
+---
+
+## Read this first
+
+**This version supersedes an earlier report whose headline claims did not survive audit.** Several
+of them were artefacts of bugs, not findings. They are listed in
+[§2](#2-what-changed-and-why) rather than quietly rewritten, because a reader who saw the earlier
+numbers deserves to know which ones moved and by how much.
+
+Every result now carries exactly one **evidence class**, and the classes are not interchangeable:
+
+| Class | Meaning |
+|---|---|
+| `Implementation verification` | Follows from the controller source. Confirms the code is faithfully implemented and logged. **Not a discovered fact.** |
+| `Within-deployment association` | A cluster-aware association in this deployment. **Not causal, not a population estimate.** |
+| `Exploratory observation` | Descriptive. Too small-n or too selection-prone to support inference. |
+| `Inconclusive` | The analysis ran and did not settle the question. |
+| `Requires replication` | Suggestive; identification needs new data. |
+
+The single most important structural fact about this study: **the drive was always on.** There is
+no drive-off condition. Nothing here identifies a causal effect of the drive, and no amount of
+modelling can change that.
+
+---
 
 ## Contents
 
-**Part I — Summary**
-
 1. [Main findings](#1-main-findings)
-
-**Part II — Background and methods**
-
-2. [Research questions and study design](#2-research-questions-and-study-design)
-3. [Data and analysis pipeline](#3-data-and-analysis-pipeline)
-4. [How to read the statistics](#4-how-to-read-the-statistics)
-
-**Part III — Results**
-
-5. [RQ1: Does a deficit change behaviour?](#5-rq1-does-a-deficit-change-behaviour)
-6. [RQ2: Does deficit expression close the recovery loop?](#6-rq2-does-deficit-expression-close-the-recovery-loop)
-7. [RQ3: Does adaptive regulatory memory encode behaviour?](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour)
-8. [Machine-learning sensitivity check](#8-machine-learning-sensitivity-check)
-
-**Part IV — Synthesis**
-
-9. [Scorecard and synthesis](#9-scorecard-and-synthesis)
-
-**Part V — Appendices**
-
-- [Appendix A: Instrumentation verification](#appendix-a-instrumentation-verification)
-- [Corrections](#corrections)
+2. [What changed, and why](#2-what-changed-and-why)
+3. [Research questions and design](#3-research-questions-and-design)
+4. [Data and pipeline](#4-data-and-pipeline)
+5. [How to read the statistics](#5-how-to-read-the-statistics)
+6. [RQ1 — Does a deficit change behaviour?](#6-rq1--does-a-deficit-change-behaviour)
+7. [RQ2 — Does deficit expression close the recovery loop?](#7-rq2--does-deficit-expression-close-the-recovery-loop)
+8. [RQ3 — What does the adaptive memory actually establish?](#8-rq3--what-does-the-adaptive-memory-actually-establish)
+9. [Machine-learning sensitivity check](#9-machine-learning-sensitivity-check)
+10. [Scorecard](#10-scorecard)
+11. [What these data cannot establish](#11-what-these-data-cannot-establish)
+12. [Reproducing this](#12-reproducing-this)
 
 ---
 
-## Part I — Summary
+## 1. Main findings
 
-### 1. Main findings
+**The strongest result is RQ1's behavioural coupling.** When the robot is in deficit (energy below
+60), the odds that a meal arrives during an interaction are **5.3x** higher than at Full
+(person-cluster bootstrap **[2.9, 9.1]**; run-cluster bootstrap [2.6, 7.1]; leave-one-person-out
+4.4–6.5). It survives adjustment for social state, trigger mode, phase, and the person's prior
+interaction count. This is an association within a single always-on deployment — it is not a causal
+effect of the drive, because there is no drive-off condition to compare against.
 
-The analysis supports all three research questions, with different levels of evidential
-strength.
+**Meal size scales with deficit severity**: Full 21 → Hungry 29 → Starving 43 stomach points,
+**+10.9 per deficit step** (run-cluster bootstrap [+6.2, +14.0]), and the gradient survives
+excluding the two obligated feeders.
 
-**RQ1: the drive acts as a two-threshold homeostatic policy.** Monitoring and hunger-state
-detection are implementation checks: the software computes them directly from the coded
-thresholds. The empirical result is behavioural. When the robot crosses the Hungry threshold
-(energy below 60), it shifts toward recovery-oriented action: hunger framing rises from 3% to
-67%, feed-seeking acts rise from 1 to 20, proactive Telegram pings rise from 0 to 172, and
-co-present feeding pursuit rises from 0.15 to 0.43. In the main clustered model, deficit
-increases the odds of feeding pursuit by **4.9x [2.6, 9.5]**. When the robot reaches Starving
-(energy below 25), it reallocates priority away from social completion: completed engagement
-falls from 0.68 to 0.08, **OR 0.03 [0.01, 0.14]**.
+**The remote channel is a weak recovery pathway.** With one-to-one reply matching and "thanks, I'm
+full" notifications excluded, **36/172** hunger pings drew a reply within an hour (0.21, exact
+[0.15, 0.28]) — against **0.09** [0.05, 0.15] in matched no-ping control windows drawn from the
+same running hours. The difference is **+0.12** (subscriber-cluster bootstrap [+0.05, +0.19]). Real,
+but small.
 
-**RQ2: the recovery loop closes at the deployment level.** Deficits elicit stronger recovery
-behaviour: meal size increases from Full to Hungry to Starving (**21 -> 29 -> 43**), and proactive
-remote pings receive modest but measurable replies (**0.21 [0.15, 0.26]** within 1 hour). As a
-supporting reliability result, modelled long-run Starving occupancy is about **1.0% [0.2%,
-3.1%]**. This is a property of the coupled human-robot loop, not the controller alone, and it
-leans on a few responsive feeders (Gini 0.57; top 3 people supplied 62% of meals).
+**The robot starved more than the previous report showed.** There are **17** Starving episodes in
+the corpus, not 8, and **13/17** recovered to Full by feeding (exact [0.50, 0.93]) — not 100%. The
+longest episode ran **30 minutes** down to level 10.5 **in a run with 15 logged interactions**:
+people were present, and the robot was not fed. That single episode is ~65% of all Starving time in
+the corpus and was **invisible** to the previous analysis.
 
-**RQ3: adaptive regulatory memory tracks interaction history and is later expressed in robot
-behaviour.** This is the strongest identification result because it uses the Phase-1 role
-manipulation as an external validation handle. Obligated feeders supplied meals at **2.7x** the
-unconstrained rate [1.2, 5.9], while the no-feed pair supplied **0 feeds in 15 Phase-1
-interactions**. The core model shows that +1 SD of engagement duration predicts **Delta affinity
-+0.17 [+0.12, +0.21]**; the result strengthens to **+0.23** when identity-reconstructed people
-are excluded. Prior-day affinity then predicts next-day proactive approaches, **RR 1.55 [1.09,
-2.20]**, after controlling for recent activity.
+**RQ2's reliability claim is withdrawn.** The robot spent **1.67%** of observed seconds in Starving
+(run-cluster bootstrap [0.38%, 4.04%]) — that empirical figure is assumption-free and stands. The
+modelled "long-run Starving occupancy of 1.0% [0.2, 3.1]" does not: Starving occupancy differs
+**~9x between Phase 1 and Phase 2** (2.81% vs 0.30%), so a time-homogeneous Markov chain fitted
+across both estimates the stationary fraction of a process that never ran.
 
-The main limitation is scope: this is one robot, one site, 8 session-days, 12 monitored runs, and
-14 named people. The results are within-deployment evidence for this human-robot regulatory loop,
-not population estimates across robots, sites, or user groups.
+**RQ3's central claim was largely a restatement of the source code.** Affinity is a *deterministic*
+EMA of delivered energy; `fed` and `affinity_before` are terms inside the update rule and alone
+explain **R² = 0.41** of every update. The previous model omitted both and regressed Δaffinity on
+`duration` (correlated 0.58 with `fed`) in their place. Properly controlled, the engagement slope is
+**+0.041** against the **+0.168** previously reported.
 
----
+**What RQ3 does establish is about the humans, and it decomposes.** Obligated feeders delivered
+**2.7x** the meal energy per person-day (randomisation p = 0.048 against a design floor of 0.015) —
+but **per interaction they fed only 1.2x as often** (randomisation p = 0.36). The difference is
+**exposure**: they came to the robot **2.2x more often**. Being told to feed the robot made people
+*visit* it. It did not make them markedly more generous once there.
 
-## Part II — Background and methods
-
-### 2. Research questions and study design
-
-The study asks three connected questions.
-
-- **RQ1** - To what extent does the orexigenic drive instantiate the four operational functions
-  of classical homeostasis: (1) internal monitoring, (2) deficit detection,
-  (3) deficit-to-action-selection coupling, (4) behavioural priority reallocation?
-- **RQ2** - Does expressing an orexigenic deficit promote recovery-oriented engagement
-  sufficient to support reliable energy replenishment in an always-on social robot?
-- **RQ3** - Does the robot's learned memory of past interactions reflect participants' behaviour,
-  and does that memory influence how the robot engages with people later?
-
-For RQ1, the first two functions are software verification checks. The empirical question is
-whether the internal deficit state changes behaviour. For RQ2, the key issue is whether hunger
-signals lead to human engagement and feeding often enough to avoid persistent starvation. For RQ3,
-this is tested by asking whether the robot's **adaptive regulatory memory** (the learned
-per-person homeostatic affinity) encodes observed participant behaviour rather than uncontrolled
-drift, and whether that learned state is subsequently expressed in the robot's allocation of
-proactive approaches.
-
-Two design facts shape the analysis.
-
-**The drive was always on.** There is no off-switch control condition. RQ2 is therefore identified
-within the always-on deployment by comparing behaviour across energy states: Full, Hungry, and
-Starving. The key contrast is whether the robot initiates more recovery-oriented behaviour when
-the internal deficit becomes stronger.
-
-**The study had two 4-day phases with assigned roles in Phase 1.** In Phase 1, two participants
-were obligated feeders, two were asked to interact but never feed, and all others were
-unconstrained. In Phase 2, all constraints were lifted. These role labels were external
-experimental metadata, not controller inputs. Because each controlled role has only 2 people,
-role contrasts validate the manipulation but should not be read as population-level estimates.
-
-The evidence is ordered as follows:
-
-1. **RQ3 role manipulation and learning validation.** This is the clearest external test because
-   the study deliberately induced different feeding histories.
-2. **RQ3 downstream expression.** Prior affinity predicts next-day proactive approaches, so the
-   learned state precedes the behaviour it predicts.
-3. **RQ1 behavioural coupling.** Deficit and Starving states change action selection and priority.
-4. **RQ2 reliability.** Low Starving occupancy supports loop-level recovery but depends on the
-   coupled human-robot setting.
-5. **Appendix checks.** Monitoring and threshold detection verify the instrumentation rather than
-   provide independent empirical effects.
+**Scope.** One robot, one site, 8 session-days, 12 monitored runs, 14 named people, and **2 people
+per controlled role**. Every effect here is existence-and-magnitude evidence for *this* loop.
 
 ---
 
-### 3. Data and analysis pipeline
+## 2. What changed, and why
 
-The robot logged four asynchronous streams: `vision`, `salience_network`, `executive_control`,
-and `chat_bot`. The `data/` folders contain eight dated snapshots. A key preparation finding was
-that these snapshots are cumulative views of one growing database, not eight independent
-experiments. Naively stacking them would double-count observations by roughly 4-5x.
+Eight corrections, in descending order of how much they moved a conclusion. All are reproduced in
+[`analysis/outputs/results_summary.md`](analysis/outputs/results_summary.md).
 
-After de-duplication, the main analysis units were:
+### 2.1 Starving episodes: 8 → 17 *(this one inverts a headline)*
 
-- **12 monitored runs**, including 10 runs with visitors.
-- **8 session-days**, split into Phase 1 and Phase 2.
-- **217 co-present interactions** involving 14 named, pseudonymised people.
-- **205 learning-eligible affinity update events** for RQ3.
-- Supporting units such as person-day summaries, Telegram pings, state transitions, and hunger
-  episodes.
+The executive logger writes `hunger_state_before` and `hunger_state_after` as **the same value** on
+the row where a threshold is crossed by *passive drain*:
 
-The pipeline has five gated stages. Each stage exists to prevent a specific error from entering
-the inferential analysis.
+```
+monotonic  event   stimulus       hs_before  hs_after  level_before  level_after
+11529.10   sample  passive_drain  HS2        HS2       25.012734     25.005765
+11530.10   sample  passive_drain  HS3        HS3       25.005765     24.998797   <- the crossing
+```
 
-1. **Ingest and de-duplicate.** Convert cumulative snapshots into canonical runs, interactions,
-   and events.
-2. **Harmonise identity and time.** Apply one central identity map, pseudonymise identities, and
-   stamp rows with both monotonic time and wall-clock time.
-3. **Verify the logs against the controller.** Check meal deltas, energy costs, drain rate,
-   thresholds, referential integrity, and clock ordering. All hard checks passed; see
-   [`verification_report.md`](analysis/outputs/verification_report.md).
-4. **Construct analysis tables.** Freeze the interaction, person-day, and hunger-state tables so
-   each model has a clear unit of analysis.
-5. **Run inference and produce figures.** RQ1 uses interaction-level behaviour, RQ2 uses recovery
-   and state-occupancy analyses, and RQ3 uses person-day and learning-event analyses.
+Only *discrete* events (`interaction_cost`, `feeding`, `mode`) produce a genuine `before != after`
+row. The old episode builder looked for `after == "HS3" and before != "HS3"`, so it was **blind to
+every drain-entered episode** — that is, to exactly the episodes the robot fell into when nobody was
+interacting with it, and therefore when nobody was there to feed it.
 
-Several harmonisation choices matter for interpretation. Interactions are the anchor for joining
-streams by identity and time window. `monotonic_sec` is used for within-run durations, while
-`timestamp_epoch` is used for cross-stream alignment and day labels. Missing duration values are
-handled before modelling: because duration is missing for about 53% of learning events and varies
-by phase, fully observed doses (`n_turns` and `active_energy_cost`) are used as primary agreement
-checks for RQ3.
+Its "8/8 received a feed, escaped, and recovered to Full; median 21 s" was the **selection rule
+restating itself**.
+
+The same gap emptied `v_hs_transitions` of all 32 real drain-driven Full→Hungry falls, leaving it
+with an impossible ledger: 8 entries into Starving and 17 exits from it. Everything is now derived
+from the **level series**, which is ground truth.
+
+| | Old | Corrected |
+|---|---|---|
+| Starving episodes | 8 | **17** |
+| Recovered to Full by feeding | 8/8 = 100% | **13/17 = 76%** (exact [0.50, 0.93]) |
+| Longest episode | 108 s | **1801 s (30 min), to level 10.5** |
+
+### 2.2 RQ3's core model regressed Δaffinity on its own update equation
+
+The controller's rule, with every constant taken from source:
+
+```
+credit     = reward_delta + active_energy_cost · 1[meals > 0]
+Δaffinity  = α · (clip(credit / 25) − affinity_before)
+```
+
+and `reward_delta` is **exactly** `stomach_level_end − stomach_level_start` (verified to machine
+precision, not assumed). So:
+
+- `active_energy_cost` — used by the old analysis as an *"independent dose agreement check"* — is a
+  **literal additive term in the credit**. Agreement there was arithmetic, not evidence. It is
+  dropped as a dose.
+- `fed` and `affinity_before` are the two dominant terms of the update, and the old model **omitted
+  both**, putting `duration` (correlated 0.58 with `fed`, and 52% missing, differentially by role)
+  in their place.
+
+| Specification | Slope |
+|---|---:|
+| **OLD**: duration, no controls | **+0.168** |
+| Duration, complete case, controlled | +0.100 |
+| Duration, IPW-weighted, controlled | +0.109 |
+| **PRIMARY**: `n_turns` (fully observed), controlled | **+0.041** |
+
+### 2.3 The role manipulation worked through attendance, not generosity
+
+"Obligated feeders supplied meals at 2.7x the unconstrained rate" was presented as evidence that the
+roles changed *feeding behaviour*. The 2.7x is real, but it decomposes:
+
+| Quantity | Feeder vs unconstrained | Randomisation p |
+|---|---:|---:|
+| **Total delivery** (meals / person-day) | **2.7x** | 0.048 |
+| **Per-encounter** (meals / interaction) | 1.2x | 0.36 |
+| **Exposure** (interactions / day) | **2.2x** | — |
+
+Exposure is a **mediator** of the role, not a confounder — telling someone to feed the robot makes
+them go to the robot — so the per-encounter figure is a *decomposition*, not a bias correction. Both
+are now reported. The old report conflated them.
+
+### 2.4 B4 was quasi-separation reported as precision
+
+Thirteen Starving interactions; **exactly one** reached Engaged. The old analysis fitted an ordinary
+logistic GEE and reported `OR 0.03 [0.008, 0.136], p = 1.9e-6`. Under quasi-separation the MLE
+diverges and the Wald SE collapses with it, manufacturing a tiny p-value from a cell containing
+almost no information. The tell was in the analysis's own output: its cluster bootstrap lower bound
+came back as `3.3e-11`, which is not a confidence bound, it is a divergence.
+
+Refitted with **Firth's penalised likelihood** and an exact test. Its p-value is now **excluded from
+the confirmatory families**. Evidence class: `Exploratory observation`.
+
+### 2.5 "The labels do not flap" was backwards
+
+B2's one non-trivial claim was **zero** rapid reversals at either threshold. Its detector tested
+`r.from_state == prev.from_state`, when a reversal requires `r.from_state == prev.to_state`. The
+condition was **unsatisfiable** — it would have returned zero on any data whatsoever.
+
+Corrected: there are **57** rapid reversals (55 at the 60 boundary, 2 at 25; median gap **29 s**),
+overwhelmingly *action cost pushes the level under the threshold → someone feeds the robot → back
+over*. The flapping is real. It is precisely why `chatBot.py` carries a 60 s `HS_DWELL_SEC`
+debounce — which the old write-up cited approvingly without noticing that it contradicted the claim
+it was supporting.
+
+### 2.6 The CTMC dropped every run's final dwell
+
+`state_sequence()` emitted segments only *between* state changes, so the stretch from the last change
+to the end of each run — a genuine right-censored sojourn — never entered the state-time
+denominators. Non-ergodic bootstrap resamples were silently swallowed by a bare `except: pass`,
+which conditioned the interval on ergodicity. And the generator pooled visited runs with idle runs,
+and Phase 1 with Phase 2, despite Starving occupancy differing **~9x** between the phases.
+
+### 2.7 The remote-loop analysis double-counted replies, and had no control
+
+The old loop asked, per ping, *"was there **any** user message in the next hour?"* — so one reply
+could be credited to five pings. It also pooled `hs3_recovery` ("thanks, I'm full") notifications in
+with hunger pings; a reply to a thank-you is not evidence that hunger signalling works. And it had
+**no control condition at all**, so "21% of pings got a reply" had nothing to be 21% *against* —
+people message the bot anyway.
+
+Now: one-to-one matching (a reply is consumed by at most one ping), recovery notifications excluded,
+and matched control windows drawn **from inside the monitored run spans** — the hours the robot was
+actually running and a reply was possible. (Drawing controls from the whole calendar, including
+nights and gaps between sessions, put the control at 1/172 and inflated the effect roughly
+two-fold. The control set *is* the analysis here.)
+
+### 2.8 The ML section reported one CV split with no interval and no null
+
+Two features (`ss_rank`, `hs_rank`), one grouped-CV split, ΔAUC = +0.088, no confidence interval, no
+permutation test. It also printed a "drop-column importance" table as a second, corroborating
+analysis — but with two features, drop-column importance **is** the ablation (`auc_without hs_rank`
+= the social-only AUC, to four decimals). One result, printed twice.
+
+Now: 25 repeated grouped-CV runs and a within-run permutation null. ΔAUC = **+0.081 [+0.072,
++0.094]**, permutation **p = 0.005**. It survives — but the redundant table is deleted.
 
 ---
 
-### 4. How to read the statistics
+## 3. Research questions and design
 
-The models were chosen to match the outcome being analysed and the repeated-observation
-structure of the data. Many observations come from the same people, runs, or days, so the
-analysis avoids simple row-independent tests as primary evidence.
+- **RQ1** — Does the orexigenic drive instantiate the four operational functions of homeostasis:
+  internal monitoring, deficit detection, deficit-to-action coupling, and priority reallocation?
+- **RQ2** — Does expressing a deficit promote recovery-oriented engagement sufficient to support
+  reliable replenishment?
+- **RQ3** — Does the robot's learned memory of past interactions reflect participants' behaviour,
+  and does it influence how the robot engages with people later?
 
-| Question | Outcome | Model | Plain-language interpretation |
-|---|---|---|---|
-| Does deficit increase feeding pursuit? | Yes/no per interaction | Logistic GEE clustered by person | Estimates how much the odds of feeding pursuit change in deficit states while accounting for repeated observations from the same person. |
-| Does Starving suppress social completion? | Yes/no per interaction | Logistic GEE clustered by person | Estimates whether completed engagement becomes less likely when the robot is Starving. |
-| Did obligated feeders feed more? | Meal counts per person-day | Poisson GEE clustered by person | Estimates a meal-rate ratio between role groups. |
-| Does prior affinity increase proactive approaches? | Count of next-day approaches | Poisson GEE clustered by person | Estimates a next-day approach-rate ratio while controlling for recent activity. |
-| Does engagement dose change affinity? | Continuous affinity update | Linear mixed model with person intercept | Estimates whether more engagement is associated with larger affinity gains while allowing each person to have a different baseline. |
-| Did the no-feed group comply? | 0 feeds in Phase 1 | Exact binomial interval | Reports the result directly because complete separation makes a standard model unstable. |
-| How often is the robot Starving in the long run? | Time in hunger states | Continuous-time Markov chain with run-level bootstrap | Estimates the stationary Starving fraction implied by observed transitions and dwell times. |
+**Two design facts govern everything.**
 
-Uncertainty is reported with confidence intervals and bootstrap checks where appropriate. P-values
-for primary claims are Benjamini-Hochberg corrected within two pre-declared families: RQ1/RQ2
-behaviour and RQ3 adaptation. All five primary inferential metrics survive correction at
-q < 0.05.
+**The drive was always on.** No off-switch condition exists. RQ2 is therefore identified only
+*within* the always-on deployment, by comparing behaviour across energy states. No causal share is
+recoverable.
 
-The report treats small samples carefully. Starving interactions are rare (13 interactions; 8
-episodes), so those results are led by effect sizes, confidence intervals, and directional
-interpretation rather than by complex covariate models.
+**Two people per controlled role.** In Phase 1 (first 4 days) two participants were obligated
+feeders, two were asked to interact but never feed, and everyone else was unconstrained; in Phase 2
+all constraints lifted. Role labels were external metadata and were **never controller inputs**.
+With 2 people per role, role is nearly aliased with identity — any "role effect" is also "these two
+particular people". Role contrasts are therefore reported as a **descriptive manipulation check**
+with person-level randomisation inference, whose p-value has a hard floor of ~0.015 set by the
+`C(12,2) = 66` possible assignments.
 
 ---
 
-## Part III — Results
+## 4. Data and pipeline
 
-### 5. RQ1: Does a deficit change behaviour?
+Four asynchronous streams (`vision`, `salience_network`, `executive_control`, `chat_bot`) across
+eight dated snapshots. A key preparation finding: **the snapshots are cumulative views of one
+growing database, not eight independent experiments.** Naively stacking them would double-count by
+roughly 4–5x.
 
-Monitoring and threshold detection are described in [Appendix A](#appendix-a-instrumentation-verification)
-because they verify the implementation. RQ1's empirical test is whether the internal deficit
-state changes action selection.
+After de-duplication:
 
-#### B3: Deficit-to-action coupling
+- **12 monitored runs** (10 with visitors, 2 idle), **8 session-days**, ~46 h
+- **217 co-present interactions** across **14 named, pseudonymised people**
+- **208 learning-eligible affinity update events**
+- **165,460 hunger-level events**; **17 Starving episodes**; **180 threshold crossings**
 
-The main contrast is Full versus deficit, where deficit combines Hungry and Starving. The result
-is a state-contingent shift toward recovery.
+Five gated stages, each preventing a specific error: ingest and de-duplicate → harmonise identity
+and time → verify logs against the controller (V1–V5, all passing) → freeze analysis tables → run
+inference.
 
-| Behaviour | Full | Deficit | Interpretation |
-|---|---:|---:|---|
-| Hunger framing in speech | 2.8% | 66.5% | Coded gate opens hunger framing in deficit. |
-| Feed-seeking speech acts | 1 | 20 | Feed-seeking appears almost entirely in deficit. |
-| Proactive Telegram pings | 0 | 172 | Remote recovery attempts are deficit-gated. |
-| Co-present feeding pursuit | 0.15 | 0.43 | Human-facing recovery pursuit increases. |
-| Mean meal size | 21.2 | 31.4 | Meals are larger when the robot is in deficit. |
+> **One identity column was previously unprotected.** `feeder_face_id` — the person who delivered
+> each meal — was not in `IDENTITY_COLS`, so it was never canonicalised or pseudonymised. That was
+> both a real-name leak vector and the reason meals could not be attributed to people at all
+> (feeding events carry **no** `exec_interaction_id`; `feeder_face_id` is the only link). Fixed, and
+> the leak checker in [`analysis/check_notebook.py`](analysis/check_notebook.py) enforces it.
 
-The coded rows show that the controller exposes a different action repertoire when energy is low.
-The co-present pursuit and meal-size rows show how that state change is expressed in behaviour.
+---
 
-The inferential anchor is a person-clustered logistic GEE:
-`fed01 ~ deficit` (see [Corrections](#corrections)). Deficit increases the odds of feeding pursuit by
-**OR 4.9 [2.6, 9.5]**, p about 2e-6; leave-one-person-out OR range 4.1-6.1.
+## 5. How to read the statistics
 
-**Verdict: supported.** The deficit state biases action selection toward goal-directed recovery.
+The cluster count is small — **14 people, 12 runs, 8 days** — and two consequences drive every
+modelling choice.
+
+**Asymptotic sandwich SEs are not trustworthy at 14 clusters.** GEE robust SEs are anti-conservative
+well below ~40 clusters. GEE/MixedLM is used as the point-estimate engine, but **the person-cluster
+bootstrap interval is what every verdict leads with**; the asymptotic CI is reported second. Where
+they disagree, the bootstrap is the honest statement.
+
+**Some quantities in this system are true by construction.** The stomach level is a software
+integrator, the hunger label is derived from it by the same thresholds, and per-person affinity is a
+deterministic EMA of the logged reward. Analyses of *those* are `Implementation verification`.
+
+| Question | Outcome | Model |
+|---|---|---|
+| Does deficit predict feeding received? | binary, per interaction | Logistic GEE, clustered by person **and** by run |
+| Does Starving suppress social completion? | binary, per interaction | **Firth penalised** logistic + Fisher exact (quasi-separation) |
+| Does meal size scale with deficit? | continuous | Cluster-robust OLS, hunger state as an **ordered** predictor |
+| Do pings elicit replies? | binary, per ping | One-to-one matching vs **matched control windows** |
+| Did obligated feeders feed more? | counts per person-day | Poisson GEE + **exposure offset** + person-level **randomisation** |
+| Does engagement dose change affinity? | continuous | Mixed model, controlling for `fed` and `affinity_before` |
+| How often is the robot Starving? | time occupancy | **Empirical** (assumption-free); CTMC only with its diagnostics |
+
+**Unidentified faces (`person_id == "unknown"`) are excluded from person-clustered models.** They
+are not one person; pooling ~23 interactions from an unknown number of strangers into a single
+cluster asserts a dependence structure that does not exist.
+
+**Multiplicity.** Every p-value entering a conclusion is registered at the point it is computed and
+exported to [`multiplicity_table.csv`](analysis/outputs/multiplicity_table.csv) — **including** the
+dose × role and dose × phase interaction terms and the role contrasts, which the previous version
+quoted in its verdicts but never corrected. Of 15 confirmatory p-values, **4 survive** BH at q<0.05.
+B4's separated p-value is recorded but deliberately **not** corrected and **not** used to support
+any claim.
+
+---
+
+## 6. RQ1 — Does a deficit change behaviour?
+
+### B1/B2 — Monitoring and detection · `Implementation verification`
+
+The drain rate matches nominal at **1.00x** with a degenerate CI, because the stomach level is a
+software integrator. Bracket accuracy is **1.00** because the label is computed from the level by
+the same thresholds. **Neither is a measurement of anything**, and neither carries evidential
+weight.
+
+Three things here *are* informative:
+
+- **Dense autonomous sampling**: every 2.3 s across 12 runs / 46 h, including two runs with no
+  visitors.
+- **Detection latency is tight**: drain-driven falls are caught within **0.0070** stomach points —
+  about one sampling step. (Not 3.6 points; see [§2.5](#25-the-labels-do-not-flap-was-backwards).)
+- **The labels flap**: 57 rapid reversals, median gap 29 s. Real, and the reason the debounce exists.
+
+### B3 — Deficit and feeding received · `Within-deployment association`
+
+**The outcome was misnamed.** It is `meals_eaten_count > 0` — *a meal arrived* — which is an outcome
+of the human-robot dyad, not a robot action. It was previously called `fed01` and described as
+"feeding pursuit". The robot can pursue feeding and get nothing, and can receive food without
+asking. It is now `feeding_received`, and the estimand is a **deficit–feeding association**.
+
+| | Full | Deficit |
+|---|---:|---:|
+| Feeding received | 0.15 | **0.43** |
+| Mean meal size | 21 | **31** |
+
+**OR 5.3**, person-cluster bootstrap **[2.9, 9.1]**, run-cluster bootstrap [2.6, 7.1], LOPO 4.4–6.5,
+robust to adjustment for social state, trigger mode, phase, and prior interaction count.
+
+**Separately, and as `Implementation verification` only**: hunger framing (3% → 66%), the 20
+feed-seeking speech acts, and the 172 proactive pings (vs **0** at Full) are **state-gated in
+source**. "Proactive pings: 0 → 172" is not a finding; it is an `if` statement. The previous report
+listed these alongside the measured outcomes in its headline, which inflated the apparent evidence.
 
 ![Deficit to action](analysis/figures/fig04_deficit_action.png)
 
-*Fig 4 - units: 367 interaction turns, 710 chat messages, 217 co-present interactions, and 193
-deficit-gated action events. Recovery-action rates Full vs deficit are shown with bootstrap CIs,
-and deficit-gated actions are plotted on the stomach-level timeline.*
+### B4 — Starving priority reallocation · `Exploratory observation`
 
-#### B4: Starving priority reallocation
+**Thirteen Starving interactions. One reached Engaged.** Six of the thirteen come from a single
+person.
 
-The next question is whether the more severe Starving state merely reduces activity or actively
-changes priorities. The evidence supports priority reallocation toward recovery.
+| | n | Engaged | Exact 95% CI |
+|---|---:|---:|---|
+| Starving | 13 | 1 (0.08) | [0.00, 0.36] |
+| Full/Hungry | 204 | 139 (0.68) | [0.61, 0.74] |
 
-When Starving, completed social engagement is strongly suppressed: turns fall from 2.5 to 0.2,
-Engaged completion falls from 0.68 to 0.08, and the model estimate is **OR 0.034 [0.008,
-0.136]**. At the same time, feeding pursuit rises from 0.26 to 0.54. This pattern is not simple
-disengagement; it is a shift away from social completion and toward replenishment.
-
-The model is `reached_Engaged ~ starving + C(initial_state)`, clustered by person. Starving has
-only 13 interactions, so the estimate should be read as a large directional effect rather than a
-precise population estimate.
-
-**Verdict: supported.** Starving reallocates priority away from social completion and toward
-recovery.
+Meanwhile **feeding received rises** (0.26 → 0.54) and turns fall (−2.39). The **opposing
+directions** are the substance: this looks like priority reallocation toward recovery rather than
+undifferentiated disengagement. But the magnitude is not estimable from 13 interactions. The Firth
+OR (0.048, profile CI [0.005, 0.216]) is a **bound, not an estimate**.
 
 ![Prioritisation heatmap](analysis/figures/fig05_prioritisation_heatmap.png)
 
-*Fig 5 - unit: interaction, n = 217; Starving column n = 13. Completion is high for known people
-until Starving shifts priority away from social completion.*
-
 ---
 
-### 6. RQ2: Does deficit expression close the recovery loop?
+## 7. RQ2 — Does deficit expression close the recovery loop?
 
-RQ1 shows that the robot changes behaviour when energy is low. RQ2 asks whether those signals are
-followed by human engagement and replenishment in deployment.
+### B5 — Recovery behaviour · `Within-deployment association`
 
-#### B5: Deficit expression elicits recovery behaviour
+**Meal size scales with deficit severity**: 21 / 29 / 43, **+10.9 per step** (run-cluster bootstrap
+[+6.2, +14.0]), surviving exclusion of the two obligated feeders (+7.5/step).
 
-Meal size increases with deficit severity: **Full 21, Hungry 29, Starving 43**. Proactive
-Telegram pings receive replies within 1 hour at **0.21 [0.15, 0.26]** overall, and 0.26 for
-Starving-specific pings. Co-present interactions are reply-bearing more often when proactive
-(83%) than reactive (42%).
+**The remote loop, against its control:**
 
-**Verdict: supported.** Deficit expression elicits measurable recovery behaviour, although remote
-reply rates are modest.
+| | rate | exact 95% CI |
+|---|---:|---|
+| After a hunger ping (60 min) | 36/172 = **0.21** | [0.15, 0.28] |
+| Matched no-ping control window | 16/172 = **0.09** | [0.05, 0.15] |
+| **Difference** | **+0.12** | subscriber-cluster bootstrap **[+0.05, +0.19]** |
+
+Real, and small. Response rates vary 0.00–0.50 across subscribers.
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
-*Fig 8 - unit: proactive Telegram ping, n = 234 across 12 subscribers; response window = 1 hour.
-Bars show response-to-ping rates with bootstrap 95% CIs.*
+### B6 — Observed Starving episodes · `Exploratory observation`
 
-#### B6: Observed Starving episodes
+Over **all 17** episodes (not the 8 the label-keyed builder could see): **13/17** received a feed
+(exact [0.50, 0.93]) and **13/17** recovered to Full by feeding. The episodes cluster in **9 runs**,
+so the effective n is nearer 9 than 17.
 
-All 8 observed Starving episodes received a feed, escaped Starving, and recovered to Full via
-feeding. Median time to first feed was 21 seconds.
+> **The longest episode ran 30 minutes, down to level 10.5, in a run with 15 logged interactions.**
+> People were present. The robot was not fed. It is ~65% of all Starving time in the corpus, and the
+> previous analysis could not see it.
 
-This is an operational status check, not a population recovery rate. Reliability is better
-summarised by the occupancy result in B7.
+### B7 — Long-run occupancy · `Inconclusive`
 
-#### B7: Long-run loop reliability
+**Empirically** — and this needs no model — the robot spent **1.67%** of observed seconds in
+Starving (run-cluster bootstrap [0.38%, 4.04%]). That figure stands.
 
-A continuous-time Markov chain fitted to Full, Hungry, and Starving transitions gives modelled
-long-run **Starving occupancy of 1.0% [0.2%, 3.1%]** using the run-level block bootstrap. A
-transition-level bootstrap gives a similar estimate, 1.1% [0.4%, 2.3%]. No absorbing starvation
-state appears in the observed deployment.
+The **modelled** stationary occupancy does not. With terminal dwells restored and non-ergodic
+resamples counted rather than discarded, the fitted CTMC gives 0.89% [0.15, 2.90] — but it fails its
+own diagnostics:
 
-This result should be read carefully. The transition rates describe the coupled human-robot loop:
-the robot signalled, people responded, and feeding replenished energy. The result is therefore
-not a controller-only property. It is also supporting rather than primary evidence because it is
-based on few Starving transitions, pools non-identical operating regimes into one model, and
-depends on a small number of responsive feeders. The pooled model is conservative because idle
-drain-only periods push Starving occupancy upward.
+| Stratum | runs | hours | Starving transitions | empirical Starving |
+|---|---:|---:|---:|---:|
+| Pooled | 12 | 46.0 | 17 | 1.67% |
+| Phase 1 | 8 | 25.1 | 11 | **2.81%** |
+| Phase 2 | 4 | 20.9 | 6 | **0.30%** |
+| Idle runs | 2 | 0.7 | 0 | *not identifiable* |
 
-**Verdict: supported as a loop-level outcome.** In this deployment, human engagement maintained
-the robot outside Starving for roughly 97-100% of the time.
+**Starving occupancy differs ~9x between the two halves of the study.** A time-homogeneous chain
+fitted across both estimates the stationary fraction of a process that never ran. This is a
+structural deficiency, not a matter of tightening the fit.
 
 ![Steady state](analysis/figures/fig09_steady_state.png)
 
-*Fig 9 - unit: CTMC state sojourn/transition reconstructed from 165,460 hunger events across 12
-monitored runs. Modelled occupancy is close to empirical time-occupancy (Starving 1.1% vs 1.8%);
-mean Starving sojourn is 163 s.*
+### D4 — Feeding concentration · `Exploratory observation`
+
+Gini **0.57** over 14 named users; the **top 3 supply 62%** of all meal energy. This is the standing
+caveat on every RQ2 result: the regulatory loop closed because a handful of specific people chose to
+close it.
 
 ---
 
-### 7. RQ3: Does adaptive regulatory memory encode behaviour?
+## 8. RQ3 — What does the adaptive memory actually establish?
 
-RQ3 links the controller mechanism to an external validation test. First, the report verifies what
-the robot learns. Then it asks whether the learned state tracks experimentally induced
-interaction histories and predicts later robot behaviour.
+### B9 — The mechanism · `Implementation verification`
 
-#### B9: Mechanism verification
+The affinity EMA is reproduced **exactly** from the logged rewards using the controller's own
+constants: `reward_delta` **is** the stomach-level change (max |diff| = 0.0), `eff_thr = max(0.50,
+base_ss − 0.15·affinity)` matches every logged selection (max error 0.0000, n=3378), the perceptual
+IPS weights never change (1 distinct combination across 216,940 events), and Hungry-state pings are
+gated to the 11/14 people above affinity 0.20. The reconstruction also reproduces the robot's **own
+persisted memory** for the 12 people it stored under a single identity — an artefact independent of
+the event log.
 
-The salience network implements per-person adaptive regulatory memory as **homeostatic affinity**:
-an exponentially weighted moving average of normalised homeostatic reward, bounded in [-1, +1].
-In plain terms, people who help reduce the robot's deficit can become easier for the robot to
-select proactively later.
+**None of this is evidence that the robot "learns about people".** Affinity is a deterministic
+function of delivered energy. It cannot drift, cannot be noisy, and cannot encode anything else. The
+previous report framed RQ3 as showing the memory "is not consistent with purely uncontrolled drift".
+Drift was never a live alternative: the EMA is four lines of arithmetic.
 
-The mechanism behaves as coded. Each check below is reproduced in
-[`b9_mechanism_check.csv`](analysis/outputs/b9_mechanism_check.csv).
+### B10.1 — The role manipulation · `Within-deployment association`
 
-| Check | Value | n |
-|---|---|---:|
-| Affinity updates converge (mean absolute update, early to late) | 0.103 -> 0.062 | 205 updates |
-| Perceptual IPS weights are constant, so learning does not touch them | 1 distinct weight combination | 216,940 events |
-| `eff_thr = max(0.50, base_ss - 0.15 * affinity)` matches logged values | max absolute error 0.0000 | 3,378 selections |
-| Eligibility discount for the highest-affinity person, against the 0.85 base | 0.143 lower threshold | 14 people |
-| Hungry-state pings gated to people above affinity 0.20 | 11 of 14 people | 14 people |
+**This is the only genuinely empirical question in RQ3, and it is about the humans.**
 
-Learning therefore acts on selection only through the per-person eligibility threshold, never
-through perception. The per-person affinity-to-threshold profile behind rows 3 and 4 is in
-[`b9_eligibility_profile.csv`](analysis/outputs/b9_eligibility_profile.csv).
+| | Feeder vs unconstrained | bootstrap | randomisation p |
+|---|---:|---|---:|
+| **Total delivery** (meals/person-day) | **2.7x** | [1.0, 8.4] | **0.048** |
+| **Per-encounter** (meals/interaction) | 1.2x | [0.8, 2.7] | 0.36 |
+| **Exposure** (interactions/day) | **2.2x** | — | — |
 
-The affinity reconstruction was also checked against the robot's persisted
-`homeostatic_learning.json` memory. For the 12 people stored under one identity, the
-reconstruction exactly matches the robot's memory (max absolute difference 0.000) and update
-counts match. For 2 people whose identity was forked in memory under spelling or case variants,
-the cleaned event log conserves update counts and produces the correct merged affinity. Leaving
-those forks unmerged would fragment affinity by up to 0.93.
+The no-feed pair supplied **0/15** meals in Phase 1 — perfect compliance, though 15 observations only
+bound their feed rate below 0.22. The feeder excess shrank **0.43x** once the obligation lifted.
 
-Because this identity repair touches an RQ3 outcome, the core dose-to-affinity model was refit
-excluding the reconstructed people. The result strengthens from +0.17 to **+0.23** (p about
-7e-14), so the dose-affinity association is not manufactured by the repair.
-
-#### B10: External validation
-
-The Phase-1 role manipulation provides the main test of whether affinity tracks behaviour.
-
-**Manipulation check.** Obligated feeders supplied meals at **2.7x** the unconstrained rate in
-Phase 1 [1.2, 5.9], p = .013. The no-feed pair complied perfectly, with **0 feeds in 15 Phase-1
-interactions**. Once roles were lifted in Phase 2, the feeder excess shrank.
-
-**Core affinity model.** The pre-specified model tests whether engagement dose predicts change in
-affinity while allowing role and phase to moderate that relationship. For unconstrained people,
-+1 SD of interaction duration predicts **Delta affinity +0.17 [+0.12, +0.21]**, p about 2e-13.
-The relationship is moderated by role: for obligated feeders, reward delivery dominates the
-update more than chat duration does. It also attenuates in Phase 2. Fully observed dose checks
-using `n_turns` and `active_energy_cost` agree in sign, and leave-one-person-out slopes range
-from +0.13 to +0.22.
-
-**Downstream expression.** Affinity as of yesterday predicts today's proactive approaches:
-**rate ratio 1.55 per +1 affinity [1.09, 2.20]**, p = .016, controlling for yesterday's
-interaction count and phase. Because predictor and outcome are on different days, this test is
-leakage-free by construction.
-
-**Verdict: supported.** Adaptive regulatory memory tracks socially embedded interaction history,
-including experimentally induced feeding roles, and is later expressed in the robot's proactive
-allocation. The result is not consistent with purely uncontrolled drift in this deployment.
-
-![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
-
-*Fig 10 - unit: learning update event, n = 205 learning-eligible events over 14 named people.
-One panel per Phase-1 role, sharing both axes: thin lines are individual people, the bold line
-is the role mean of the currently-held affinity, and the dashed vertical marks the phase
-boundary. Meal counts in the panel titles are Phase-1 meals, the window in which the role
-actually constrained the person.*
+**Being told to feed the robot made people go to the robot. It did not make them markedly more
+generous once there.** With 2 people per role, this shows the manipulation took *for these four
+people* and estimates **nothing** about a population.
 
 ![Role validation](analysis/figures/fig12_role_validation.png)
 
-*Fig 12 - units: interaction and person-day; 217 interactions, 14 named people, 8 days. The
-left panel shows feed probability per interaction with exact CIs; the right panel shows meals
-per person-day with GEE rate ratios.*
+### B10.2 / B10.3 — Dose and downstream expression
+
+**Δaffinity is a programmed learning-rule response.** Controlling for `fed` and `affinity_before` —
+both terms *in the update rule* — and using the fully observed dose, +1 SD of engagement is
+associated with **Δaffinity +0.041** [+0.016, +0.066], person-cluster bootstrap [+0.009, +0.155].
+The uncontrolled specification reported **+0.168**.
+
+**Downstream**, prior affinity is associated with next-day proactive approaches *per opportunity* at
+**RR 1.19** [1.07, 1.33] (1.55 without the exposure offset), among the 62 person-days where the
+person returned. But the entire path runs through `eff_thr = max(0.50, base − 0.15·affinity)`, which
+B9 verifies to a maximum error of **0.0000**. **"Affinity predicts approaches" is substantially a
+restatement of that line of source code**, not an independent behavioural finding.
 
 ![Affinity dose model](analysis/figures/fig13_affinity_dose.png)
 
-*Fig 13 - unit: learning update event; duration-linked subset n about 97, fully observed dose
-checks use all 205 learning-eligible events. The figure shows raw duration-linked events,
-per-role trends, and mixed-model coefficients with 95% CIs.*
+---
+
+## 9. Machine-learning sensitivity check
+
+Two features (`ss_rank`, `hs_rank`), 217 interactions, grouped CV by run. Adding hunger state changes
+held-out Engaged-prediction AUC by **+0.081 [+0.072, +0.094]** across 25 repeated grouped-CV runs,
+**permutation p = 0.005** against a within-run shuffle null. Social state remains the dominant
+predictor.
+
+Sensitivity evidence only. It corroborates the *direction* of B3/B4 and confirms nothing — and the
+out-of-fold Starving column rests on the same 13 interactions that make B4 exploratory, so it is not
+independent corroboration.
 
 ---
 
-### 8. Machine-learning sensitivity check
+## 10. Scorecard
 
-The machine-learning analysis is a sensitivity check, not a confirmatory model. Its purpose is to
-ask whether hunger state adds held-out predictive information beyond social state.
-
-Using group-aware cross-validation on about 200 interaction rows, adding hunger state improves
-Engaged prediction AUC from **0.669 to 0.757** (+0.088) and PR-AUC by **+0.068**. Drop-column
-cross-validation ranks hunger behind social state, meaning social context remains the stronger
-predictor. Out-of-fold predictions reproduce the Starving suppression pattern, which
-corroborates B4 but does not prove it. The unit is the interaction (n = 217), and the grouped
-cross-validation leaves out whole runs or people.
-
----
-
-## Part IV — Synthesis
-
-### 9. Scorecard and synthesis
-
-| Claim | Source | Outcome |
+| Claim | Source | Evidence class |
 |---|---|---|
-| Adaptive regulatory memory tracks interaction history and is expressed downstream | B10 / RQ3 | **Supported** |
-| Deficit-to-action-selection coupling is behaviourally expressed | B3 / RQ1 | **Supported** |
-| Starving reallocates priority away from social completion | B4 / RQ1 | **Supported** |
-| Deficit expression elicits recovery behaviour | B5 / RQ2 | **Supported** |
-| Long-run replenishment is reliable at the loop level | B7 / RQ2 | **Supported** as a supporting observation |
-| Observed Starving episodes resolve by feeding | B6 / RQ2 | **Supported** as exploratory |
-| Internal monitoring is continuous and autonomous | B1 / Appendix A | **Supported** as implementation verification |
-| Deficit detection follows the 60/25 thresholds | B2 / Appendix A | **Supported** as implementation verification |
+| Internal monitoring is continuous and autonomous | B1 | `Implementation verification` |
+| Deficit detection follows the coded 60/25 thresholds | B2 | `Implementation verification` |
+| **Deficit is associated with feeding received** | **B3** | **`Within-deployment association`** |
+| Starving reallocates priority away from social completion | B4 | `Exploratory observation` |
+| Deficit expression elicits recovery behaviour | B5 | `Within-deployment association` |
+| Observed Starving episodes resolve by feeding | B6 | `Exploratory observation` |
+| Long-run Starving occupancy is low | B7 | **`Inconclusive`** |
+| The role manipulation changed what people did | B10.1 | `Within-deployment association` |
+| Affinity encodes history and is expressed downstream | B10 | `Within-deployment association` |
+| Hunger state adds held-out predictive signal | D1 | `Within-deployment association` |
 
-Taken together, the results show a coherent homeostatic loop. RQ1 establishes the behavioural
-mechanism: hunger thresholds change action selection, and Starving shifts priority away from
-ordinary social completion. RQ2 shows that this signalling loop was sufficient in deployment to
-maintain low Starving occupancy, while making clear that this is a human-robot loop-level result.
-RQ3 provides the strongest validation: experimentally induced feeding histories are reflected in
-the learned affinity state, and that state predicts later proactive allocation.
-
-The scope remains deliberately narrow. These are within-deployment findings for one robot at one
-site over 8 session-days. The next scientific step is replication with more people per controlled
-role and across additional sites.
+**Synthesis.** The engineering verification is strong and uninteresting: the controller does what it
+says. The one solid empirical result is **B3** — the deficit is associated with a five-fold increase
+in the odds of a meal arriving, and it survives every robustness check applied to it. **B5** adds a
+graded meal-size response and a weak-but-real remote channel. **B10.1** shows the role manipulation
+took, by changing attendance. Everything else is either the source code restated, or too small to
+estimate.
 
 ---
 
-## Part V — Appendices
+## 11. What these data cannot establish
 
-### Appendix A: Instrumentation verification
+Each of the following requires **new data**. None is a matter of better analysis.
 
-B1 and B2 are kept separate from the main empirical results because they verify that the logged
-data behaves as the controller source specifies. They are not independent inferential tests.
-
-**B1: internal monitoring.** The stomach level is a software integrator. Passive drain matches
-the nominal rate exactly (1.00x), as expected for implemented software rather than a noisy
-biological measurement. The non-trivial operational result is dense autonomous sampling: about
-every 2.3 seconds across 12 runs / 46 hours, including two runs with no visitors.
-
-**B2: deficit detection.** Hunger labels are derived from the coded thresholds: Full to Hungry at
-60, and Hungry to Starving at 25. Detection is the drain-driven fall, where the level crosses the
-threshold continuously; feeding-driven rises are discrete meals that overshoot, so they are
-recovery rather than detection and are counted separately.
-
-| Threshold | Transitions | Drain falls | Bracket accuracy | Widest bracket | Rapid reversals (<120 s) |
-|---|---:|---:|---:|---:|---:|
-| 60 (Full / Hungry) | 121 | 49 | 1.00 | 3.6 | 0 |
-| 25 (Hungry / Starving) | 14 | 8 | 1.00 | 3.6 | 0 |
-
-Accuracy of 1.00 is true by implementation, because the label is computed from the level by the
-same thresholds. The informative columns are the last two. The widest bracket is 3.6 stomach
-points, which is one drain sample, so the label is never caught more than a single sampling step
-away from the coded boundary. And there were zero rapid reversals at either threshold, so the
-labels do not flap. Values come from
-[`b2_detection_check.csv`](analysis/outputs/b2_detection_check.csv); the observed transition
-counts per edge are in
-[`b2_transition_counts.csv`](analysis/outputs/b2_transition_counts.csv).
-
-**Reading:** the instrumentation behaves exactly as coded. The empirical homeostasis claims rest
-on the behavioural and learning results in RQ1-RQ3.
+- **Drive-on vs drive-off causal identification.** There is no off condition. The causal share of the
+  drive in any observed feeding is not identified and cannot be.
+- **Multi-site generalisation.** One robot, one site, one convenience sample.
+- **Stable role-effect estimation.** Two people per controlled role. The randomisation p-value has a
+  hard floor of ~0.015 set by the number of possible assignments. More people per role — not more
+  modelling.
+- **Reliable Starving-episode rates.** 17 episodes clustered in 9 runs, some right-censored.
+- **A calibrated long-run occupancy.** The deployment is not a time-homogeneous process.
+- **Population-level conclusions of any kind.**
 
 ---
 
-### Corrections
+## 12. Reproducing this
 
-**B3 model formula.** An earlier version of this README stated the B3 inferential anchor as
-`fed_here ~ deficit + C(initial_state)`. The code (`analysis/build_notebook.py`) actually fits
-`fed01 ~ deficit` — a person-clustered logistic GEE with no `initial_state` covariate. `fed01` is
-a binary feeding-pursuit indicator local to the B3 co-present-interaction table; `fed_here` is a
-separate variable (`meals_eaten_count > 0`) used later, in B5. The two were conflated in the
-write-up. The `C(initial_state)` covariate does appear in the notebook, but as part of the B4
-model (`reached_ss4 ~ starving + C(initial_state)`), not B3.
+```bash
+make all          # clean regeneration: manifest -> execute -> check -> test -> repro report
+```
 
-The reported effect size, CI, and p-value (OR 4.9 [2.6, 9.5], p about 2e-6, LOPO range 4.1-6.1)
-match the notebook's actual `fed01 ~ deficit` output, so the B3 verdict is unaffected. Only the
-formula text and variable name were stale; they have been corrected in place above rather than
-silently rewritten, per the note in this section.
+| Target | What it does |
+|---|---|
+| `make execute` | Rebuild and run the notebook top-to-bottom from a clean state |
+| `make check` | Notebook fully executed, error-free, and **leaks no participant identity** |
+| `make test` | 27 regression tests, each pinning one corrected defect |
+| `make manifest` | SHA-256 + row counts + schema fingerprints for every input |
+| `make check-constants` | Verify `CONST` against the pinned controller source |
+| `make repro` | Input hashes, software versions, execution status, output hashes |
 
-![Drive timeline](analysis/figures/fig02_drive_timeline.png)
+**Full independent reproduction requires controlled access to data this repository does not and
+cannot ship.** The SQLite databases contain participant faces, names and chat transcripts;
+`analysis/private/` holds the identity-canonicalisation and role-assignment maps. Both are
+git-ignored.
 
-*Fig 2 - unit: hunger-level event, n = 165,460 across 12 monitored runs / 8 days. The timeline
-shows autonomous drain, discrete feeding recoveries, and brief Starving periods.*
+Without that data a third party can still verify that the build is deterministic (fixed seed, pinned
+dependencies), that the analysis constants match the pinned controller source, and — if they hold
+the data — that their copy hashes to the values in
+[`analysis/data_manifest.json`](analysis/data_manifest.json).
+
+> **Constants are currently `UNVERIFIED` against source.** `analysis/controller_source.json` has
+> `commit: UNPINNED`. Set it to the 40-char SHA the deployment ran and re-run `make check-constants`
+> to close this. The reproducibility report records the unverified state rather than quietly passing.

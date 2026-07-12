@@ -1,0 +1,1434 @@
+{
+  "generated_utc": "2026-07-12T23:40:54+00:00",
+  "note": "Raw data are NOT distributed with this repository: the databases contain participant faces, names and chat text. This manifest records exactly what the analysis consumed, so a holder of the data can confirm they have the same bytes. It does not make the analysis reproducible without that data.",
+  "collection_dates": [
+    "15-06",
+    "16-06",
+    "17-06",
+    "18-06",
+    "22-06",
+    "23-06",
+    "25-06",
+    "29-06"
+  ],
+  "expected_files": [
+    {
+      "path": "data/15-06/data_collection/executive_control.db",
+      "session": "15-06",
+      "kind": "executive_control",
+      "sha256": "46ee7fe260b5705e8991376a96e1d765cc3ccf6fc603bf3977249dcad995b540",
+      "bytes": 7892992,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 23908,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 36,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 29,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 7,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 23989
+    },
+    {
+      "path": "data/15-06/data_collection/salience_network.db",
+      "session": "15-06",
+      "kind": "salience_network",
+      "sha256": "f2e480cc1f0701cd86f49bbd47deeb1ca9b494bf1a2ad7088260133391c62844",
+      "bytes": 12877824,
+      "tables": {
+        "face_ips_events": {
+          "rows": 29778,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 37,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 21,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 42,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 8,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 951,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 30848
+    },
+    {
+      "path": "data/15-06/data_collection/chat_bot.db",
+      "session": "15-06",
+      "kind": "chat_bot",
+      "sha256": "fd62d8b646545acd1f52ffc267cac3f817b0582a5ded8c92b40a8587233ec9ec",
+      "bytes": 225280,
+      "tables": {
+        "chat_events": {
+          "rows": 109,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 8,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 100,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 8,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 8,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 245
+    },
+    {
+      "path": "data/15-06/data_collection/vision.db",
+      "session": "15-06",
+      "kind": "vision",
+      "sha256": "a7697b21b342e9274c4c57e0a7f4f8a137cfe0a18ad9c1ae4a2a4c50f5a20d6b",
+      "bytes": 28172288,
+      "tables": {
+        "landmark_events": {
+          "rows": 83335,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 83341
+    },
+    {
+      "path": "data/16-06/data_collection/executive_control.db",
+      "session": "16-06",
+      "kind": "executive_control",
+      "sha256": "b34e00c0eab1665f68f390b3005769a0be87c3299b43c2addf71405e06f00670",
+      "bytes": 15597568,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 47366,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 110,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 69,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 14,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 47568
+    },
+    {
+      "path": "data/16-06/data_collection/salience_network.db",
+      "session": "16-06",
+      "kind": "salience_network",
+      "sha256": "4cc2a694998ef144dc0d6f3a75f986c297eb6846850a20716161b02219775105",
+      "bytes": 24469504,
+      "tables": {
+        "face_ips_events": {
+          "rows": 56655,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 82,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 53,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 106,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 20,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 1415,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 58342
+    },
+    {
+      "path": "data/16-06/data_collection/chat_bot.db",
+      "session": "16-06",
+      "kind": "chat_bot",
+      "sha256": "e552adea6b08ff98125df64db4e61189448e8f7e99e2db2af88c1d09e4eda112",
+      "bytes": 434176,
+      "tables": {
+        "chat_events": {
+          "rows": 297,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 11,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 284,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 11,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 11,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 626
+    },
+    {
+      "path": "data/16-06/data_collection/vision.db",
+      "session": "16-06",
+      "kind": "vision",
+      "sha256": "b5a98517c30b1426ce0443358d7a4d38e1f6e8a39dc97123283a244982e5d583",
+      "bytes": 54136832,
+      "tables": {
+        "landmark_events": {
+          "rows": 159398,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 159404
+    },
+    {
+      "path": "data/16-06/memory/greeted_today.json",
+      "session": "16-06",
+      "kind": "memory",
+      "sha256": "3f750513f8eb49950998b57f6451f37194eb93522263d2fc1e018cfdae7926e2",
+      "bytes": 731
+    },
+    {
+      "path": "data/16-06/memory/homeostatic_learning.json",
+      "session": "16-06",
+      "kind": "memory",
+      "sha256": "191f7f52bd7a8b803fce42778960fdb0601d522c58f661cb7ede857c21c8e830",
+      "bytes": 4354
+    },
+    {
+      "path": "data/16-06/memory/hunger_state.json",
+      "session": "16-06",
+      "kind": "memory",
+      "sha256": "c565a7a24b63e2cf4fd74e9ed0834dcd169f98fdaedd2d304b2d2a17f9dfc81d",
+      "bytes": 137
+    },
+    {
+      "path": "data/16-06/memory/last_greeted.json",
+      "session": "16-06",
+      "kind": "memory",
+      "sha256": "ea27befaea8a3f1a2228ac805dbd5c9c06fae942a75178059f6e59cc50b01bd2",
+      "bytes": 2120
+    },
+    {
+      "path": "data/16-06/memory/talked_today.json",
+      "session": "16-06",
+      "kind": "memory",
+      "sha256": "d87432dc901bc6705073a025848098990ef4d30a583c3c210a5be59e749de673",
+      "bytes": 487
+    },
+    {
+      "path": "data/17-06/data_collection/executive_control.db",
+      "session": "17-06",
+      "kind": "executive_control",
+      "sha256": "9381b5262db911ee1a4f4702f3cbc3c3f719746466698414a3720049894ab9f7",
+      "bytes": 23326720,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 70847,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 192,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 99,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 16,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 71163
+    },
+    {
+      "path": "data/17-06/data_collection/salience_network.db",
+      "session": "17-06",
+      "kind": "salience_network",
+      "sha256": "11b1acd5442c5906bf5fae5cf5a9557951b73d66779972e0218c0d043f8bf40e",
+      "bytes": 34938880,
+      "tables": {
+        "face_ips_events": {
+          "rows": 81389,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 114,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 80,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 160,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 30,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 1669,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 83453
+    },
+    {
+      "path": "data/17-06/data_collection/chat_bot.db",
+      "session": "17-06",
+      "kind": "chat_bot",
+      "sha256": "0ea45bb89401a987cd20c7b10c0d38dbca05db259cc346ccbaac6052fbe46a31",
+      "bytes": 516096,
+      "tables": {
+        "chat_events": {
+          "rows": 377,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 11,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 360,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 11,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 11,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 782
+    },
+    {
+      "path": "data/17-06/data_collection/vision.db",
+      "session": "17-06",
+      "kind": "vision",
+      "sha256": "d7fdfd4d0632fe8ea72cc898a8626ba672ddd8942a31900dc3792bde087d4432",
+      "bytes": 78323712,
+      "tables": {
+        "landmark_events": {
+          "rows": 230874,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 230880
+    },
+    {
+      "path": "data/17-06/memory/greeted_today.json",
+      "session": "17-06",
+      "kind": "memory",
+      "sha256": "674a2dcecb43db5ce982632839f3430c4e9e48309213c1ce883d12fed397f3e4",
+      "bytes": 731
+    },
+    {
+      "path": "data/17-06/memory/homeostatic_learning.json",
+      "session": "17-06",
+      "kind": "memory",
+      "sha256": "a5f54be7ce6ff3836d846dbbbc500f3b7d8074f51d2c9312b02f6f37bb3a9b44",
+      "bytes": 4374
+    },
+    {
+      "path": "data/17-06/memory/hunger_state.json",
+      "session": "17-06",
+      "kind": "memory",
+      "sha256": "360d219e206a75a146fca71f6050e9cfa6881c404e31989aaf19be96aedc7fe3",
+      "bytes": 136
+    },
+    {
+      "path": "data/17-06/memory/last_greeted.json",
+      "session": "17-06",
+      "kind": "memory",
+      "sha256": "ea27befaea8a3f1a2228ac805dbd5c9c06fae942a75178059f6e59cc50b01bd2",
+      "bytes": 2120
+    },
+    {
+      "path": "data/17-06/memory/talked_today.json",
+      "session": "17-06",
+      "kind": "memory",
+      "sha256": "4e40a0daac9ecb51e38e03b0e822d64ffe8fe7f1b79cc26d1968e265682d2239",
+      "bytes": 443
+    },
+    {
+      "path": "data/18-06/data_collection/executive_control.db",
+      "session": "18-06",
+      "kind": "executive_control",
+      "sha256": "0f854f954908a5609701c46457ced19dc4563958c220232cd4cbbe06ac496ca1",
+      "bytes": 29851648,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 90452,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 264,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 134,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 19,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 90878
+    },
+    {
+      "path": "data/18-06/data_collection/salience_network.db",
+      "session": "18-06",
+      "kind": "salience_network",
+      "sha256": "c73579d46e60a9f67b7b5e11e088982f8fce157b4186aef2f0445c15b71ad8ea",
+      "bytes": 49377280,
+      "tables": {
+        "face_ips_events": {
+          "rows": 114151,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 151,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 109,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 218,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 43,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 3133,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 117816
+    },
+    {
+      "path": "data/18-06/data_collection/chat_bot.db",
+      "session": "18-06",
+      "kind": "chat_bot",
+      "sha256": "e2179920d6a1afa711560e0fd3338e91c59690c54e905d854f041ad2b5c180e9",
+      "bytes": 618496,
+      "tables": {
+        "chat_events": {
+          "rows": 493,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 12,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 463,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 12,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 12,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 1004
+    },
+    {
+      "path": "data/18-06/data_collection/vision.db",
+      "session": "18-06",
+      "kind": "vision",
+      "sha256": "1c49ce526ddbac9384baef5f102abf12a57699eb6a6e5624e8afb020bc2c3fa8",
+      "bytes": 108916736,
+      "tables": {
+        "landmark_events": {
+          "rows": 321044,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 321050
+    },
+    {
+      "path": "data/18-06/memory/greeted_today.json",
+      "session": "18-06",
+      "kind": "memory",
+      "sha256": "04b61588520f912e2a04d0d6374a0632e1824fed5f625b737cef8006b5101767",
+      "bytes": 539
+    },
+    {
+      "path": "data/18-06/memory/homeostatic_learning.json",
+      "session": "18-06",
+      "kind": "memory",
+      "sha256": "29851106d0eef2b766037154e697ad604b63cd9341100ddf026e89d18e16f922",
+      "bytes": 4937
+    },
+    {
+      "path": "data/18-06/memory/hunger_state.json",
+      "session": "18-06",
+      "kind": "memory",
+      "sha256": "1b66d701b8d76403b9a97e5f8a28ffd52ef23fdaa401a85619acbb3a927dcce6",
+      "bytes": 137
+    },
+    {
+      "path": "data/18-06/memory/last_greeted.json",
+      "session": "18-06",
+      "kind": "memory",
+      "sha256": "542e268869735dff22a8347d52712c140b59178e79537d86bc92e67f3ff947b4",
+      "bytes": 2586
+    },
+    {
+      "path": "data/18-06/memory/talked_today.json",
+      "session": "18-06",
+      "kind": "memory",
+      "sha256": "14fd32bb6c28e75e87c511c9ea312d733427d15d6b9a15d35675c27b9c0a2d17",
+      "bytes": 487
+    },
+    {
+      "path": "data/22-06/data_collection/executive_control.db",
+      "session": "22-06",
+      "kind": "executive_control",
+      "sha256": "4a430d854655d10c9b27c7da9d8563dd849735106b1f6fc9628d4d0c2a6ba0f9",
+      "bytes": 35885056,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 108900,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 290,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 150,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 20,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 109369
+    },
+    {
+      "path": "data/22-06/data_collection/salience_network.db",
+      "session": "22-06",
+      "kind": "salience_network",
+      "sha256": "0bb0eb2f4633b050903662a1c8ae269109d8cc2096f72bf651b39ce4ceac21a6",
+      "bytes": 62824448,
+      "tables": {
+        "face_ips_events": {
+          "rows": 145863,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 167,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 124,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 248,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 52,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 3263,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 149728
+    },
+    {
+      "path": "data/22-06/data_collection/chat_bot.db",
+      "session": "22-06",
+      "kind": "chat_bot",
+      "sha256": "1043fcc598ddea39f40e17d7ed8c4ed8c9a236bb22044d880f4555aa29ea7578",
+      "bytes": 716800,
+      "tables": {
+        "chat_events": {
+          "rows": 597,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 12,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 560,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 12,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 12,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 1205
+    },
+    {
+      "path": "data/22-06/data_collection/vision.db",
+      "session": "22-06",
+      "kind": "vision",
+      "sha256": "3ae3bc158b210ad2349e3e83dfeb16e484e60051fcd298d109bc570d42c078a7",
+      "bytes": 140378112,
+      "tables": {
+        "landmark_events": {
+          "rows": 414389,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 414395
+    },
+    {
+      "path": "data/22-06/memory/greeted_today.json",
+      "session": "22-06",
+      "kind": "memory",
+      "sha256": "8733045c2f72549c63afded6363097dea81339e3288be45809a21dcafb7f3540",
+      "bytes": 434
+    },
+    {
+      "path": "data/22-06/memory/homeostatic_learning.json",
+      "session": "22-06",
+      "kind": "memory",
+      "sha256": "c921f08e5093f1e37167193cb92b20c219ca8c6be07cfba32e58eed2a5376b33",
+      "bytes": 5011
+    },
+    {
+      "path": "data/22-06/memory/hunger_state.json",
+      "session": "22-06",
+      "kind": "memory",
+      "sha256": "97ea821ad28a1ebb5c61f53fffdc39db9adbed1cfe90d72ae25e794a782275e4",
+      "bytes": 136
+    },
+    {
+      "path": "data/22-06/memory/last_greeted.json",
+      "session": "22-06",
+      "kind": "memory",
+      "sha256": "8c5be24f2d370c0a8ddd60f89befe6de488eddf622bd4088656ce510e4f8bb30",
+      "bytes": 2582
+    },
+    {
+      "path": "data/22-06/memory/talked_today.json",
+      "session": "22-06",
+      "kind": "memory",
+      "sha256": "411f6ffe5b5e7f1999632b5279f5a097250e1088540b23733399e8622fe8f112",
+      "bytes": 289
+    },
+    {
+      "path": "data/23-06/data_collection/executive_control.db",
+      "session": "23-06",
+      "kind": "executive_control",
+      "sha256": "ca37043879aa1fe21ff7d9a5c87f5747b3ae7efd2e8a5728555604a66986e687",
+      "bytes": 42516480,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 129192,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 306,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 167,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 20,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 129694
+    },
+    {
+      "path": "data/23-06/data_collection/salience_network.db",
+      "session": "23-06",
+      "kind": "salience_network",
+      "sha256": "19a2b120379ec75a7525176b628594ddb0803b39d9be2b7c59858e75798c0c89",
+      "bytes": 72237056,
+      "tables": {
+        "face_ips_events": {
+          "rows": 167980,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 184,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 140,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 280,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 61,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 3298,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 171954
+    },
+    {
+      "path": "data/23-06/data_collection/chat_bot.db",
+      "session": "23-06",
+      "kind": "chat_bot",
+      "sha256": "b2f9aa0c33d8147eb2c2dfad4f65567957ab977f4a29e819538caab60da941a2",
+      "bytes": 782336,
+      "tables": {
+        "chat_events": {
+          "rows": 671,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 12,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 628,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 12,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 12,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 1347
+    },
+    {
+      "path": "data/23-06/data_collection/vision.db",
+      "session": "23-06",
+      "kind": "vision",
+      "sha256": "256cbbf33c54e14a02168cb84d49e7155cd3c6780a66134460898b3b798baf53",
+      "bytes": 162127872,
+      "tables": {
+        "landmark_events": {
+          "rows": 479028,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 479034
+    },
+    {
+      "path": "data/23-06/memory/greeted_today.json",
+      "session": "23-06",
+      "kind": "memory",
+      "sha256": "b6a95e4759e98cf28a513b5bb9a0a2ff0681831fd7db6e8858485a7912ebdc22",
+      "bytes": 337
+    },
+    {
+      "path": "data/23-06/memory/homeostatic_learning.json",
+      "session": "23-06",
+      "kind": "memory",
+      "sha256": "6ff9b7d12edefb699e8e8a4ce45251962b3d6f3a2d752d81eb453e17261b46dc",
+      "bytes": 4995
+    },
+    {
+      "path": "data/23-06/memory/hunger_state.json",
+      "session": "23-06",
+      "kind": "memory",
+      "sha256": "c9fca615d839104861f97af66dd67af6582792b694f8200d7bd40a89c2c4ca25",
+      "bytes": 138
+    },
+    {
+      "path": "data/23-06/memory/last_greeted.json",
+      "session": "23-06",
+      "kind": "memory",
+      "sha256": "5d547e041b97f3a635095ccd9774be72cfa705d25794c2d21d14d7a2a3d14431",
+      "bytes": 2581
+    },
+    {
+      "path": "data/23-06/memory/talked_today.json",
+      "session": "23-06",
+      "kind": "memory",
+      "sha256": "e25760de022ea3680b158520a5b732cfaeb7e1d320951c76e65aca83975a477a",
+      "bytes": 242
+    },
+    {
+      "path": "data/25-06/data_collection/executive_control.db",
+      "session": "25-06",
+      "kind": "executive_control",
+      "sha256": "a2b87c4f3030371cfa2ad3faeca7d56021a00b435e4e5599d2f589a12819991f",
+      "bytes": 50016256,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 151993,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 339,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 197,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 23,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 152561
+    },
+    {
+      "path": "data/25-06/data_collection/salience_network.db",
+      "session": "25-06",
+      "kind": "salience_network",
+      "sha256": "c612d0430c9520ddd8f089d7abace9daf54f2faca77f81136ec373568e11e629",
+      "bytes": 84164608,
+      "tables": {
+        "face_ips_events": {
+          "rows": 194495,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 217,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 168,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 336,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 72,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 4999,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 200298
+    },
+    {
+      "path": "data/25-06/data_collection/chat_bot.db",
+      "session": "25-06",
+      "kind": "chat_bot",
+      "sha256": "70f8e54c4baf619bb41b373538cfe3b22c8b86ccae5635f01d7ca1fda9b86dd8",
+      "bytes": 823296,
+      "tables": {
+        "chat_events": {
+          "rows": 719,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 12,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 671,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 12,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 12,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 1438
+    },
+    {
+      "path": "data/25-06/data_collection/vision.db",
+      "session": "25-06",
+      "kind": "vision",
+      "sha256": "ce1742dabc9444ad6e4cf51794dd0dedc76911d1e50cd176d1466a8ef035faab",
+      "bytes": 186707968,
+      "tables": {
+        "landmark_events": {
+          "rows": 550827,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 550833
+    },
+    {
+      "path": "data/25-06/memory/greeted_today.json",
+      "session": "25-06",
+      "kind": "memory",
+      "sha256": "8b2106621dca813a82bf2921dd19466fea3b9beca0aefa1ccb4f09d0ddcb2d24",
+      "bytes": 479
+    },
+    {
+      "path": "data/25-06/memory/homeostatic_learning.json",
+      "session": "25-06",
+      "kind": "memory",
+      "sha256": "847e713882cd34f38e879b9a79a5c89a7eede5e52aec95c34fc696b44545e31a",
+      "bytes": 4988
+    },
+    {
+      "path": "data/25-06/memory/hunger_state.json",
+      "session": "25-06",
+      "kind": "memory",
+      "sha256": "4bde5bb06adccc0e690ae44d36532ff9e91773665c23eced79017d5024b4e2f7",
+      "bytes": 137
+    },
+    {
+      "path": "data/25-06/memory/last_greeted.json",
+      "session": "25-06",
+      "kind": "memory",
+      "sha256": "b4352588ffad7a12a81b33399915b0c1cc2433b98cfb766b2787fa3de5f01006",
+      "bytes": 2581
+    },
+    {
+      "path": "data/25-06/memory/talked_today.json",
+      "session": "25-06",
+      "kind": "memory",
+      "sha256": "37ef1581fec530d1c634dddf910c6ddff118356f69d7a926d29c52d108fe9ea7",
+      "bytes": 430
+    },
+    {
+      "path": "data/29-06/data_collection/executive_control.db",
+      "session": "29-06",
+      "kind": "executive_control",
+      "sha256": "6878a4ba6f211898437c51bfbe293136a71e3fe2defb7e49aecb9a557aaa27b3",
+      "bytes": 54472704,
+      "tables": {
+        "hunger_level_events": {
+          "rows": 165460,
+          "columns": 30
+        },
+        "interaction_turns": {
+          "rows": 367,
+          "columns": 37
+        },
+        "interactions": {
+          "rows": 217,
+          "columns": 37
+        },
+        "reactive_interactions": {
+          "rows": 25,
+          "columns": 20
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 4,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "aaaaf9ac2b767b8b",
+      "total_rows": 166078
+    },
+    {
+      "path": "data/29-06/data_collection/salience_network.db",
+      "session": "29-06",
+      "kind": "salience_network",
+      "sha256": "62b67c3087455a94268f7922edf3bf9fb971d878ec7d4d7b2b03ffa487dffc62",
+      "bytes": 93769728,
+      "tables": {
+        "face_ips_events": {
+          "rows": 216940,
+          "columns": 33
+        },
+        "homeostatic_learning_changes": {
+          "rows": 239,
+          "columns": 26
+        },
+        "interaction_attempts": {
+          "rows": 186,
+          "columns": 23
+        },
+        "interaction_state_events": {
+          "rows": 372,
+          "columns": 22
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 6,
+          "columns": 2
+        },
+        "ss_changes": {
+          "rows": 82,
+          "columns": 14
+        },
+        "target_selections": {
+          "rows": 5142,
+          "columns": 23
+        }
+      },
+      "schema_sha256": "807b810be424959f",
+      "total_rows": 222972
+    },
+    {
+      "path": "data/29-06/data_collection/chat_bot.db",
+      "session": "29-06",
+      "kind": "chat_bot",
+      "sha256": "b0b28cae015a9b48a37804beb1d613a41d3fe61d269d398198bffc7003e405c7",
+      "bytes": 860160,
+      "tables": {
+        "chat_events": {
+          "rows": 761,
+          "columns": 22
+        },
+        "chat_memory": {
+          "rows": 12,
+          "columns": 5
+        },
+        "chat_messages": {
+          "rows": 710,
+          "columns": 24
+        },
+        "meta": {
+          "rows": 5,
+          "columns": 2
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 2,
+          "columns": 2
+        },
+        "subscribers": {
+          "rows": 12,
+          "columns": 4
+        },
+        "user_memory": {
+          "rows": 12,
+          "columns": 3
+        }
+      },
+      "schema_sha256": "6948a9ff6ae5cf23",
+      "total_rows": 1519
+    },
+    {
+      "path": "data/29-06/data_collection/vision.db",
+      "session": "29-06",
+      "kind": "vision",
+      "sha256": "0457db1e7184eb27703250b27c8f77c98ee0f8095b03815e59efd16f62014578",
+      "bytes": 208257024,
+      "tables": {
+        "landmark_events": {
+          "rows": 614530,
+          "columns": 32
+        },
+        "schema_info": {
+          "rows": 5,
+          "columns": 2
+        },
+        "sqlite_sequence": {
+          "rows": 1,
+          "columns": 2
+        }
+      },
+      "schema_sha256": "90b4a1ce6be5c8d7",
+      "total_rows": 614536
+    },
+    {
+      "path": "data/29-06/memory/greeted_today.json",
+      "session": "29-06",
+      "kind": "memory",
+      "sha256": "bbd144effadb3938fde39e97e91882a2fac4300f0788f3edddad27260c1337d1",
+      "bytes": 432
+    },
+    {
+      "path": "data/29-06/memory/homeostatic_learning.json",
+      "session": "29-06",
+      "kind": "memory",
+      "sha256": "85d05ae09a374c73a99ced582c2694c26e454e4a5faede72bd2f968b942f0eac",
+      "bytes": 5255
+    },
+    {
+      "path": "data/29-06/memory/hunger_state.json",
+      "session": "29-06",
+      "kind": "memory",
+      "sha256": "c339b9daa262d396f2bdb6c2351e3ea22b278dccc8bade29e2add0b9315bcc6b",
+      "bytes": 137
+    },
+    {
+      "path": "data/29-06/memory/last_greeted.json",
+      "session": "29-06",
+      "kind": "memory",
+      "sha256": "6438bd10bbcab681a5ade1bf5ad52cc1b0907cbed3c63a93131402123d23b8ff",
+      "bytes": 2740
+    },
+    {
+      "path": "data/29-06/memory/talked_today.json",
+      "session": "29-06",
+      "kind": "memory",
+      "sha256": "bbd144effadb3938fde39e97e91882a2fac4300f0788f3edddad27260c1337d1",
+      "bytes": 432
+    }
+  ],
+  "private_files": [
+    {
+      "path": "analysis/private/identity_canon.json",
+      "sha256": "9d2bdafc0e2de6f99da36ffb3f8765bccb5d8dda3cf0b1ae0bfa822d744d1a91",
+      "bytes": 109,
+      "note": "git-ignored; contents never published"
+    },
+    {
+      "path": "analysis/private/pseudonym_map.json",
+      "sha256": "d38c2d0ef971b20c1f8fa39df6abc94514a5ab34cccfc0ae990081187861e492",
+      "bytes": 274,
+      "note": "git-ignored; contents never published"
+    },
+    {
+      "path": "analysis/private/role_phase.json",
+      "sha256": "b7ddb741b3c2637756bc81c19deeaf376a4ee98f2b3cdba6f8599ffa0f1145c5",
+      "bytes": 468,
+      "note": "git-ignored; contents never published"
+    }
+  ],
+  "schema_version": 1
+}

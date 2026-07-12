@@ -1,6 +1,17 @@
-family,metric,p,q_bh,sig_0.05
-RQ1/2-behaviour,B3_deficit_pursuit,1.9947014769267946e-06,1.9947014769267946e-06,True
-RQ1/2-behaviour,B4_starving_override,1.9402909845892217e-06,1.9947014769267946e-06,True
-RQ3-adaptation,B10_dose_affinity,1.629672051035867e-13,4.889016153107601e-13,True
-RQ3-adaptation,B10_role_meal_rate,0.01349405733535476,0.01578920600818486,True
-RQ3-adaptation,B10_prior_aff_prioritisation,0.01578920600818486,0.01578920600818486,True
+analysis,model,term,p,family,status,note,q_bh,sig_q05
+B3,"feeding_received ~ deficit (logistic GEE, cluster=person)",deficit,5.831678032543423e-08,RQ1/2-behaviour,confirmatory,,6.175865526121331e-08,True
+B5a,"meal_delta ~ hs_rank (OLS, cluster-robust by run)",hs_rank,6.175865526121331e-08,RQ1/2-behaviour,confirmatory,,6.175865526121331e-08,True
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns,0.0014169198732650852,RQ3-adaptation,confirmatory,primary dose; fully observed,0.012158372620737008,True
+B10.3,"n_pro_next ~ prior_aff + n_today + phase + offset(log detections) (Poisson GEE, cluster=person)",prior_aff,0.0018705188647287704,RQ3-adaptation,confirmatory,"two-part model, PART 2: approaches per opportunity, conditional on presence",0.012158372620737008,True
+B10.1,"meals ~ is_feeder*phase (Poisson GEE, cluster=person) — TOTAL delivery",is_feeder,0.01349405733535476,RQ3-adaptation,confirmatory,asymptotic; 2 feeders — the permutation p is the one to read,0.05847424845320395,False
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(role)[T.feeder],0.03770854076249882,RQ3-adaptation,confirmatory,"dose x moderator interaction — quoted in the verdict, so it is corrected",0.12255275747812115,False
+B10.1,"TOTAL meal delivery, person-level randomisation (Phase 1)",feeder vs unconstrained,0.04779044191161767,RQ3-adaptation,confirmatory,permutation p; hard design floor ~0.015,0.12425514897020594,False
+B10.1,"meals ~ is_feeder*phase (Poisson GEE, cluster=person) — TOTAL delivery",is_feeder:phase[P2],0.11120230042338956,RQ3-adaptation,confirmatory,role x phase: the obligation lifting,0.218537827536528,False
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(role)[T.no_feed],0.11767421482736123,RQ3-adaptation,confirmatory,role main contrast,0.218537827536528,False
+B10.3,"present_next ~ prior_aff + n_today + phase (logistic GEE, cluster=person)",prior_aff,0.20343412616111023,RQ3-adaptation,confirmatory,"two-part model, PART 1: does affinity predict who returns? (the selection step)",0.3305804550118041,False
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(phase)[T.P2],0.23490952779882635,RQ3-adaptation,confirmatory,"dose x moderator interaction — quoted in the verdict, so it is corrected",0.3393137623760825,False
+B10.1,"PER-ENCOUNTER feed rate, person-level randomisation (Phase 1)",feeder vs unconstrained,0.3607278544291142,RQ3-adaptation,confirmatory,permutation p; hard design floor ~0.015,0.4689462107578484,False
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),C(role)[T.feeder],0.43795147017492964,RQ3-adaptation,confirmatory,role main contrast,0.517579010206735,False
+B10.1,meals ~ is_feeder*phase + offset(log n_interactions) — PER-ENCOUNTER,is_feeder,0.48388610696583645,RQ3-adaptation,confirmatory,"exposure is a mediator: this is a decomposition, not a corrected estimate",0.5242099492129895,False
+B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns:C(role)[T.no_feed],0.6874775202173407,RQ3-adaptation,confirmatory,"dose x moderator interaction — quoted in the verdict, so it is corrected",0.6874775202173407,False
+B4,reached_ss4 ~ starving + C(initial_state) (Firth penalised logistic),starving,1.2259493387625512e-05,(none - excluded),exploratory,"quasi-separation: 1 success in 13 Starving interactions; reported for transparency, never used to support a claim",,

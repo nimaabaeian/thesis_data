@@ -1,11 +1,11 @@
 # Verification report
 
-_Generated 2026-07-11 19:10_
+_Generated 2026-07-13 01:35_
 
 | id | check | severity | result | detail |
 |---|---|---|---|---|
-| V1a | HS1<->HS2 transitions bracket 60 | soft | PASS | (bracket_frac=1.00, n=121) |
-| V1b | HS2<->HS3 transitions bracket 25 | soft | PASS | (bracket_frac=1.00, n=14) |
+| V1a | HS1<->HS2 transitions bracket 60 | soft | PASS | (bracket_frac=1.00, n=153) |
+| V1b | HS2<->HS3 transitions bracket 25 | soft | PASS | (bracket_frac=1.00, n=16) |
 | V1c | meal_delta == SMALL/MEDIUM/LARGE const | hard | PASS | (mismatches=0) |
 | V1d | fitted drain rate ~ nominal 100/(4h) | soft | PASS | (median=6.94e-03/s vs nominal=6.94e-03/s, n_seg=85) |
 | V1e | stomach level in [0,100] | hard | PASS |  |

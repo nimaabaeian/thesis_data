@@ -1,3 +1,3 @@
-threshold,edge,n_transitions,bracket_accuracy,n_drain_falls,max_bracket_width,n_feeding_rises,rapid_reversals_lt120s
-60,Full<->Hungry,121,1.0,49,3.600203761789537,72,0
-25,Hungry<->Starving,14,1.0,8,3.600200692150331,6,0
+threshold,edge,n_crossings,bracket_accuracy,n_drain_falls,max_drain_bracket_width,mean_drain_bracket_width,nominal_drain_step,n_action_cost_falls,max_action_cost_bracket_width,n_feeding_rises,rapid_reversals_lt120s
+60.0,Full<->Hungry,153,1.0,32,0.006971774829800381,0.006969243288035498,0.015688683079859957,49,3.60697988933984,72,55
+25.0,Hungry<->Starving,16,1.0,2,0.007033851411620162,0.007000790701980009,0.015688683079859957,8,3.6060073749886676,6,2

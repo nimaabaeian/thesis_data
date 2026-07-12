@@ -1,6 +1,9 @@
-from_state,to_state,n
-Full,Hungry,49
-Hungry,Full,72
-Hungry,Starving,8
-Starving,Full,11
-Starving,Hungry,6
+from_state,to_state,cause,n
+Full,Hungry,interaction_cost,49
+Full,Hungry,passive_drain,32
+Hungry,Full,feeding,72
+Hungry,Starving,interaction_cost,8
+Hungry,Starving,passive_drain,2
+Starving,Full,feeding,7
+Starving,Full,mode,4
+Starving,Hungry,feeding,6

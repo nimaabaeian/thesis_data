@@ -1,0 +1,6 @@
+from_state,to_state,logged,level_derived,missed_by_the_log
+HS1,HS2,49,81,32
+HS2,HS1,72,72,0
+HS2,HS3,8,10,2
+HS3,HS1,11,11,0
+HS3,HS2,6,6,0
