@@ -1,6 +1,6 @@
 # Reproducibility report
 
-_Generated 2026-07-13T12:51:23+00:00_
+_Generated 2026-07-13T12:58:12+00:00_
 
 ## Build status: **PASS**
 
@@ -23,12 +23,24 @@ role and attendance maps. Both are git-ignored.
 ## Git
 
 - branch: `master`
-- commit: `26015e2d702c59466171687fff9f677f077d0372`
+- commit: `2da95591fda728474ca7a3292adf3c4603790cf1`
 - working tree dirty (meaningfully): `no`
 
 **Regenerated-but-ignored changes** (these files are rewritten by every build and embed a live timestamp, random SVG clip-path IDs, or fresh notebook cell IDs, so they never diff cleanly against a prior commit even when nothing meaningful changed — excluded from the dirty-tree gate by design, not hidden):
 
+- `analysis/figures/fig02_drive_timeline.svg`
+- `analysis/figures/fig04_deficit_action.svg`
+- `analysis/figures/fig05_prioritisation_heatmap.svg`
+- `analysis/figures/fig08_remote_loop.svg`
+- `analysis/figures/fig09_steady_state.svg`
+- `analysis/figures/fig10_affinity_trajectories.svg`
+- `analysis/figures/fig12_role_validation.svg`
+- `analysis/figures/fig13_affinity_dose.svg`
+- `analysis/orexigenic_analysis.ipynb`
+- `analysis/outputs/quality_report.md`
 - `analysis/outputs/reproducibility_report.md`
+- `analysis/outputs/results_summary.md`
+- `analysis/outputs/verification_report.md`
 
 ## Environment
 
@@ -103,8 +115,8 @@ deployment commit, with no drift between them:
 | `outputs/ml_ablation_delta.csv` | `5553d3c6897a7634` |
 | `outputs/ml_model_metrics.csv` | `fc20cfd24a51d06b` |
 | `outputs/multiplicity_table.csv` | `a3a800fae69e1e37` |
-| `outputs/quality_report.md` | `0ef06b435bf79972` |
-| `outputs/results_summary.md` | `8e31e64ff544bf93` |
+| `outputs/quality_report.md` | `d054471782bd5d37` |
+| `outputs/results_summary.md` | `264ea92f13da2e2a` |
 | `outputs/rq3_affinity_repair_robustness.csv` | `1a98ecc95bec3003` |
 | `outputs/rq3_dose_specification_comparison.csv` | `f49592fe37d71c39` |
 | `outputs/rq3_ipw_balance.csv` | `f1e34949feca9e1e` |
@@ -115,7 +127,7 @@ deployment commit, with no drift between them:
 | `outputs/rq3_model_results.csv` | `6baeea2efe971243` |
 | `outputs/small_cluster_sensitivity.csv` | `fc2f7d51fc2671ee` |
 | `outputs/success_criteria.csv` | `a2e72d316c8c8d0f` |
-| `outputs/verification_report.md` | `dc8195b506a4de0c` |
+| `outputs/verification_report.md` | `fc97ca83c46fc436` |
 | `figures/fig02_drive_timeline.png` | `5dbe059deec7f99c` |
 | `figures/fig04_deficit_action.png` | `ae5ba8a6d1dee7c3` |
 | `figures/fig05_prioritisation_heatmap.png` | `85b5c4ec49d13e1d` |

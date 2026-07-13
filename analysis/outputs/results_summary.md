@@ -1,6 +1,6 @@
 # Orexigenic drive — results summary
 
-_Generated 2026-07-13 14:49. Single always-on condition (no drive-off control). 12 monitored runs, 10 with visitors, 8 session-days, 217 interactions, 14 named people. Two-phase design: Phase 1 (first 4 days) had roles assigned BY AVAILABILITY (2 obligated feeders, 2 interact-no-feed, rest unconstrained) — **not randomised**; Phase 2 unconstrained._
+_Generated 2026-07-13 14:58. Single always-on condition (no drive-off control). 12 monitored runs, 10 with visitors, 8 session-days, 217 interactions, 14 named people. Two-phase design: Phase 1 (first 4 days) had roles assigned BY AVAILABILITY (2 obligated feeders, 2 interact-no-feed, rest unconstrained) — **not randomised**; Phase 2 unconstrained._
 
 ## How to read this report
 
