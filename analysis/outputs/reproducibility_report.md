@@ -1,6 +1,6 @@
 # Reproducibility report
 
-_Generated 2026-07-13T12:08:18+00:00_
+_Generated 2026-07-13T12:51:23+00:00_
 
 ## Build status: **PASS**
 
@@ -23,8 +23,12 @@ role and attendance maps. Both are git-ignored.
 ## Git
 
 - branch: `master`
-- commit: `13507ed6ae625612c152da6a309c94e3325f7b23`
-- working tree dirty: `no`
+- commit: `26015e2d702c59466171687fff9f677f077d0372`
+- working tree dirty (meaningfully): `no`
+
+**Regenerated-but-ignored changes** (these files are rewritten by every build and embed a live timestamp, random SVG clip-path IDs, or fresh notebook cell IDs, so they never diff cleanly against a prior commit even when nothing meaningful changed — excluded from the dirty-tree gate by design, not hidden):
+
+- `analysis/outputs/reproducibility_report.md`
 
 ## Environment
 
@@ -87,7 +91,7 @@ deployment commit, with no drift between them:
 | `outputs/b7_terminal_segments.csv` | `e32a35299d1f4eda` |
 | `outputs/b9_eligibility_profile.csv` | `aca512d12ee802c3` |
 | `outputs/b9_mechanism_check.csv` | `0f8b208b25b4a3e8` |
-| `outputs/bh_corrected_pvalues.csv` | `e845c9f732950be4` |
+| `outputs/bh_corrected_pvalues.csv` | `a3a800fae69e1e37` |
 | `outputs/constants_check.json` | `ae3660f35d4923b3` |
 | `outputs/d4_feeding_concentration.csv` | `9718d09957d963e9` |
 | `outputs/hs3_episodes.parquet` | `79a9ea187e68e70b` |
@@ -98,9 +102,9 @@ deployment commit, with no drift between them:
 | `outputs/ml_ablation.csv` | `0d0a637e19beb371` |
 | `outputs/ml_ablation_delta.csv` | `5553d3c6897a7634` |
 | `outputs/ml_model_metrics.csv` | `fc20cfd24a51d06b` |
-| `outputs/multiplicity_table.csv` | `e845c9f732950be4` |
-| `outputs/quality_report.md` | `49751acce4a83ebe` |
-| `outputs/results_summary.md` | `41600073200aceed` |
+| `outputs/multiplicity_table.csv` | `a3a800fae69e1e37` |
+| `outputs/quality_report.md` | `0ef06b435bf79972` |
+| `outputs/results_summary.md` | `8e31e64ff544bf93` |
 | `outputs/rq3_affinity_repair_robustness.csv` | `1a98ecc95bec3003` |
 | `outputs/rq3_dose_specification_comparison.csv` | `f49592fe37d71c39` |
 | `outputs/rq3_ipw_balance.csv` | `f1e34949feca9e1e` |
@@ -110,8 +114,8 @@ deployment commit, with no drift between them:
 | `outputs/rq3_missingness_model.csv` | `f367e7c12413cd1e` |
 | `outputs/rq3_model_results.csv` | `6baeea2efe971243` |
 | `outputs/small_cluster_sensitivity.csv` | `fc2f7d51fc2671ee` |
-| `outputs/success_criteria.csv` | `c9092cfdf3d375c2` |
-| `outputs/verification_report.md` | `8e61b44e72d517f0` |
+| `outputs/success_criteria.csv` | `a2e72d316c8c8d0f` |
+| `outputs/verification_report.md` | `dc8195b506a4de0c` |
 | `figures/fig02_drive_timeline.png` | `5dbe059deec7f99c` |
 | `figures/fig04_deficit_action.png` | `ae5ba8a6d1dee7c3` |
 | `figures/fig05_prioritisation_heatmap.png` | `85b5c4ec49d13e1d` |
