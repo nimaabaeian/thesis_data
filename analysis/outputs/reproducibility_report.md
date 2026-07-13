@@ -1,12 +1,12 @@
 # Reproducibility report
 
-_Generated 2026-07-13T12:58:12+00:00_
+_Generated 2026-07-13T13:25:17+00:00_
 
-## Build status: **PASS**
+## Build status: **FAIL**
 
-Every acceptance gate passed. The numbers in `results_summary.md` and `README.md`
-were produced by this build, from the inputs hashed below, using the constants
-verified against the pinned controller commits.
+This build did not meet the acceptance gates:
+
+- the working tree has MEANINGFUL uncommitted changes — this report cannot certify that a specific commit produced these outputs; commit or stash before running `make repro`. Changed: README.md, analysis/build_notebook.py, analysis/outputs/b3_adjusted_models.csv, analysis/outputs/bh_corrected_pvalues.csv, analysis/outputs/multiplicity_table.csv, analysis/outputs/success_criteria.csv, analysis/repro_report.py, analysis/tests/test_analysis.py, analysis/outputs/b10_feeder_attribution_sensitivity.csv, analysis/tests/test_reporting.py
 
 ## What can and cannot be reproduced
 
@@ -23,14 +23,28 @@ role and attendance maps. Both are git-ignored.
 ## Git
 
 - branch: `master`
-- commit: `2da95591fda728474ca7a3292adf3c4603790cf1`
-- working tree dirty (meaningfully): `no`
+- commit: `c319f909e7f2688ca89043e558cf017f794a92d6`
+- working tree dirty (meaningfully): `yes`
+
+**Meaningful uncommitted changes (this fails the gate):**
+
+- `README.md`
+- `analysis/build_notebook.py`
+- `analysis/outputs/b3_adjusted_models.csv`
+- `analysis/outputs/bh_corrected_pvalues.csv`
+- `analysis/outputs/multiplicity_table.csv`
+- `analysis/outputs/success_criteria.csv`
+- `analysis/repro_report.py`
+- `analysis/tests/test_analysis.py`
+- `analysis/outputs/b10_feeder_attribution_sensitivity.csv`
+- `analysis/tests/test_reporting.py`
 
 **Regenerated-but-ignored changes** (these files are rewritten by every build and embed a live timestamp, random SVG clip-path IDs, or fresh notebook cell IDs, so they never diff cleanly against a prior commit even when nothing meaningful changed — excluded from the dirty-tree gate by design, not hidden):
 
 - `analysis/figures/fig02_drive_timeline.svg`
 - `analysis/figures/fig04_deficit_action.svg`
 - `analysis/figures/fig05_prioritisation_heatmap.svg`
+- `analysis/figures/fig08_remote_loop.png`
 - `analysis/figures/fig08_remote_loop.svg`
 - `analysis/figures/fig09_steady_state.svg`
 - `analysis/figures/fig10_affinity_trajectories.svg`
@@ -87,12 +101,13 @@ deployment commit, with no drift between them:
 | `outputs/active_cost_table.csv` | `5d5b31fd425d4ebb` |
 | `outputs/b10_downstream_stage_models.csv` | `2f4c094d27b8e536` |
 | `outputs/b10_downstream_stages.csv` | `b3f370e617464d3c` |
+| `outputs/b10_feeder_attribution_sensitivity.csv` | `a817afb3dd23b638` |
 | `outputs/b10_scheduled_day_panel.csv` | `35c7bf96249be7ca` |
 | `outputs/b10_scheduled_day_panel_reconciliation.csv` | `35c7bf96249be7ca` |
 | `outputs/b2_detection_check.csv` | `64a403679e64bd05` |
 | `outputs/b2_flapping_events.csv` | `ff4ababd2fdd54d2` |
 | `outputs/b2_transition_counts.csv` | `e714f98ec6c59651` |
-| `outputs/b3_adjusted_models.csv` | `6c011090fa3942ac` |
+| `outputs/b3_adjusted_models.csv` | `16d63be90548908c` |
 | `outputs/b4_starving_exact.csv` | `23da55c0d7a57b4b` |
 | `outputs/b5_meal_size_by_state.csv` | `45190f99fbee9d44` |
 | `outputs/b5_ping_by_subscriber.csv` | `18b3a0586af39219` |
@@ -103,7 +118,7 @@ deployment commit, with no drift between them:
 | `outputs/b7_terminal_segments.csv` | `e32a35299d1f4eda` |
 | `outputs/b9_eligibility_profile.csv` | `aca512d12ee802c3` |
 | `outputs/b9_mechanism_check.csv` | `0f8b208b25b4a3e8` |
-| `outputs/bh_corrected_pvalues.csv` | `a3a800fae69e1e37` |
+| `outputs/bh_corrected_pvalues.csv` | `2fcf02a2ab3fddaa` |
 | `outputs/constants_check.json` | `ae3660f35d4923b3` |
 | `outputs/d4_feeding_concentration.csv` | `9718d09957d963e9` |
 | `outputs/hs3_episodes.parquet` | `79a9ea187e68e70b` |
@@ -114,9 +129,9 @@ deployment commit, with no drift between them:
 | `outputs/ml_ablation.csv` | `0d0a637e19beb371` |
 | `outputs/ml_ablation_delta.csv` | `5553d3c6897a7634` |
 | `outputs/ml_model_metrics.csv` | `fc20cfd24a51d06b` |
-| `outputs/multiplicity_table.csv` | `a3a800fae69e1e37` |
-| `outputs/quality_report.md` | `d054471782bd5d37` |
-| `outputs/results_summary.md` | `264ea92f13da2e2a` |
+| `outputs/multiplicity_table.csv` | `2fcf02a2ab3fddaa` |
+| `outputs/quality_report.md` | `e62e966aefe056dc` |
+| `outputs/results_summary.md` | `475f76148182aa0a` |
 | `outputs/rq3_affinity_repair_robustness.csv` | `1a98ecc95bec3003` |
 | `outputs/rq3_dose_specification_comparison.csv` | `f49592fe37d71c39` |
 | `outputs/rq3_ipw_balance.csv` | `f1e34949feca9e1e` |
@@ -126,12 +141,12 @@ deployment commit, with no drift between them:
 | `outputs/rq3_missingness_model.csv` | `f367e7c12413cd1e` |
 | `outputs/rq3_model_results.csv` | `6baeea2efe971243` |
 | `outputs/small_cluster_sensitivity.csv` | `fc2f7d51fc2671ee` |
-| `outputs/success_criteria.csv` | `a2e72d316c8c8d0f` |
-| `outputs/verification_report.md` | `fc97ca83c46fc436` |
+| `outputs/success_criteria.csv` | `929fec75810d9d68` |
+| `outputs/verification_report.md` | `9aaecf3e98be4878` |
 | `figures/fig02_drive_timeline.png` | `5dbe059deec7f99c` |
 | `figures/fig04_deficit_action.png` | `ae5ba8a6d1dee7c3` |
 | `figures/fig05_prioritisation_heatmap.png` | `85b5c4ec49d13e1d` |
-| `figures/fig08_remote_loop.png` | `6bdf57ad93017428` |
+| `figures/fig08_remote_loop.png` | `e623d2795c942b16` |
 | `figures/fig09_steady_state.png` | `5f8f28c50eb2f9e2` |
 | `figures/fig10_affinity_trajectories.png` | `2f99cb3132c548dd` |
 | `figures/fig12_role_validation.png` | `bf46260d735de759` |

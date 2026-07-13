@@ -33,17 +33,17 @@ perception → salience → executive regulation → remote/Telegram signalling.
 - **RQ3** — Does the robot's **adaptive regulatory memory** (per-person homeostatic affinity)
   encode observed participant behaviour rather than uncontrolled drift, and is that learned
   state subsequently expressed in the robot's allocation of proactive approaches? The
-  **role manipulation is experiment metadata only**: roles
+  **role assignment is experiment metadata only**: roles
   were assigned by the researchers for validation and were never available to the robot or
   used by the software.
 
 > **Fixed design fact (single condition).** The drive was **always on** for the whole
-> study. RQ2 is identified from the **within-drive graded deficit**
-> (Full → Hungry → Starving) and from the **proactive / mixed-initiative vs reactive**
-> contrast. *The graded deficit is the manipulation; the orexigenic state is treated as
-> an internal drive-function signal that biases recovery-oriented action selection.*
+> study. RQ2 is examined through observational comparisons across the **within-drive graded
+> deficit** (Full → Hungry → Starving) and the **proactive / mixed-initiative vs reactive**
+> contrast. Hunger state was not randomised, so these comparisons identify deployment-specific
+> associations, not the causal effect of a deficit or of the drive.
 
-> **Second design fact (two phases, role manipulation).** The deployment ran in **two
+> **Second design fact (two phases, role assignment).** The deployment ran in **two
 > 4-day phases**. In **Phase 1** (first four experiment days) participants had assigned
 > roles: two **obligated feeders** (feed several times a day), two **interact-but-never-feed**
 > participants, and everyone else **unconstrained**. In **Phase 2** (last four days) all
@@ -60,6 +60,12 @@ is a strict superset of the earlier ones. We therefore de-duplicate to the true 
 of analysis, the **run** (`run_id`, 10 runs) grouped by data-collection **day**
 (`day_rome`, 8 days). Naive concatenation across folders would 4–5× double-count; we
 do not do that. This is verified in Phase 0.2 and the verification gate.
+
+> **Public reproducibility boundary.** The raw databases are not distributed because they contain
+> participant faces, identities, and chat transcripts. The public repository supports code,
+> committed-artifact, manifest, and synthetic-fixture auditing, but not independent end-to-end
+> numerical regeneration. An authorised data holder can verify the exact input bytes against
+> `analysis/data_manifest.json` and run the complete acceptance build.
 """)
 
 # ==========================================================================
@@ -223,10 +229,10 @@ def phase_of_day(day):
     return "P1" if str(day) in PHASE1_DAYS_EARLY else "P2"
 
 # The COMPLETE person x scheduled-day attendance panel, transcribed from the experiment's own
-# session sheet. This is the exposure denominator: on 33 of 96 scheduled person-days a
-# participant was expected and DID NOT TURN UP. Those are genuine zeros — zero interactions,
-# zero meals — and a panel built from completed interactions (as the previous one was) simply
-# loses them, inflating every per-day rate for exactly the people who attended least reliably.
+# session sheet. The raw sheet marks 33 of 96 scheduled person-days absent; log reconciliation
+# overrides 10 of those marks because a real interaction was recorded, leaving 23 genuine
+# no-show zeros. A panel built from completed interactions (as the previous one was) simply loses
+# those zeros, inflating every per-day rate for exactly the people who attended least reliably.
 # It also records that roles were assigned BY AVAILABILITY, not randomised.
 PRESENCE = json.loads((PRIVATE_DIR / "presence_panel.json").read_text()) \
            if (PRIVATE_DIR / "presence_panel.json").exists() else {}
@@ -1229,6 +1235,15 @@ modelling choice below.
    affinity is a deterministic EMA of the logged reward. Analyses of those quantities are
    **implementation verification**, not empirical inference, and are labelled as such.
 
+The hypotheses, covariates, and multiplicity families were specified in this analysis repository,
+but were **not externally preregistered**. The report therefore uses “analysis-specified,” not
+“preregistered” or an unqualified “prespecified.” There was also no prospective power analysis.
+Null and borderline findings are read through their confidence intervals and estimability; the
+simulation-based minimum-detectable-effect exercise later in the notebook is a planning diagnostic,
+not retrospective observed power. With so few clusters, very small asymptotic p-values should not
+be read as equivalent to evidence from a large multi-site study; cluster-bootstrap intervals are
+the primary uncertainty summaries.
+
 Every result carries exactly one **evidence class**:
 
 | Class | Meaning |
@@ -1650,18 +1665,18 @@ print(f"\nPerson-clustered models exclude 'unknown' faces: {len(d)} interactions
 print("\nDeficit x feeding received (named people):")
 print(pd.crosstab(d_named["grp"], d_named["feeding_received"], margins=True).to_string())
 
-# --- ONE prespecified adjusted model. ------------------------------------------------------
+# --- ONE analysis-specified adjusted model (not externally preregistered). ----------------
 # Every predictor is fixed BEFORE the interaction starts, so nothing about the outcome leaks in.
 B3_UNADJ = "feeding_received ~ deficit"
 # PHASE IS NESTED WITHIN DAY. Each session-day belongs to exactly one phase, so C(day) fully
 # determines C(phase) and a model containing both is not identified — the person-clustered fit
 # returns a non-finite estimate, which is precisely the failure mode fit_gee_checked exists to
-# catch rather than swallow. Day is the finer control and ABSORBS phase, so the prespecified
+# catch rather than swallow. Day is the finer control and ABSORBS phase, so the analysis-specified
 # model uses day; a phase-only variant is fitted alongside so both adjustments are reported.
 B3_ADJ   = ("feeding_received ~ deficit + C(initial_state) + C(trigger_mode) + C(day) + prior_n")
 B3_ADJ_PHASE = ("feeding_received ~ deficit + C(initial_state) + C(trigger_mode) + C(phase) "
                 "+ prior_n")
-print(f"\nPRESPECIFIED adjusted model (day absorbs phase — they are nested, not additive):")
+print(f"\nANALYSIS-SPECIFIED adjusted model (not externally preregistered; day absorbs phase):")
 print(f"    {B3_ADJ}")
 print(f"PHASE-ONLY variant (coarser time control, reported alongside):")
 print(f"    {B3_ADJ_PHASE}")
@@ -1670,8 +1685,8 @@ b3_models = []
 for label, fml, src, cl in [
     ("unadjusted",                B3_UNADJ,     d_named, "person_id"),
     ("unadjusted",                B3_UNADJ,     d,       "run_id"),
-    ("PRESPECIFIED adjusted",     B3_ADJ,       d_named, "person_id"),
-    ("PRESPECIFIED adjusted",     B3_ADJ,       d,       "run_id"),
+    ("ANALYSIS-SPECIFIED adjusted", B3_ADJ,     d_named, "person_id"),
+    ("ANALYSIS-SPECIFIED adjusted", B3_ADJ,     d,       "run_id"),
     ("adjusted, phase not day",   B3_ADJ_PHASE, d_named, "person_id"),
     ("adjusted, phase not day",   B3_ADJ_PHASE, d,       "run_id"),
 ]:
@@ -1716,12 +1731,12 @@ for m in b3_models:
                             f"excluded from BH correction")
 
 # --- Does it actually survive adjustment? Decided, not asserted. ----------------------------
-# The gate is the PRESPECIFIED model, under both clusterings. The phase-only variant is a
+# The gate is the ANALYSIS-SPECIFIED model, under both clusterings. The phase-only variant is a
 # secondary sensitivity and is reported (including its convergence status) but does not veto the
-# prespecified claim — it is a coarser control on the same axis, not a required check.
-b3_adj = adjustment_verdict([m for m in b3_models if m["model"] == "PRESPECIFIED adjusted"],
+# required part of the claim — it is a coarser control on the same axis, not a required check.
+b3_adj = adjustment_verdict([m for m in b3_models if m["model"] == "ANALYSIS-SPECIFIED adjusted"],
                             focal_sign=+1.0)
-print(f"\n'Survives adjustment' gate (PRESPECIFIED model, both clusterings): "
+print(f"\n'Survives adjustment' gate (ANALYSIS-SPECIFIED model, both clusterings): "
       f"{'YES' if b3_adj['survives'] else 'NO'}")
 print(f"    {b3_adj['reason']}")
 _variant = [m for m in b3_models if m["model"] == "adjusted, phase not day"]
@@ -1769,7 +1784,8 @@ globals()["_b3"] = dict(orr=b3_or, ci=b3_ci, p=b3_p,
                         lopo=[min(_lopo), max(_lopo)], n=len(d_named),
                         survives_adjustment=b3_adj["survives"], adj_reason=b3_adj["reason"])
 
-_adj_txt = (f"It survives the prespecified adjustment for social state, trigger mode, phase, day "
+_adj_txt = (f"It survives the analysis-specified adjustment (not externally preregistered) for "
+            f"social state, trigger mode, phase, day "
             f"and prior interaction count, under both clustering schemes."
             if b3_adj["survives"] else
             f"It CANNOT be said to survive adjustment: {b3_adj['reason']}.")
@@ -2293,8 +2309,10 @@ verdict("B5", _ev5,
         f"cluster [{_w60['sub_boot_lo']:+.2f}, {_w60['sub_boot_hi']:+.2f}]) — at that coverage the "
         f"matched subset is well under half the ping population, so this figure should not be "
         f"quoted as a headline on its own. {(_by_sub['replies']==0).sum()}/{len(_by_sub)} "
-        f"subscribers never replied to any hunger ping. The remote channel is a real but WEAK "
-        f"recovery pathway"
+        f"subscribers never replied to any hunger ping. Hunger pings were followed by a small "
+        f"increase in short-term replies in this deployment. The matched comparison remains "
+        f"observational: matching cannot eliminate every time-varying difference in subscriber "
+        f"availability or deployment context"
         + ("." if _meaningful else
            "; the ping-control difference does not clear zero under both clustering schemes, so it "
            "is reported as exploratory."),
@@ -3016,7 +3034,7 @@ verdict("B9", EV_IMPL,
 globals()["_b9_hlc"]=hlc   # B10 consumes the re-threaded learning events; nothing else is exported
 """)
 
-md(r"""### B10 — RQ3: the role manipulation, and what it can and cannot establish
+md(r"""### B10 — RQ3: the role assignment, and what it can and cannot establish
 
 **The framing has changed, because the previous one claimed more than the design supports.**
 
@@ -3028,8 +3046,8 @@ B9 established that affinity is a **deterministic EMA of delivered energy**. It 
 - The previous claim that the result "is not consistent with purely uncontrolled drift" set up a
   straw alternative. A deterministic EMA cannot drift.
 
-So RQ3 has exactly **one** genuinely empirical question, and it is about the *humans*, not the
-robot: **did the assigned roles change what people did?** In Phase 1 (first 4 days) two
+So RQ3 has exactly **one** genuinely empirical comparison, and it is about the *humans*, not the
+robot: **how did observed behaviour differ across the assigned role groups?** In Phase 1 (first 4 days) two
 participants were obligated feeders, two were asked to interact but never feed, and everyone else
 was unconstrained; in Phase 2 all constraints lifted. Roles were external metadata and were never
 controller inputs.
@@ -3039,14 +3057,15 @@ effect" is also "these two particular people". No amount of modelling fixes that
 
 - Role contrasts are reported as a **descriptive manipulation check**.
 - The asymptotic GEE p-value is **not** treated as population inference; we **lead with the
-  person-cluster bootstrap** and add **person-level randomisation inference** (permuting the role
-  labels across people), which is the reference distribution the design actually licenses.
+  person-cluster bootstrap** and add an exact **label-permutation sensitivity**. Because labels
+  were not randomised, that permutation has no design-based causal interpretation; it only shows
+  how strongly the contrast depends on the two labelled individuals.
 - Counts are modelled with an **exposure offset**, because "feeders fed more" is uninformative if
   feeders were simply *present* more. Exposure is reconstructed from interactions and observed
   person-days, including days a person was present but fed nothing.
 
-Verdict target: **manipulation validated for these participants; population inference
-unsupported.**""")
+Verdict target: **descriptive role-group exposure difference for these participants; causal and
+population inference unsupported.**""")
 
 code(r"""
 # --- B10a. Role/phase metadata + composition -------------------------------------------
@@ -3277,6 +3296,45 @@ print(f"\n    CROSS-CHECK: the independent feed-attribution pipeline assigns "
       f"reading is not independently corroborated by the attribution pipeline, and should not be "
       f"stated as settled.")
 
+# FORMAL ATTRIBUTION SENSITIVITY. These are deliberately separate measurement definitions;
+# they are not averaged or forced to agree. The verified-identity row has high specificity but
+# very low coverage, while timestamp attribution has high coverage but identifies the interaction
+# target rather than necessarily the physical feeder.
+_verified_feeds = _feeds_all[
+    _feeds_all["feeder_face_id"].notna()
+    & (_feeds_all["feeder_face_id"] != "unknown")
+].copy()
+_verified_feeds["verified_role"] = _verified_feeds["feeder_face_id"].map(role_of)
+_verified_feeds["phase"] = _verified_feeds["day_rome"].map(phase_of_day)
+_vf_nf = _verified_feeds[
+    (_verified_feeds["verified_role"] == "no_feed") & (_verified_feeds["phase"] == "P1")
+]
+_attr_sens = pd.DataFrame([
+    dict(method="direct interaction log", observation_unit="interaction",
+         observed_units=_nf_n, total_possible_units=_nf_n, coverage=1.0,
+         phase1_no_feed_meal_count=_nf_k, phase1_no_feed_energy=np.nan,
+         identifies="meal count recorded on the interaction itself",
+         limitation="does not contain a directly measured energy total"),
+    dict(method="active-interaction timestamp attribution", observation_unit="feeding event",
+         observed_units=_n_attr, total_possible_units=len(_feeds_all),
+         coverage=_n_attr / len(_feeds_all), phase1_no_feed_meal_count=np.nan,
+         phase1_no_feed_energy=_nf_energy_p1,
+         identifies="who the robot was interacting with when energy arrived",
+         limitation="interaction target may not be the physical feeder"),
+    dict(method="verified feeder_face_id only", observation_unit="feeding event",
+         observed_units=len(_verified_feeds), total_possible_units=len(_feeds_all),
+         coverage=len(_verified_feeds) / len(_feeds_all),
+         phase1_no_feed_meal_count=len(_vf_nf),
+         phase1_no_feed_energy=float(_vf_nf["meal_delta"].sum()),
+         identifies="logged physical feeder identity when populated",
+         limitation="high-specificity subset with substantial missing identity data"),
+])
+_attr_sens.to_csv(OUT_DIR / "b10_feeder_attribution_sensitivity.csv", index=False)
+print("\n    ATTRIBUTION SENSITIVITY (definitions are not interchangeable):")
+print(_attr_sens.to_string(index=False))
+print("    -> Because the direct and timestamp pipelines disagree, role-related feeding and")
+print("       compliance claims remain descriptive and definition-sensitive.")
+
 print("\n(3) The FOUR distinct quantities, Phase 1 (mean per scheduled day unless noted):")
 p1 = pdm[pdm.phase == "P1"]
 q = (p1.groupby("role", observed=True)
@@ -3313,16 +3371,16 @@ print(f"      meals per interaction        {_rr_perint:.2f}x   <- per-encounter 
 print(f"      interactions per sched. day  {_rr_expo:.2f}x   <- TOTAL exposure (attendance x intensity)")
 print(f"        = attendance rate ({_rr_attend_rate:.2f}x: attended/scheduled days)")
 print(f"        x interactions per attended day ({_rr_int_per_attend:.2f}x, once they showed up)")
-print(f"\n    The role acted through EXPOSURE, which is NOT purely 'showing up more' — it splits")
+print(f"\n    The observed role-group difference is concentrated in EXPOSURE, which is NOT purely")
+print(f"    'showing up more' — it splits")
 print(f"    into {_rr_attend_rate:.1f}x higher attendance PROBABILITY and {_rr_int_per_attend:.1f}x more")
 print(f"    interactions PER DAY THEY ATTENDED, which multiply to the {_rr_expo:.1f}x total. "
       f"{_rr_energy:.1f}x the energy")
 print(f"    arrived during interactions attributed to feeder-role participants, per scheduled day, but per")
 print(f"    encounter only {_rr_perint:.1f}x as often (attribution, not a verified feeder identity —")
 print(f"    see the attribution note above). Exposure is a")
-print(f"    MEDIATOR of the role (being told to feed the robot makes you go to the robot, and to stay")
-print(f"    engaged once there), not a confounder, so the per-encounter figure is a decomposition, not")
-print(f"    a corrected estimate.")
+print(f"    descriptive exposure decomposition. Non-random role allocation does not identify exposure")
+print(f"    as a causal mediator, and the per-encounter figure is not a corrected causal estimate.")
 
 # --- Poisson models on the complete panel, with an exposure offset ------------------------
 pm_ = pdm[pdm["role"].isin(["feeder", "normal"])].copy()
@@ -3396,7 +3454,7 @@ register_p("B10.1", "delivered_energy ~ is_feeder*phase (GEE, cluster=person, co
            note="non-randomised roles, 2 feeders — descriptive manipulation check")
 register_p("B10.1", "meal_count ~ is_feeder*phase + offset(log interactions) (Poisson GEE, cluster=person)",
            "is_feeder", _g_perop["p"], "RQ3-adaptation", "exploratory",
-           note="per-encounter propensity; exposure is a mediator, so this is a decomposition")
+           note="per-encounter propensity; descriptive exposure decomposition, not causal mediation")
 register_p("B10.1", "delivered energy/day, exact label-permutation sensitivity (NOT randomisation inference)",
            "feeder vs unconstrained", _pe["p"], "RQ3-adaptation", "exploratory",
            note=f"roles non-randomised; exact enumeration of {_pe['n_assignments']} assignments, floor {_pe['floor']:.3f}")
@@ -3420,6 +3478,8 @@ globals()["_b10_meal_gee"] = dict(
     perm_p_energy=_pe["p"], perm_p_perint=_pp["p"], perm_floor=_pe["floor"],
     n_assignments=_pe["n_assignments"],
     nofeed_k=_nf_k, nofeed_n=_nf_n, nofeed_hi=_nf_e[2], nofeed_energy_p1=_nf_energy_p1,
+    verified_n=len(_verified_feeds), verified_total=len(_feeds_all),
+    verified_nofeed_p1_n=len(_vf_nf), verified_nofeed_p1_energy=float(_vf_nf["meal_delta"].sum()),
     n_sched=len(pdm), n_noshow=int((pdm["attended"] == 0).sum()),
     randomised=False,
     total_energy_feeder=float(q.loc["feeder", "total_energy"]),
@@ -3629,10 +3689,10 @@ for trunc_lbl, (lo_q, hi_q) in {"none": (0.0, 1.0), "1-99%": (0.01, 0.99),
         w = np.clip(w, lo_w, hi_w)
         w = np.where(obs, w, 0.0)
     _ipw_variants[trunc_lbl] = w
-h10["ipw"] = _ipw_variants["1-99%"]          # prespecified truncation
+h10["ipw"] = _ipw_variants["1-99%"]          # analysis-specified truncation
 
 _diag = ipw_diagnostics(h10["p_obs"].values, h10["has_duration"].values, h10["ipw"].values)
-print("\nIPW DIAGNOSTICS (prespecified truncation: 1st-99th percentile):")
+print("\nIPW DIAGNOSTICS (analysis-specified truncation: 1st-99th percentile):")
 print(f"  predicted P(observed) range : [{_diag['p_min']:.3f}, {_diag['p_max']:.3f}]")
 print(f"  weight range                : [{_diag['w_min']:.2f}, {_diag['w_max']:.2f}] "
       f"(mean {_diag['w_mean']:.2f})")
@@ -4089,11 +4149,11 @@ verdict("B10.1", EV_EXPL,
         f"into {_mg['rr_attend_rate']:.1f}x higher attendance PROBABILITY (feeders attended every "
         f"scheduled day; unconstrained participants attended a minority of theirs) and "
         f"{_mg['rr_int_per_attend']:.1f}x more interactions PER DAY THEY DID ATTEND — both "
-        f"components matter, and the product is the {_mg['rr_expo']:.1f}x headline. Being told to "
-        f"feed the robot made people GO TO the robot more reliably AND stay more engaged once there; "
-        f"it does not show they were markedly more generous per encounter. Exposure is a mediator "
-        f"of the role, not a confounder, so the per-encounter figure is a decomposition and the "
-        f"energy figure is what arrived during their interactions. A label-permutation sensitivity "
+        f"components matter, and the product is the {_mg['rr_expo']:.1f}x headline. The obligated-"
+        f"feeder participants attended more reliably and had more interactions on days they attended; "
+        f"they were not markedly more likely to be credited with feeding per encounter. This is a "
+        f"descriptive exposure decomposition, not evidence that assignment caused attendance or "
+        f"engagement. The energy figure is what arrived during their interactions. A label-permutation sensitivity "
         f"over the exact enumeration of all {_mg['n_assignments']} possible assignments gives "
         f"p={_mg['perm_p_energy']:.3f} (energy) and p={_mg['perm_p_perint']:.3f} (per-encounter) "
         f"against a hard design floor of {_mg['perm_floor']:.3f} — a descriptive measure of how much "
@@ -4105,9 +4165,11 @@ verdict("B10.1", EV_EXPL,
         f"timestamp rather than to the interaction's own recorded meal count. The two pipelines "
         f"disagree, so this is NOT read as verified perfect compliance — only as what the direct "
         f"interaction-level log shows, with the caveat that a separate, independently computed "
-        f"figure for the same people and days is nonzero. An earlier version reported a 2.7x "
-        f"meal-rate ratio as though feeders fed more READILY; the excess is real, and it is mostly "
-        f"a fact about exposure, not generosity.",
+        f"figure for the same people and days is nonzero. The formal attribution-sensitivity table "
+        f"(`b10_feeder_attribution_sensitivity.csv`) keeps all three definitions side by side; the "
+        f"role-related feeding result is definition-sensitive. An earlier version reported a 2.7x "
+        f"meal-rate ratio as though feeders fed more READILY; the observed difference is mostly a "
+        f"fact about exposure, not generosity.",
         n=int(_mg["n_sched"]))
 
 # RQ3-b is IMPLEMENTATION VERIFICATION with an exploratory deployment association on top.
@@ -4163,9 +4225,9 @@ verdict("B10", EV_IMPL,
         f"error of 0.0000, so it is arithmetic, not a finding; and given eligibility it is "
         f"associated with proactive approach at RR {_pr['rr']:.2f} "
         f"[{_pr['ci'][0]:.2f}, {_pr['ci'][1]:.2f}] (bootstrap [{_pr['boot'][0]:.2f}, "
-        f"{_pr['boot'][2]:.2f}]) over {_pr['total_eligible']} eligible opportunities. What RQ3 "
-        f"genuinely establishes is B10.1 — the role manipulation changed what PEOPLE did. Everything "
-        f"else is the controller doing what it was written to do.",
+        f"{_pr['boot'][2]:.2f}]) over {_pr['total_eligible']} eligible opportunities. B10.1 adds "
+        f"only a descriptive role-group exposure difference for these participants; it does not "
+        f"identify a role effect. Everything else is the controller doing what it was written to do.",
         n=len(h10))
 # BH correction is NOT run here. It runs ONCE, at the very end of the notebook, after
 # EVERY analysis (including D1) has registered its p-values. Correcting a family before
@@ -4448,7 +4510,7 @@ axR.set_xticks([15,30,60]); axR.set_xlabel("reply window (minutes)")
 axR.set_ylabel("P(user reply)"); axR.set_ylim(0,1)
 axR.legend(fontsize=8.6, loc="upper left")
 axR.set_title("Window sensitivity (exact 95% CI; paired difference labelled)", fontsize=10.6)
-fig.suptitle("Fig 8 — The remote channel is a real but weak recovery pathway",
+fig.suptitle("Fig 8 — Hunger pings show a small matched reply association",
              fontsize=13, fontweight="semibold")
 savefig(fig,"fig08_remote_loop"); plt.show()
 """)
@@ -5086,12 +5148,12 @@ rows = [
  ("RQ1-1","Internal monitoring is continuous and autonomous","B1"),
  ("RQ1-2","Deficit detection follows the coded 60/25 thresholds","B2"),
  ("RQ1-3","Deficit is associated with feeding received","B3"),
- ("RQ1-4","Starving reallocates priority away from social completion","B4"),
- ("RQ2-a","Deficit expression elicits recovery behaviour","B5"),
- ("RQ2-b","Observed Starving episodes resolve by feeding","B6"),
- ("RQ2-c","Long-run Starving occupancy is low","B7"),
- ("RQ3-a","The role manipulation changed what people did","B10.1"),
- ("RQ3-b","Affinity encodes interaction history and is expressed downstream","B10"),
+ ("RQ1-4","Observed Starving interactions show a pattern consistent with priority reallocation","B4"),
+ ("RQ2-a","Deficit severity is associated with recovery-related behaviour","B5"),
+ ("RQ2-b","13 of 17 observed Starving episodes recovered by feeding","B6"),
+ ("RQ2-c","Long-run Starving occupancy is not identified; observed occupancy was 1.67%","B7"),
+ ("RQ3-a","Role groups differed descriptively in attendance and interaction exposure","B10.1"),
+ ("RQ3-b","Affinity updating and eligibility operate as programmed; downstream behavioural effects remain inconclusive","B10"),
  ("D1",   "Hunger state adds held-out predictive signal","D1"),
 ]
 sc = []
@@ -5127,6 +5189,11 @@ L=["# Orexigenic drive — results summary", "",
    f"{master[master.person_id!='unknown']['person_id'].nunique()} named people. "
    f"Two-phase design: Phase 1 (first 4 days) had roles assigned BY AVAILABILITY (2 obligated "
    f"feeders, 2 interact-no-feed, rest unconstrained) — **not randomised**; Phase 2 unconstrained._", "",
+   "## Public reproducibility boundary", "",
+   "The raw databases are not distributed because they contain participant faces, identities, and "
+   "chat transcripts. The public repository supports code, committed-artifact, manifest, and "
+   "synthetic-fixture auditing, but not independent end-to-end numerical regeneration. An authorised "
+   "data holder can verify inputs against `analysis/data_manifest.json` and run the full build.", "",
    "## How to read this report", "",
    "Every result carries exactly one evidence class. They are not interchangeable:", "",
    "| Class | Meaning |", "|---|---|",
@@ -5135,6 +5202,11 @@ L=["# Orexigenic drive — results summary", "",
    f"| `{EV_EXPL}` | Descriptive. Too small-n or too selection-prone to support inference. |",
    f"| `{EV_INCONC}` | Run, and did not settle the question. |",
    f"| `{EV_REPL}` | Suggestive; identification needs new data. |", "",
+   "Hypotheses, covariates, and multiplicity families were analysis-specified but not externally "
+   "preregistered. No prospective power analysis was conducted; null and borderline results are "
+   "read through intervals and estimability, while the reported simulation-based detectable-effect "
+   "exercise is a planning diagnostic rather than retrospective observed power. Very small asymptotic "
+   "p-values should not be interpreted as large-study evidence; cluster-bootstrap intervals lead.", "",
    "## Verification gate", "",
    f"All V1–V5 checks passed. Controller constants verified key-by-key against the pinned "
    f"deployment commits (see `reproducibility_report.md`); corpus energy balance active-out "
@@ -5184,13 +5256,16 @@ L+=["## Key quantities", "",
     f"- **Starving episodes**: {_b6d['n']} in total; {_b6d['feed_k']}/{_b6d['n']} received a feed "
     f"(exact [{_b6d['e_feed'][1]:.2f}, {_b6d['e_feed'][2]:.2f}]). Longest {_b6d['worst_sec']/60:.0f} min "
     f"to level {_b6d['worst_min_level']:.1f}.",
-    f"- **Role manipulation** (B10.1, exploratory; roles NOT randomised): on the complete "
+    f"- **Role-group comparison** (B10.1, exploratory; roles NOT randomised): on the complete "
     f"scheduled-day panel ({_mg['n_sched']} scheduled person-days, {_mg['n_noshow']} no-shows kept as "
-    f"zeros), feeders delivered **{_mg['rr_energy']:.1f}x the ENERGY** per scheduled day "
+    f"zeros), **{_mg['rr_energy']:.1f}x the ENERGY** arrived during interactions attributed to "
+    f"obligated-feeder participants per scheduled day "
     f"(bootstrap [{_mg['boot'][0]:.1f}, {_mg['boot'][2]:.1f}]) but fed only "
     f"**{_mg['rr_perint']:.1f}x per interaction** (bootstrap "
     f"[{_mg['boot_perop'][0]:.1f}, {_mg['boot_perop'][2]:.1f}]). The gap is ATTENDANCE "
-    f"({_mg['rr_expo']:.1f}x more interactions per scheduled day). Label-permutation sensitivity "
+    f"({_mg['rr_expo']:.1f}x more interactions per scheduled day), a descriptive decomposition rather "
+    f"than causal mediation. The direct and timestamp attribution pipelines disagree; see "
+    f"`b10_feeder_attribution_sensitivity.csv`. Label-permutation sensitivity "
     f"p={_mg['perm_p_energy']:.3f} over the exact enumeration of {_mg['n_assignments']} assignments "
     f"(floor {_mg['perm_floor']:.3f}) — **not randomisation inference**.",
     f"- **Affinity is a programmed update rule** (B10): its four logged inputs (credit, "
@@ -5252,12 +5327,12 @@ print("  B9 affinity mechanism    :", g("B9"))
 print("\nCREDIBLE WITHIN-DEPLOYMENT ASSOCIATIONS (clustered, adjusted, not causal):")
 print("  B3 deficit -> feeding    :", g("B3"))
 print("  B5 recovery behaviour    :", g("B5"))
-print("  B10.1 role manipulation  :", g("B10.1"))
 
 print("\nEXPLORATORY / INCONCLUSIVE (reported, not relied upon):")
 print("  B4 Starving priority     :", g("B4"))
 print("  B6 Starving episodes     :", g("B6"))
 print("  B7 long-run occupancy    :", g("B7"))
+print("  B10.1 role groups        :", g("B10.1"))
 print("  D1 ML sensitivity        :", g("D1"))
 
 print("\nRQ3 (B10)                  :", g("B10"))
@@ -5296,6 +5371,7 @@ items = [
  ("b7_stratified_occupancy.csv", exists("b7_stratified_occupancy.csv")),
  ("b9_mechanism_check.csv", exists("b9_mechanism_check.csv")),
  ("b9_eligibility_profile.csv", exists("b9_eligibility_profile.csv")),
+ ("b10_feeder_attribution_sensitivity.csv", exists("b10_feeder_attribution_sensitivity.csv")),
  ("b10_person_day_exposure.csv", exists("b10_person_day_exposure.csv")),
  ("b10_downstream_panel.csv", exists("b10_downstream_panel.csv")),
  ("multiplicity_table.csv", exists("multiplicity_table.csv")),

@@ -1,0 +1,4 @@
+method,observation_unit,observed_units,total_possible_units,coverage,phase1_no_feed_meal_count,phase1_no_feed_energy,identifies,limitation
+direct interaction log,interaction,15,15,1.0,0.0,,meal count recorded on the interaction itself,does not contain a directly measured energy total
+active-interaction timestamp attribution,feeding event,104,108,0.9629629629629629,,115.0,who the robot was interacting with when energy arrived,interaction target may not be the physical feeder
+verified feeder_face_id only,feeding event,14,108,0.12962962962962962,0.0,0.0,logged physical feeder identity when populated,high-specificity subset with substantial missing identity data

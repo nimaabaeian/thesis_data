@@ -409,8 +409,8 @@ def test_b3_reports_status_for_every_model():
     t = pd.read_csv(OUT / "b3_adjusted_models.csv")
     assert {"model", "cluster", "status", "reason", "odds_ratio"} <= set(t.columns)
     assert t["status"].notna().all(), "every model must carry a status"
-    ok = t[(t.model == "PRESPECIFIED adjusted")]
-    assert len(ok) == 2, "the prespecified model must be fitted under BOTH clusterings"
+    ok = t[(t.model == "ANALYSIS-SPECIFIED adjusted")]
+    assert len(ok) == 2, "the analysis-specified model must be fitted under BOTH clusterings"
 
 
 @needs_outputs

@@ -1,9 +1,9 @@
 analysis,model,term,p,family,status,note,q_bh,sig_q05
-B3,"PRESPECIFIED adjusted (logistic GEE, cluster=run_id)",deficit,2.2350691281111903e-12,RQ1/2-behaviour,confirmatory,"adjusted-model sensitivity, quoted to support 'survives adjustment'",1.564548389677833e-11,True
+B3,"ANALYSIS-SPECIFIED adjusted (logistic GEE, cluster=run_id)",deficit,2.2350691281111903e-12,RQ1/2-behaviour,confirmatory,"adjusted-model sensitivity, quoted to support 'survives adjustment'",1.564548389677833e-11,True
 B3,"adjusted, phase not day (logistic GEE, cluster=run_id)",deficit,6.558756934805614e-09,RQ1/2-behaviour,confirmatory,"adjusted-model sensitivity, quoted to support 'survives adjustment'",2.295564927181965e-08,True
 B3,"feeding_received ~ deficit (logistic GEE, cluster=person)",deficit,5.831678032543368e-08,RQ1/2-behaviour,confirmatory,,1.080776467071233e-07,True
 B5a,"meal_delta ~ hs_rank (OLS, cluster-robust by run)",hs_rank,6.175865526121331e-08,RQ1/2-behaviour,confirmatory,,1.080776467071233e-07,True
-B3,"PRESPECIFIED adjusted (logistic GEE, cluster=person_id)",deficit,8.88825769959452e-06,RQ1/2-behaviour,confirmatory,"adjusted-model sensitivity, quoted to support 'survives adjustment'",1.2443560779432328e-05,True
+B3,"ANALYSIS-SPECIFIED adjusted (logistic GEE, cluster=person_id)",deficit,8.88825769959452e-06,RQ1/2-behaviour,confirmatory,"adjusted-model sensitivity, quoted to support 'survives adjustment'",1.2443560779432328e-05,True
 D1,"ΔAUC from adding hunger state, 25 repeated grouped-CV runs vs within-run permutation null (200 permutations)",hunger_state -> reached_ss4,0.004975124378109453,RQ1/2-behaviour,confirmatory,held-out predictive sensitivity; quoted in the D1 verdict and the README,0.005804311774461029,True
 D1,"ΔAUC from adding hunger state, 25 repeated grouped-CV runs vs within-run permutation null (200 permutations)",hunger_state -> replied_any,0.03980099502487562,RQ1/2-behaviour,confirmatory,held-out predictive sensitivity; quoted in the D1 verdict and the README,0.03980099502487562,True
 B10.2,d_aff ~ n_turns*role + n_turns*phase + HS + trigger + fed + affinity_before + (1|person),z_n_turns,0.0014169198732650852,RQ3-adaptation,confirmatory,primary dose; fully observed,0.011335358986120682,True
@@ -22,4 +22,4 @@ B10.2,"d_aff ~ credit + active_energy_cost + fed + affinity_before + z_n_turns (
 B10.1,"delivered energy/day, exact label-permutation sensitivity (NOT randomisation inference)",feeder vs unconstrained,0.044444444444444446,RQ3-adaptation,exploratory,"roles non-randomised; exact enumeration of 45 assignments, floor 0.022",,
 B10.3,"eligible ~ prior_aff (logistic GEE, detection-level, cluster=person)",prior_aff,0.2703821402279981,RQ3-adaptation,exploratory,"stage 2 IS the coded eligibility threshold (eff_thr = max(0.50, base - 0.15*affinity), verified exactly in B9) — it is implementation verification, not inference",,
 B10.1,"meals per interaction, exact label-permutation sensitivity (NOT randomisation inference)",feeder vs unconstrained,0.4,RQ3-adaptation,exploratory,"roles non-randomised; exact enumeration, floor 0.022",,
-B10.1,"meal_count ~ is_feeder*phase + offset(log interactions) (Poisson GEE, cluster=person)",is_feeder,0.6123809767198107,RQ3-adaptation,exploratory,"per-encounter propensity; exposure is a mediator, so this is a decomposition",,
+B10.1,"meal_count ~ is_feeder*phase + offset(log interactions) (Poisson GEE, cluster=person)",is_feeder,0.6123809767198107,RQ3-adaptation,exploratory,"per-encounter propensity; descriptive exposure decomposition, not causal mediation",,

@@ -46,7 +46,8 @@ REQUIRED_OUTPUTS = [
     "master_interactions.parquet", "hs3_episodes.parquet", "hs_transitions.parquet",
     "b3_adjusted_models.csv", "b5_ping_control_pairs.csv", "b6_episode_outcomes.csv",
     "b7_stratified_occupancy.csv", "b9_mechanism_check.csv",
-    "b10_scheduled_day_panel.csv", "b10_downstream_stages.csv",
+    "b10_scheduled_day_panel.csv", "b10_feeder_attribution_sensitivity.csv",
+    "b10_downstream_stages.csv",
     "rq3_dose_specification_comparison.csv", "small_cluster_sensitivity.csv",
 ]
 REQUIRED_FIGS = ["fig02_drive_timeline", "fig04_deficit_action", "fig05_prioritisation_heatmap",
