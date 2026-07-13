@@ -1,0 +1,88 @@
+name: CI
+
+# The raw data are not in this repository and cannot be (participant faces, names, chat
+# transcripts). CI therefore runs everything that does NOT need them:
+#
+#   * the notebook generator and the statistical module compile;
+#   * the regression tests — which exercise the PRODUCTION functions in statistical_helpers.py
+#     on synthetic fixtures, so every corrected defect is pinned without any real data;
+#   * the multiplicity ledger's structure;
+#   * the notebook checker (identity-leak scan over anything committed).
+#
+# Constants verification needs the private controller repo, so it runs only when a deploy key is
+# configured; it is reported as SKIPPED-IN-CI rather than passed silently, because an unverified
+# constant is not a passing constant.
+
+on:
+  push:
+    branches: [master, main, "fix/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r analysis/requirements.txt
+
+      - name: Compile the generator and the statistical module
+        run: python -m py_compile analysis/build_notebook.py analysis/statistical_helpers.py
+
+      - name: Build the notebook (source only; execution needs the private data)
+        run: python analysis/build_notebook.py /tmp/nb.ipynb
+
+      - name: Notebook build is deterministic
+        run: |
+          python analysis/build_notebook.py /tmp/a.ipynb
+          python analysis/build_notebook.py /tmp/b.ipynb
+          python - <<'PY'
+          import json
+          a = json.load(open('/tmp/a.ipynb'))
+          b = json.load(open('/tmp/b.ipynb'))
+          assert [c['source'] for c in a['cells']] == [c['source'] for c in b['cells']], \
+              "notebook generation is not deterministic"
+          print("notebook build is deterministic")
+          PY
+
+      - name: Regression tests (production code, synthetic fixtures)
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+        run: python -m pytest analysis/tests/ -q
+
+      - name: No duplicated statistical implementations
+        run: |
+          python - <<'PY'
+          src = open('analysis/build_notebook.py').read()
+          dupes = [f for f in ["def build_hs3_episodes", "def state_sequence", "def match_pings",
+                               "def control_windows", "def firth_logit", "def flapping",
+                               "def fit_ctmc", "def exact_prop_ci"]
+                   if f in src]
+          assert not dupes, f"reimplemented in the notebook instead of imported: {dupes}"
+          print("no duplicated statistical implementations")
+          PY
+
+      - name: Environment lock exists
+        run: test -s analysis/requirements.lock && echo "lock present"
+
+      - name: Controller constants
+        run: |
+          if [ -n "${{ secrets.CONTROLLER_DEPLOY_KEY }}" ]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.CONTROLLER_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+            python analysis/check_constants.py
+          else
+            echo "constants_check=SKIPPED-IN-CI (controller repo is private; no deploy key set)."
+            echo "This is NOT a pass. Run 'make check-constants' locally against a checkout."
+          fi

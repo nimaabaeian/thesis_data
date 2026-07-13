@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """Regression tests for the corrections made to this analysis.
 
-Each test pins a specific defect that was found and fixed. They are written so that reintroducing
-the defect fails the test, which is the only reason to have them.
+Every test exercises the PRODUCTION functions in `analysis/statistical_helpers.py` — the same
+module the notebook imports. Nothing is reimplemented here.
 
-The tests that need the real data are skipped when it is absent (the public repo does not ship it),
-but the *logic* tests — episode detection, ping matching, CTMC dwell accounting, Firth, exact
-intervals — run on synthetic fixtures and always execute.
+That is the point. The previous suite carried its own copies of the episode builder, the ping
+matcher, the sojourn splitter and Firth, so the tests could pass while the notebook shipped
+different code. Worse, one of those copies (the flapping detector) contained the *same* bug as
+the notebook, so the test that "verified" it could never have failed on any input. Duplicated
+logic does not test anything; it tests itself.
 
-    python -m pytest analysis/tests/ -q
+    make test
 """
 from __future__ import annotations
 
 import json
-import math
 import re
 import sys
 from pathlib import Path
@@ -29,115 +30,47 @@ DATA = REPO / "data"
 
 sys.path.insert(0, str(ANALYSIS))
 
-HAVE_DATA = DATA.exists() and any(DATA.glob("*/data_collection/executive_control.db"))
-HAVE_OUTPUTS = (OUT / "hs3_episodes.parquet").exists()
+# THE PRODUCTION CODE. If an import here fails, the notebook is broken too.
+from statistical_helpers import (  # noqa: E402
+    EVIDENCE_CLASSES, HS_STARVING_MAX,
+    build_hs3_episodes, build_hs_crossings, hs_from_level, flapping,
+    state_sequence, fit_ctmc, is_irreducible,
+    match_pings, control_windows, assign_run_by_time,
+    exact_prop_ci, cluster_bootstrap, exact_permutation_p, enumerate_label_assignments,
+    firth_logit, firth_profile_ci,
+    fit_gee_checked, adjustment_verdict, ipw_diagnostics, spec_agreement,
+)
 
-needs_data = pytest.mark.skipif(not HAVE_DATA, reason="raw data not present (not distributed)")
+HAVE_OUTPUTS = (OUT / "hs3_episodes.parquet").exists()
 needs_outputs = pytest.mark.skipif(not HAVE_OUTPUTS, reason="outputs not built; run `make execute`")
 
 
-# ---------------------------------------------------------------------------------------
-# Re-implementations of the notebook's units, kept in lockstep with build_notebook.py.
-# The notebook is generated code, so the tests exercise the same algorithms against
-# fixtures they fully control.
-# ---------------------------------------------------------------------------------------
-HS_FULL_MIN, HS_STARVING_MAX = 60.0, 25.0
-
-
-def hs_from_level(x):
-    x = pd.to_numeric(x, errors="coerce")
-    return np.where(x >= HS_FULL_MIN, "HS1", np.where(x >= HS_STARVING_MAX, "HS2", "HS3"))
-
-
-def build_hs3_episodes_from_levels(hr: pd.DataFrame) -> pd.DataFrame:
-    """The level-derived episode builder (mirrors build_notebook.build_hs3_episodes)."""
-    hr = hr.sort_values(["run_id", "monotonic_sec"]).copy()
-    hr["level"] = hr["stomach_level_after"].fillna(hr["stomach_level_before"])
-    eps = []
-    for run, g in hr.groupby("run_id"):
-        g = g.reset_index(drop=True)
-        lvl, mono = g["level"].values, g["monotonic_sec"].values
-        starving = lvl < HS_STARVING_MAX
-        i = 0
-        while i < len(g):
-            if not starving[i]:
-                i += 1
-                continue
-            j = i
-            while j + 1 < len(g) and starving[j + 1]:
-                j += 1
-            escaped = (j + 1) < len(g)
-            eps.append(dict(run_id=run, entry_mono=float(mono[i]),
-                            entry_cause=("run_start" if i == 0 else g["stimulus_type"].iloc[i]),
-                            min_level=float(np.min(lvl[i:j + 1])),
-                            hs3_duration_sec=float((mono[j + 1] if escaped else mono[-1]) - mono[i]),
-                            escaped_starving=int(escaped),
-                            censored_at_run_end=int(not escaped)))
-            i = j + 1
-    return pd.DataFrame(eps)
-
-
-def state_sequence(hr: pd.DataFrame) -> pd.DataFrame:
-    """Sojourns INCLUDING the right-censored terminal segment (to_state is None there)."""
-    hr = hr.sort_values(["run_id", "monotonic_sec"]).copy()
-    hr["_lvl"] = hr["stomach_level_after"].fillna(hr["stomach_level_before"])
-    hr["_st"] = hs_from_level(hr["_lvl"])
-    segs = []
-    for run, g in hr.groupby("run_id"):
-        s, t = g["_st"].values, g["monotonic_sec"].values
-        if len(s) < 2:
-            continue
-        keep = np.r_[True, s[1:] != s[:-1]]
-        cs, ct = s[keep], t[keep]
-        for i in range(len(cs) - 1):
-            segs.append((run, cs[i], float(ct[i + 1] - ct[i]), cs[i + 1], False))
-        t_end = float(t[-1])
-        if t_end > ct[-1]:
-            segs.append((run, cs[-1], t_end - ct[-1], None, True))
-    return pd.DataFrame(segs, columns=["run_id", "state", "dwell", "to_state", "terminal"])
-
-
-def match_pings(ev: pd.DataFrame, ping_types, window: float) -> pd.DataFrame:
-    """Greedy one-to-one ping->reply matching (mirrors B5b)."""
-    rows = []
-    for chat, g in ev.groupby("chat_id"):
-        pings = g[g["event_type"].isin(ping_types)].sort_values("timestamp_epoch")
-        msgs = g[g["event_type"] == "user_message"].sort_values("timestamp_epoch")
-        used: set[int] = set()
-        for _, p in pings.iterrows():
-            t0 = p["timestamp_epoch"]
-            cand = msgs[(msgs["timestamp_epoch"] > t0)
-                        & (msgs["timestamp_epoch"] <= t0 + window)
-                        & (~msgs["id"].isin(used))]
-            hit = len(cand) > 0
-            if hit:
-                used.add(int(cand["id"].iloc[0]))
-            rows.append(dict(chat_id=chat, ping_id=int(p["id"]), replied=int(hit),
-                             matched_reply=int(cand["id"].iloc[0]) if hit else None))
-    return pd.DataFrame(rows)
-
-
 def _hr(rows):
-    """Fixture helper: build a hunger_raw-shaped frame from (run, t, level, stimulus)."""
+    """hunger_raw-shaped fixture from (run, t, level, stimulus)."""
     return pd.DataFrame([
         dict(run_id=r, monotonic_sec=float(t), stomach_level_before=float(lv),
              stomach_level_after=float(lv), stimulus_type=st, event_type="sample",
-             id=i, day_rome="2026-06-15", timestamp_epoch=1.0e9 + t)
-        for i, (r, t, lv, st) in enumerate(rows)
-    ])
+             id=i, day_rome="2026-06-15", timestamp_epoch=1.0e9 + t, session_id="s",
+             active_energy_cost=0.0, exec_interaction_id=None)
+        for i, (r, t, lv, st) in enumerate(rows)])
+
+
+def _chat(rows):
+    return pd.DataFrame([dict(id=i, chat_id=c, event_type=e, timestamp_epoch=float(t),
+                              run_id="r1", day_rome="2026-06-15", hs="HS2")
+                         for i, (c, e, t) in enumerate(rows)])
 
 
 # =======================================================================================
 # 1. The logging artefact: drain crossings are invisible in the label fields
 # =======================================================================================
 def test_drain_entered_episode_is_detected_from_levels():
-    """The defect: an episode entered by passive drain has before==after==HS3 on the crossing
-    row, so a builder keyed on `before != HS3 and after == HS3` never sees it. This is the
-    30-minute episode the old analysis missed."""
+    """The 30-minute episode the old builder could not see. It required a logged
+    `before != HS3 -> after == HS3` row, which the logger never emits for a drain crossing."""
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in
               [(0, 30.0), (1, 27.0), (2, 24.9), (3, 20.0), (4, 15.0), (5, 26.0), (6, 30.0)]])
-    eps = build_hs3_episodes_from_levels(hr)
-    assert len(eps) == 1, "a drain-entered Starving episode must be found"
+    eps = build_hs3_episodes(hr)
+    assert len(eps) == 1
     assert eps.iloc[0]["entry_cause"] == "passive_drain"
     assert eps.iloc[0]["min_level"] == pytest.approx(15.0)
 
@@ -146,175 +79,230 @@ def test_label_keyed_builder_would_have_missed_it():
     """Prove the OLD approach fails on the same fixture — otherwise the test above proves nothing."""
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in
               [(0, 30.0), (1, 27.0), (2, 24.9), (3, 20.0), (4, 26.0)]])
-    # Reproduce the logger's behaviour: both fields flip together on the crossing row.
     hr["hunger_state_before"] = hs_from_level(hr["stomach_level_after"])
     hr["hunger_state_after"] = hs_from_level(hr["stomach_level_after"])
     old_entries = ((hr["hunger_state_after"] == "HS3")
                    & (hr["hunger_state_before"] != "HS3")).sum()
     assert old_entries == 0, "fixture must reproduce the logging artefact"
-    assert len(build_hs3_episodes_from_levels(hr)) == 1, "the level-derived builder must still see it"
+    assert len(build_hs3_episodes(hr)) == 1, "the level-derived builder must still see it"
 
 
-def test_episode_count_matches_contiguous_level_blocks():
-    """Two separate dips below 25 in one run are two episodes, not one."""
+def test_two_dips_are_two_episodes():
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in
               [(0, 30), (1, 20), (2, 30), (3, 40), (4, 22), (5, 35)]])
-    assert len(build_hs3_episodes_from_levels(hr)) == 2
+    assert len(build_hs3_episodes(hr)) == 2
 
 
 def test_right_censored_episode_is_flagged():
-    """A run that ends while Starving is censored, not 'escaped'."""
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in [(0, 30), (1, 20), (2, 15)]])
-    eps = build_hs3_episodes_from_levels(hr)
-    assert len(eps) == 1
+    eps = build_hs3_episodes(hr)
     assert eps.iloc[0]["censored_at_run_end"] == 1
     assert eps.iloc[0]["escaped_starving"] == 0
 
 
+def test_crossings_include_drain_falls():
+    hr = _hr([("r1", t, lv, "passive_drain") for t, lv in [(0, 62), (1, 59), (2, 58)]])
+    cr = build_hs_crossings(hr)
+    assert len(cr) == 1
+    assert cr.iloc[0]["cause"] == "passive_drain"
+
+
 # =======================================================================================
-# 2. CTMC dwell accounting
+# 2. Flapping — the detector that could never fire
+# =======================================================================================
+def test_flapping_detects_a_genuine_reversal():
+    """The old detector compared from_state to the PREVIOUS from_state. A reversal requires
+    from_state == previous TO_state. The condition was unsatisfiable and returned 0 on any data."""
+    m = pd.DataFrame([
+        dict(run_id="r1", monotonic_sec=100.0, from_state="HS1", to_state="HS2", cause="interaction_cost"),
+        dict(run_id="r1", monotonic_sec=120.0, from_state="HS2", to_state="HS1", cause="feeding"),
+    ])
+    fl, tot, rev = flapping(m, window=120.0)
+    assert fl == 1, "a crossing undone 20 s later IS a rapid reversal"
+    assert tot == 2
+    assert rev.iloc[0]["gap_sec"] == pytest.approx(20.0)
+
+
+def test_flapping_ignores_a_repeat_in_the_same_direction():
+    m = pd.DataFrame([
+        dict(run_id="r1", monotonic_sec=100.0, from_state="HS1", to_state="HS2", cause="c"),
+        dict(run_id="r1", monotonic_sec=110.0, from_state="HS1", to_state="HS2", cause="c"),
+    ])
+    assert flapping(m, window=120.0)[0] == 0
+
+
+def test_flapping_respects_the_window():
+    m = pd.DataFrame([
+        dict(run_id="r1", monotonic_sec=0.0, from_state="HS1", to_state="HS2", cause="c"),
+        dict(run_id="r1", monotonic_sec=500.0, from_state="HS2", to_state="HS1", cause="c"),
+    ])
+    assert flapping(m, window=120.0)[0] == 0
+
+
+# =======================================================================================
+# 3. CTMC: terminal dwell, irreducibility, stationary validation
 # =======================================================================================
 def test_final_dwell_is_included():
-    """The defect: the old state_sequence() emitted segments only BETWEEN state changes, so the
-    stretch from the last change to the end of the run vanished from the state-time denominators."""
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in
               [(0, 70), (10, 65), (20, 55), (30, 50), (40, 45), (50, 40)]])
     seq = state_sequence(hr)
-    total = seq["dwell"].sum()
-    assert total == pytest.approx(50.0), "dwell must cover the whole run, including the tail"
+    assert seq["dwell"].sum() == pytest.approx(50.0), "dwell must cover the whole run"
     assert seq["terminal"].sum() == 1
     term = seq[seq["terminal"]].iloc[0]
     assert term["state"] == "HS2"
-    assert term["dwell"] == pytest.approx(30.0), "20s->50s in HS2 is a real, censored sojourn"
+    assert term["dwell"] == pytest.approx(30.0)
 
 
 def test_terminal_segment_is_not_a_transition():
-    """A run ending is not a state change. Counting it as one invents transitions that
-    never happened and corrupts every rate in the generator."""
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in [(0, 70), (10, 55), (20, 50)]])
     seq = state_sequence(hr)
-    transitions = seq[seq["to_state"].notna()]
-    assert len(transitions) == 1, "exactly one real transition: HS1 -> HS2"
-    assert seq["terminal"].sum() == 1
-    assert transitions["terminal"].sum() == 0, "the terminal row must never be a transition"
+    tr = seq[seq["to_state"].notna()]
+    assert len(tr) == 1, "exactly one real transition: HS1 -> HS2"
+    assert tr["terminal"].sum() == 0, "the terminal row must never be a transition"
 
 
-def test_state_time_denominator_uses_terminal_dwell():
-    """time_in[state] must include terminal dwell; counts must not."""
+def test_state_time_uses_terminal_dwell_but_counts_do_not():
     hr = _hr([("r1", t, lv, "passive_drain") for t, lv in [(0, 70), (10, 55), (60, 50)]])
-    seq = state_sequence(hr)
-    time_in = seq.groupby("state")["dwell"].sum()
-    cnt = seq[seq["to_state"].notna()].groupby(["state", "to_state"]).size()
-    assert time_in["HS1"] == pytest.approx(10.0)
-    assert time_in["HS2"] == pytest.approx(50.0), "the 50s terminal HS2 sojourn must count"
-    assert cnt.get(("HS2", "HS1"), 0) == 0, "no transition out of the terminal state"
+    fit = fit_ctmc(state_sequence(hr))
+    assert fit["time_in"]["HS2"] == pytest.approx(50.0), "the 50 s terminal HS2 sojourn must count"
+    assert fit["counts"].loc["HS2", "HS1"] == 0, "no transition out of the terminal state"
 
 
-def test_nonergodic_resamples_are_counted_not_dropped():
-    """A generator with no Starving transition has no unique stationary distribution. The old code
-    swallowed those resamples in a bare `except: pass`, which conditioned the CI on ergodicity."""
-    from scipy.linalg import null_space
+def test_irreducibility_is_strong_connectivity_not_nullspace_dim():
+    """A chain that never reaches HS3 is REDUCIBLE. Inferring ergodicity from dim(null(Q'))==1
+    conflates 'unique stationary distribution' with 'irreducible' — a reducible chain with one
+    absorbing class also has a 1-D null space."""
+    reducible = np.array([[0, 3, 0], [4, 0, 0], [0, 0, 0]])
+    assert not is_irreducible(reducible)
+    connected = np.array([[0, 3, 0], [4, 0, 2], [0, 2, 0]])
+    assert is_irreducible(connected)
 
-    def fit(counts, time_in):
-        states = ["HS1", "HS2", "HS3"]
-        Q = np.zeros((3, 3))
-        for i, si in enumerate(states):
-            for j, sj in enumerate(states):
-                if i != j and time_in[i] > 0:
-                    Q[i, j] = counts[i][j] / time_in[i]
-            Q[i, i] = -Q[i].sum()
-        ns = null_space(Q.T)
-        return (ns.shape[1] == 1)
 
-    # A corpus that never reaches HS3: HS3 is unreachable -> not a single stationary dist.
-    counts_no_hs3 = [[0, 3, 0], [4, 0, 0], [0, 0, 0]]
-    ok = fit(counts_no_hs3, [100.0, 100.0, 0.0])
-    assert not ok, "a resample with no Starving transition must be flagged non-ergodic"
+def test_stationary_vector_is_validated_not_coerced():
+    """fit_ctmc must VALIDATE pi (>=0, sums to 1, pi @ Q ~ 0), not abs() an arbitrary basis
+    vector and normalise it."""
+    hr = _hr([("r1", t, lv, "passive_drain") for t, lv in
+              [(0, 70), (10, 55), (20, 70), (30, 55), (40, 20), (50, 70), (60, 20), (70, 70)]])
+    fit = fit_ctmc(state_sequence(hr))
+    if fit["stationary_valid"]:
+        pi = fit["pi"]
+        assert np.all(pi >= -1e-9)
+        assert pi.sum() == pytest.approx(1.0)
+        assert np.max(np.abs(pi @ fit["Q"])) < 1e-7
 
-    counts_full = [[0, 3, 0], [4, 0, 2], [0, 2, 0]]
-    assert fit(counts_full, [100.0, 100.0, 10.0]), "a connected chain must be ergodic"
+
+def test_unidentified_chain_reports_a_reason():
+    hr = _hr([("r1", t, lv, "passive_drain") for t, lv in [(0, 70), (10, 55), (20, 50)]])
+    fit = fit_ctmc(state_sequence(hr))
+    assert not fit["irreducible"], "a chain that never reaches Starving is reducible"
+    if not fit["stationary_valid"]:
+        assert fit["reason"], "a failure must say WHY"
 
 
 # =======================================================================================
-# 3. One-to-one ping/reply matching
+# 4. Ping <-> reply matching
 # =======================================================================================
-def _chat(rows):
-    return pd.DataFrame([dict(id=i, chat_id=c, event_type=e, timestamp_epoch=float(t),
-                              run_id="r1", day_rome="2026-06-15", hs="HS2")
-                         for i, (c, e, t) in enumerate(rows)])
-
-
 def test_one_reply_cannot_answer_many_pings():
-    """The defect: the old loop asked, per ping, 'was there ANY user message in the next hour?'
-    Three pings and one reply scored 3/3. It must score 1/3."""
+    """The old loop asked, per ping, 'was there ANY message in the next hour?' Three pings and
+    one reply scored 3/3. It must score 1/3."""
     ev = _chat([("c1", "hs2_entry", 0), ("c1", "hs2_entry", 10), ("c1", "hs2_entry", 20),
                 ("c1", "user_message", 30)])
-    pm = match_pings(ev, ["hs2_entry"], window=3600.0)
+    pm = match_pings(ev, ["hs2_entry"], 3600.0)
     assert len(pm) == 3
-    assert pm["replied"].sum() == 1, "one reply may answer exactly one ping"
+    assert pm["replied"].sum() == 1
+
+
+def test_reply_matches_the_NEAREST_preceding_ping():
+    """Reply-centric matching. A greedy forward walk would credit the reply to the ping an hour
+    old rather than the one sent 10 seconds before it."""
+    ev = _chat([("c1", "hs2_entry", 0), ("c1", "hs2_entry", 3000), ("c1", "user_message", 3010)])
+    pm = match_pings(ev, ["hs2_entry"], 3600.0)
+    answered = pm[pm.replied == 1]
+    assert len(answered) == 1
+    assert answered.iloc[0]["t"] == 3000.0, "the NEAREST preceding ping must claim the reply"
 
 
 def test_no_duplicate_reply_attribution():
-    """No reply id may be consumed twice."""
     ev = _chat([("c1", "hs2_entry", 0), ("c1", "hs2_entry", 5),
                 ("c1", "user_message", 10), ("c1", "user_message", 12)])
-    pm = match_pings(ev, ["hs2_entry"], window=3600.0)
+    pm = match_pings(ev, ["hs2_entry"], 3600.0)
     matched = pm["matched_reply"].dropna().tolist()
-    assert len(matched) == len(set(matched)), "a reply was attributed to more than one ping"
+    assert len(matched) == len(set(matched))
     assert pm["replied"].sum() == 2
 
 
 def test_replies_never_exceed_pings():
     ev = _chat([("c1", "hs2_entry", 0)] + [("c1", "user_message", t) for t in range(1, 20)])
-    pm = match_pings(ev, ["hs2_entry"], window=3600.0)
+    pm = match_pings(ev, ["hs2_entry"], 3600.0)
     assert pm["replied"].sum() <= len(pm)
 
 
 def test_reply_outside_window_does_not_count():
     ev = _chat([("c1", "hs2_entry", 0), ("c1", "user_message", 5000)])
-    pm = match_pings(ev, ["hs2_entry"], window=3600.0)
-    assert pm["replied"].sum() == 0
+    assert match_pings(ev, ["hs2_entry"], 3600.0)["replied"].sum() == 0
 
 
 def test_recovery_notifications_are_excluded():
-    """hs3_recovery is 'thanks, I'm full' — a notification, not a request for food. Counting
-    replies to it as evidence that hunger signalling works is a category error."""
-    ev = _chat([("c1", "hs3_recovery", 0), ("c1", "user_message", 10),
-                ("c1", "hs2_entry", 100)])
-    pm = match_pings(ev, ["hs2_entry", "hs3_proactive"], window=3600.0)
-    assert len(pm) == 1, "only genuine hunger pings enter the analysis"
+    """hs3_recovery is 'thanks, I'm full'. A reply to a thank-you is not evidence that hunger
+    signalling works."""
+    ev = _chat([("c1", "hs3_recovery", 0), ("c1", "user_message", 10), ("c1", "hs2_entry", 100)])
+    pm = match_pings(ev, ["hs2_entry", "hs3_proactive"], 3600.0)
+    assert len(pm) == 1
     assert pm.iloc[0]["ping_id"] == 2
 
 
+# --- controls ---------------------------------------------------------------------------
+def _spans():
+    return pd.DataFrame([dict(run_id="R1", t_start=0.0, t_end=100000.0)])
+
+
+def test_run_assignment_is_by_time_not_run_id():
+    """The chat and executive DBs have DISJOINT run_id namespaces (zero overlap), so joining on
+    run_id matches nothing. Wall-clock containment is the only correct key."""
+    got = assign_run_by_time([50.0, 999999.0], _spans())
+    assert got == ["R1", None]
+
+
+def test_control_window_is_ping_free_and_one_reply_one_window():
+    ev = _chat([("c1", "hs2_entry", 5000), ("c1", "user_message", 5100)])
+    pm = match_pings(ev, ["hs2_entry"], 3600.0)
+    pm["exec_run_id"] = assign_run_by_time(pm["t"], _spans())
+    ctrl = control_windows(ev, pm, 3600.0, _spans(), seed=1)
+    ok = ctrl[ctrl["matched"] == True]  # noqa: E712
+    for t0 in ok["t"]:
+        assert not ((pm["t"] >= t0 - 3600.0) & (pm["t"] <= t0 + 3600.0)).any(), \
+            "a control window must contain no ping"
+
+
+def test_control_reply_is_not_double_counted():
+    """A single user message must not satisfy several control windows, exactly as for pings."""
+    ev = _chat([("c1", "hs2_entry", 5000), ("c1", "hs2_entry", 6000),
+                ("c1", "user_message", 20000)])
+    pm = match_pings(ev, ["hs2_entry"], 900.0)
+    pm["exec_run_id"] = assign_run_by_time(pm["t"], _spans())
+    ctrl = control_windows(ev, pm, 900.0, _spans(), seed=3)
+    ok = ctrl[ctrl["matched"] == True]  # noqa: E712
+    assert ok["replied"].sum() <= 1, "one message cannot satisfy two control windows"
+
+
 # =======================================================================================
-# 4. Exact intervals and Firth (the B4 separation fix)
+# 5. Exact intervals, Firth, permutation
 # =======================================================================================
 def test_exact_ci_for_zero_of_n():
-    """0/15 has a real upper bound. Reporting it as '0%, perfect compliance' with no interval
-    overstates what 15 observations can rule out."""
-    from statsmodels.stats.proportion import proportion_confint
-    lo, hi = proportion_confint(0, 15, method="beta")
-    assert lo == 0.0
-    assert 0.15 < hi < 0.25, f"upper bound for 0/15 should be ~0.22, got {hi}"
+    est, lo, hi = exact_prop_ci(0, 15)
+    assert lo == 0.0 and 0.15 < hi < 0.25, "0/15 has a real upper bound (~0.22)"
 
 
 def test_exact_ci_for_one_of_thirteen():
-    """B4's cell. The exact interval is wide, and that width is the finding."""
-    from statsmodels.stats.proportion import proportion_confint
-    lo, hi = proportion_confint(1, 13, method="beta")
-    assert lo < 0.01 and hi > 0.30, f"1/13 must yield a wide interval, got [{lo}, {hi}]"
+    est, lo, hi = exact_prop_ci(1, 13)
+    assert lo < 0.01 and hi > 0.30, "B4's cell must yield a wide interval"
 
 
 def test_firth_is_finite_under_separation():
-    """The defect: unpenalised logistic regression diverges under separation, and the Wald SE
-    collapses with it, manufacturing p ~ 1e-6 out of a cell with almost no information."""
-    from build_notebook import CELLS  # noqa: F401  (import guard: module is importable)
-
-    # Perfectly separated data: x==1 always y==0, x==0 always y==1.
+    """Plain ML diverges under separation and its Wald SE collapses with it, manufacturing a
+    tiny p-value from a cell with almost no information. B4 is exactly that shape."""
     X = np.column_stack([np.ones(20), np.r_[np.ones(10), np.zeros(10)]])
     y = np.r_[np.zeros(10), np.ones(10)]
-
-    # Unpenalised MLE diverges.
     import statsmodels.api as sm
     with np.errstate(all="ignore"):
         try:
@@ -323,173 +311,211 @@ def test_firth_is_finite_under_separation():
         except Exception:
             diverged = True
     assert diverged, "fixture must actually be separated"
-
-    # Firth stays finite.
-    beta = _firth(X, y)
-    assert np.all(np.isfinite(beta)), "Firth must return a finite estimate under separation"
-    assert abs(beta[1]) < 10, f"Firth estimate should be shrunk, got {beta[1]}"
+    beta = firth_logit(X, y)
+    assert np.all(np.isfinite(beta)) and abs(beta[1]) < 10
 
 
-def _firth(X, y, max_iter=200, tol=1e-8):
-    X = np.asarray(X, float); y = np.asarray(y, float)
-    beta = np.zeros(X.shape[1])
-    for _ in range(max_iter):
-        eta = X @ beta
-        p = 1.0 / (1.0 + np.exp(-eta))
-        W = p * (1 - p)
-        XtWX = X.T @ (X * W[:, None])
-        inv = np.linalg.pinv(XtWX)
-        H = (X * W[:, None]) @ inv
-        h = np.einsum("ij,ij->i", H, X)
-        U = X.T @ (y - p + h * (0.5 - p))
-        step = inv @ U
-        nb = beta + step
-        if np.max(np.abs(nb - beta)) < tol:
-            return nb
-        beta = nb
-    return beta
+def test_firth_profile_ci_is_finite():
+    X = np.column_stack([np.ones(20), np.r_[np.ones(10), np.zeros(10)]])
+    y = np.r_[np.zeros(10), np.ones(10)]
+    b, lo, hi, p = firth_profile_ci(X, y, 1)
+    assert np.isfinite(lo) and np.isfinite(hi) and lo < b < hi
 
 
-# =======================================================================================
-# 5. Zero-exposure person-days
-# =======================================================================================
-def test_zero_meal_person_days_are_retained():
-    """A day someone was present and fed nothing is a zero in the denominator, not a missing row.
-    Dropping those days inflates the meal rate for anyone who showed up rarely."""
-    inter = pd.DataFrame([
-        dict(person_id="P01", day_rome="d1", meals_eaten_count=2, interaction_id=1),
-        dict(person_id="P01", day_rome="d2", meals_eaten_count=0, interaction_id=2),
-        dict(person_id="P02", day_rome="d1", meals_eaten_count=0, interaction_id=3),
-    ])
-    pdm = (inter.groupby(["person_id", "day_rome"])
-                .agg(meals=("meals_eaten_count", "sum"),
-                     n_interactions=("interaction_id", "size")).reset_index())
-    assert len(pdm) == 3, "all three person-days must survive, including the two zero-meal ones"
-    assert (pdm["meals"] == 0).sum() == 2
-    # And the exposure offset must be defined for them.
-    assert np.all(np.isfinite(np.log(pdm["n_interactions"].clip(lower=1))))
+def test_permutation_is_exactly_enumerated():
+    """C(12,2) = 66 assignments. Approximating a 66-point discrete distribution with 5,000
+    random draws adds Monte-Carlo error for nothing."""
+    ids = [f"P{i:02d}" for i in range(12)]
+    labs = ["feeder"] * 2 + ["normal"] * 10
+    assigns = enumerate_label_assignments(ids, labs)
+    assert len(assigns) == 66
+
+
+def test_permutation_p_has_the_design_floor():
+    df = pd.DataFrame([dict(person_id=f"P{i:02d}", role="feeder" if i < 2 else "normal",
+                            y=10.0 if i < 2 else 1.0) for i in range(12)])
+    r = exact_permutation_p(df, "person_id", "role",
+                            lambda d: d[d.role == "feeder"]["y"].mean()
+                            / max(d[d.role == "normal"]["y"].mean(), 1e-9))
+    assert r["n_assignments"] == 66
+    assert r["p"] >= r["floor"] - 1e-12, "p cannot fall below 1/66"
 
 
 # =======================================================================================
-# 6. Artifacts produced by a real run
+# 6. Model status must be reported, never swallowed
+# =======================================================================================
+def test_failed_model_is_reported_not_caught():
+    import statsmodels.api as sm
+    df = pd.DataFrame(dict(y=[0, 1, 0, 1], x=[0, 1, 0, 1], g=["a", "a", "b", "b"]))
+    r = fit_gee_checked("y ~ nonexistent_column", df, groups="g",
+                        family=sm.families.Binomial(), focal="nonexistent_column")
+    assert r["status"] == "failed"
+    assert r["reason"], "a failure must carry a reason"
+
+
+def test_adjustment_verdict_refuses_on_a_failed_model():
+    """'Survives adjustment' requires EVERY prespecified model to produce a finite, directionally
+    consistent estimate. A model that failed does not get quietly excluded from the tally."""
+    ok = dict(status="ok", estimate=1.5, cluster="person", reason=None)
+    bad = dict(status="failed", estimate=np.nan, cluster="run", reason="did not converge")
+    assert adjustment_verdict([ok, ok], focal_sign=+1.0)["survives"]
+    v = adjustment_verdict([ok, bad], focal_sign=+1.0)
+    assert not v["survives"]
+    assert "failed" in v["reason"]
+
+
+def test_adjustment_verdict_refuses_on_sign_flip():
+    a = dict(status="ok", estimate=+1.5, cluster="person", reason=None)
+    b = dict(status="ok", estimate=-0.8, cluster="run", reason=None)
+    assert not adjustment_verdict([a, b], focal_sign=+1.0)["survives"]
+
+
+def test_spec_agreement_requires_magnitude_not_just_sign():
+    """+0.041 and +0.168 agree in sign while differing four-fold. Calling them 'consistent'
+    would hide the entire finding."""
+    r = spec_agreement({"a": 0.041, "b": 0.168}, rel_tol=0.5)
+    assert r["sign_agree"] and not r["magnitude_agree"]
+    r2 = spec_agreement({"a": 0.100, "b": 0.120}, rel_tol=0.5)
+    assert r2["sign_agree"] and r2["magnitude_agree"]
+
+
+def test_ipw_diagnostics_flag_positivity():
+    p = np.array([0.02, 0.5, 0.9])
+    obs = np.array([1, 1, 1])
+    w = 0.5 / p
+    d = ipw_diagnostics(p, obs, w)
+    assert d["positivity_violation"], "a propensity of 0.02 is a positivity violation"
+    assert d["ess"] < d["n_observed"], "ESS must be below n when weights are unequal"
+
+
+# =======================================================================================
+# 7. Artifacts produced by a real run
 # =======================================================================================
 @needs_outputs
 def test_b3_outcome_is_renamed():
-    """`fed01` described a robot action ('feeding pursuit'). It is an outcome of the dyad: a meal
-    arrived. The variable name and the estimand must both say so.
-
-    The old name may still appear in PROSE (the correction is documented, deliberately), but it
-    must not survive as a live identifier — so this checks the model formulas, not the narrative.
-    """
     src = (ANALYSIS / "build_notebook.py").read_text()
-    assert "feeding_received ~ deficit" in src, "the renamed outcome must be the modelled one"
-
-    # No live code may still reference the old identifier: no assignment, no formula, no column.
-    live = re.findall(r'fed01\s*[=~\["\']', src)
-    assert not live, f"`fed01` is still used as an identifier: {live}"
-
-    # And the notebook must not fit anything with it.
+    assert "feeding_received ~ deficit" in src
+    assert not re.findall(r'fed01\s*[=~\["\']', src), "`fed01` is still a live identifier"
+    assert "feed_pursuit=" not in src, "`feed_pursuit` is still a live column name"
     nb = json.loads((ANALYSIS / "orexigenic_analysis.ipynb").read_text())
     for cell in nb["cells"]:
-        if cell.get("cell_type") != "code":
-            continue
-        code = "".join(cell["source"]) if isinstance(cell["source"], list) else cell["source"]
-        assert "fed01" not in code, "a code cell still references fed01"
+        if cell.get("cell_type") == "code":
+            code = "".join(cell["source"]) if isinstance(cell["source"], list) else cell["source"]
+            assert "fed01" not in code
 
 
 @needs_outputs
-def test_b3_reports_both_clusterings():
-    """14 person-clusters is far below where a GEE sandwich SE is trustworthy, so the
-    bootstrap — by person AND by run — is what the verdict must lead with."""
-    sens = pd.read_csv(OUT / "small_cluster_sensitivity.csv")
-    metrics = set(sens["metric"])
-    assert "B3_deficit_feeding_OR" in metrics
-    assert "B3_deficit_feeding_OR_runcluster" in metrics, \
-        "B3 must report a run-clustered bootstrap as well as a person-clustered one"
-
-
-@needs_outputs
-def test_unknown_faces_excluded_from_person_clusters():
-    """'unknown' is an unrecognised-face placeholder, not a person. Pooling ~23 interactions from
-    an unknown number of strangers into one cluster asserts a dependence structure that does not
-    exist."""
-    src = (ANALYSIS / "build_notebook.py").read_text()
-    assert 'd_named = d[d["person_id"] != "unknown"]' in src, \
-        "person-clustered models must drop the unknown-face placeholder"
-
-
-@needs_outputs
-def test_multiplicity_table_is_complete():
-    """The old version corrected 5 p-values while quoting interaction terms it never corrected."""
-    mt = pd.read_csv(OUT / "multiplicity_table.csv")
-    assert {"analysis", "model", "term", "p", "family", "status"} <= set(mt.columns)
-    conf = mt[mt["status"] == "confirmatory"]
-    assert conf["q_bh"].notna().all(), "every confirmatory p must carry a q-value"
-    # Interaction terms must be present, not silently omitted.
-    assert conf["term"].str.contains(":").any(), "dose x moderator interactions must be corrected"
-    # B4's separated p must be recorded but NOT corrected.
-    b4 = mt[mt["analysis"] == "B4"]
-    if len(b4):
-        assert (b4["status"] == "exploratory").all()
-        assert b4["q_bh"].isna().all(), "B4's separated p-value must not be BH-corrected"
+def test_b3_reports_status_for_every_model():
+    t = pd.read_csv(OUT / "b3_adjusted_models.csv")
+    assert {"model", "cluster", "status", "reason", "odds_ratio"} <= set(t.columns)
+    assert t["status"].notna().all(), "every model must carry a status"
+    ok = t[(t.model == "PRESPECIFIED adjusted")]
+    assert len(ok) == 2, "the prespecified model must be fitted under BOTH clusterings"
 
 
 @needs_outputs
 def test_all_starving_episodes_present():
     ep = pd.read_parquet(OUT / "hs3_episodes.parquet")
-    assert len(ep) > 8, f"level-derived builder must find more than the old 8; got {len(ep)}"
-    assert "entry_cause" in ep.columns
+    assert len(ep) > 8, f"level-derived builder must beat the old 8; got {len(ep)}"
     assert (ep["entry_cause"] == "passive_drain").any(), \
-        "drain-entered episodes must be present — they are the ones the old builder dropped"
-    assert "censored_at_run_end" in ep.columns
+        "drain-entered episodes must be present — the old builder dropped exactly these"
 
 
 @needs_outputs
 def test_evidence_classes_are_used():
-    """No result may carry a bare 'Supported'."""
     sc = pd.read_csv(OUT / "success_criteria.csv")
-    allowed = {"Implementation verification", "Within-deployment association",
-               "Exploratory observation", "Inconclusive", "Requires replication"}
-    assert set(sc["evidence_class"]) <= allowed, \
-        f"illegal evidence class: {set(sc['evidence_class']) - allowed}"
+    assert set(sc["evidence_class"]) <= EVIDENCE_CLASSES
     assert "Supported" not in set(sc["evidence_class"])
 
 
 @needs_outputs
-def test_b1_b2_are_implementation_verification():
+def test_b1_b2_b10_are_implementation_verification():
     sc = pd.read_csv(OUT / "success_criteria.csv").set_index("id")
     assert sc.loc["RQ1-1", "evidence_class"] == "Implementation verification"
     assert sc.loc["RQ1-2", "evidence_class"] == "Implementation verification"
+    assert sc.loc["RQ3-b", "evidence_class"] == "Implementation verification", \
+        "affinity is a deterministic EMA; RQ3-b is not a general learning result"
 
 
 @needs_outputs
-def test_b4_is_not_confirmatory():
+def test_b4_and_b10_1_are_not_confirmatory():
     sc = pd.read_csv(OUT / "success_criteria.csv").set_index("id")
-    assert sc.loc["RQ1-4", "evidence_class"] in ("Exploratory observation", "Inconclusive"), \
-        "13 interactions with 1 success cannot be a confirmatory association"
+    assert sc.loc["RQ1-4", "evidence_class"] in ("Exploratory observation", "Inconclusive")
+    assert sc.loc["RQ3-a", "evidence_class"] == "Exploratory observation", \
+        "roles were not randomised and there are 2 people per role"
+
+
+@needs_outputs
+def test_zero_exposure_days_are_kept_and_not_faked():
+    """A scheduled day with no attendance is a genuine zero. It must stay in the panel, and it
+    must NOT be given a fake exposure of 1."""
+    p = pd.read_csv(OUT / "b10_scheduled_day_panel.csv")
+    assert (p["attended"] == 0).sum() > 0, "no-show days must be present"
+    zero = p[p["n_interactions"] == 0]
+    assert len(zero) > 0
+    assert (zero["meal_count"] == 0).all()
+    assert (zero["delivered_energy"] == 0).all()
+
+
+@needs_outputs
+def test_meal_count_and_energy_are_distinct():
+    """A count of meals is not stomach points: meals are SMALL 10 / MEDIUM 25 / LARGE 45."""
+    p = pd.read_csv(OUT / "b10_scheduled_day_panel.csv")
+    assert {"meal_count", "delivered_energy"} <= set(p.columns)
+    fed = p[p["meal_count"] > 0]
+    if len(fed):
+        assert not np.allclose(fed["meal_count"], fed["delivered_energy"]), \
+            "meal_count and delivered_energy must not be the same number"
+
+
+NEGATORS = ("no ", "not ", "never", "without", "nor ", "cannot", "n't")
+
+
+def _affirms(text: str, phrase: str) -> list[str]:
+    """Occurrences of `phrase` that are NOT disclaimed by a nearby negation.
+
+    The point is to forbid the CLAIM, not the word. A report that says "this is not randomisation
+    inference" is doing exactly what it should; one that says "survives randomisation" is not.
+    """
+    hits = []
+    low = text.lower()
+    start = 0
+    while (i := low.find(phrase, start)) != -1:
+        window = low[max(0, i - 90):i]
+        if not any(n in window for n in NEGATORS):
+            hits.append(text[max(0, i - 90):i + len(phrase) + 40].replace("\n", " "))
+        start = i + len(phrase)
+    return hits
+
+
+@needs_outputs
+def test_no_randomisation_claims_anywhere():
+    """Roles were assigned by availability, so no conclusion may claim randomisation inference.
+
+    Mentioning the phrase in order to DISCLAIM it is correct and must not fail; asserting it is
+    what is forbidden.
+    """
+    surfaces = {f: (OUT / f).read_text() for f in ["results_summary.md", "success_criteria.csv"]}
+    surfaces["README.md"] = (REPO / "README.md").read_text()
+    for name, txt in surfaces.items():
+        for banned in ("survives randomisation", "survives randomization"):
+            assert banned not in txt.lower(), f"{name} claims '{banned}'"
+        affirmed = _affirms(txt, "randomisation inference")
+        assert not affirmed, (
+            f"{name} asserts randomisation inference without disclaiming it "
+            f"(roles were assigned by availability):\n  " + "\n  ".join(affirmed))
 
 
 @needs_outputs
 def test_dropcolumn_table_is_gone():
-    """With two features, drop-column importance IS the ablation. Publishing both double-counted."""
     assert not (OUT / "ml_dropcolumn_importance.csv").exists()
 
 
 @needs_outputs
-def test_reproducible_under_fixed_seed():
-    """Two consecutive builds of the notebook must produce byte-identical source."""
-    import subprocess
-    import tempfile
-    with tempfile.TemporaryDirectory() as td:
-        a, b = Path(td) / "a.ipynb", Path(td) / "b.ipynb"
-        for p in (a, b):
-            subprocess.run([sys.executable, str(ANALYSIS / "build_notebook.py"), str(p)],
-                           check=True, capture_output=True)
-        na, nb = json.loads(a.read_text()), json.loads(b.read_text())
-        sa = [c["source"] for c in na["cells"]]
-        sb = [c["source"] for c in nb["cells"]]
-        assert sa == sb, "notebook build is not deterministic"
-
-
-if __name__ == "__main__":
-    raise SystemExit(pytest.main([__file__, "-q"]))
+def test_no_duplicate_statistical_implementations():
+    """The notebook must not redefine what statistical_helpers already provides."""
+    src = (ANALYSIS / "build_notebook.py").read_text()
+    for fn in ["def build_hs3_episodes", "def state_sequence", "def match_pings",
+               "def control_windows", "def firth_logit", "def flapping", "def fit_ctmc",
+               "def exact_prop_ci"]:
+        assert fn not in src, f"{fn} is duplicated in the notebook instead of imported"

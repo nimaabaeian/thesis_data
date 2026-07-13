@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-07-12T23:40:54+00:00",
+  "generated_utc": "2026-07-13T09:48:41+00:00",
   "note": "Raw data are NOT distributed with this repository: the databases contain participant faces, names and chat text. This manifest records exactly what the analysis consumed, so a holder of the data can confirm they have the same bytes. It does not make the analysis reproducible without that data.",
   "collection_dates": [
     "15-06",
@@ -1415,6 +1415,12 @@
       "path": "analysis/private/identity_canon.json",
       "sha256": "9d2bdafc0e2de6f99da36ffb3f8765bccb5d8dda3cf0b1ae0bfa822d744d1a91",
       "bytes": 109,
+      "note": "git-ignored; contents never published"
+    },
+    {
+      "path": "analysis/private/presence_panel.json",
+      "sha256": "5516726eb1eb68f833537f866f4b1f3cb4f3c24155a417bf14767dbe72f7d20e",
+      "bytes": 11382,
       "note": "git-ignored; contents never published"
     },
     {

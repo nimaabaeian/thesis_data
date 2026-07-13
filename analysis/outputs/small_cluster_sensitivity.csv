@@ -1,10 +1,10 @@
 metric,primary,boot_lo,boot_median,boot_hi,successful_refits,unit
-B3_deficit_feeding_OR,5.319674472932552,2.8738903140198264,5.29684343434343,9.096208592132491,1000,person-cluster bootstrap over interactions
-B3_deficit_feeding_OR_runcluster,5.319674472932552,2.6348733234003983,4.210173872180324,7.093101663054754,1000,run-cluster bootstrap over interactions
-B4_starving_override_OR_firth,0.04811300613927196,0.011603123835124352,0.0437553610169538,0.09406569313168596,1000,person-cluster bootstrap over interactions (Firth)
+B3_deficit_feeding_OR,5.319674472932552,2.76795173495123,5.220912314635483,9.04645467819585,1000,person-cluster bootstrap over interactions
+B3_deficit_feeding_OR_runcluster,5.319674472932552,2.6348733234003996,4.2101738721803255,7.093101663054745,1000,run-cluster bootstrap over interactions
+B4_starving_override_OR_firth,0.04811300613927196,,,,0,person-cluster bootstrap over interactions (Firth)
 B5a_meal_size_slope,10.878962536023046,6.164034853202921,10.712421861558756,13.975124583563368,1000,run-cluster bootstrap over meals
-B5b_ping_minus_control_reply_rate,0.08720930232558141,-0.008275242544017247,0.08456121343445287,0.1655649453540812,1000,"subscriber-cluster bootstrap, ping vs matched control window"
-B10_role_TOTAL_delivery_RR,2.684782608695652,1.0,2.6590909090909083,8.439062499998013,1000,person-cluster bootstrap over person-days (meals/day)
-B10_role_PER_ENCOUNTER_RR,1.1969309462915598,0.8166500000000003,1.2281639928698773,2.7197303901631558,1000,person-cluster bootstrap over person-days (meals/interaction)
+B5a_meal_size_slope_excl_feeders,7.077464788732378,2.0120741686266665,7.0167166108467,12.206061625700544,1000,"run-cluster bootstrap over meals, obligated feeders excluded"
+B10_role_DELIVERED_ENERGY_ratio,4.292134831460674,1.6342105263157893,4.745762711864407,20.033333333333324,895,"person-cluster bootstrap, delivered energy per SCHEDULED day"
+B10_role_MEALS_PER_INTERACTION_ratio,1.1409897292250233,0.0,1.1895424836601307,2.7515311244979905,1000,"person-cluster bootstrap, meals per interaction"
 B10_dose_slope_n_turns_controlled,0.0406677758503474,0.008749735950299676,0.057559250707206924,0.1554373981060567,1000,person-cluster bootstrap over ALL learning events
-B10_prior_affinity_RR_exposure_adj,1.191820689816348,1.0463160343095181,1.1832781475820378,1.3412812606810305,1000,"person-cluster bootstrap over person-days, exposure-adjusted"
+B10_prior_affinity_RR_per_eligible_opportunity,1.0280685128198124,0.9999999999433282,1.0233623007858126,1.10473625188714,1000,"person-cluster bootstrap, offset by eligible detections"

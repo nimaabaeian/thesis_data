@@ -1,54 +1,192 @@
 {
-  "_comment": "Pinned controller source from which every constant in CONST is taken. check_constants.py verifies CONST against this exact commit. If the controller repo is not reachable, the check reports SKIPPED rather than silently passing.",
-  "repo": "https://github.com/nimaabaeian/alwaysOn-embodiedBehaviour",
-  "commit": "UNPINNED",
-  "commit_note": "Set this to the 40-char SHA of the commit the deployment ran. Until it is set, check_constants.py reports UNPINNED and the reproducibility report records that the constants are unverified against source.",
+  "_comment": [
+    "Pinned controller source for every constant in CONST. check_constants.py verifies each",
+    "named key and value against these commits and FAILS the build on any mismatch, missing",
+    "constant, or unavailable source.",
+    "",
+    "The controller changed DURING the deployment, so a single commit does not describe it.",
+    "Data collection ran 2026-06-15 to 2026-06-29:",
+    "  * b84e2f8 (2026-06-15 14:37) ran the first session days;",
+    "  * be46774 ('STABLE VERSION', 2026-06-18 16:30) ran from 18 June to the end.",
+    "  * No commits landed between 2026-06-18 and 2026-07-05.",
+    "",
+    "Every constant this analysis depends on is IDENTICAL across both commits — the 18 June",
+    "changes touched proactive-messaging logic, prompt text and a greeted-entry pruning routine,",
+    "not thresholds, meal sizes, energy costs or the affinity EMA. The checker therefore verifies",
+    "BOTH commits and additionally asserts they agree with each other, so the analysis rests on a",
+    "constant that was stable for the whole deployment rather than on one snapshot of it.",
+    "",
+    "`commit` is the reference (end-of-deployment) commit; `deployment_commits` is the full set",
+    "that must agree."
+  ],
+  "repo": "git@github.com:nimaabaeian/social-robot-embodied-behaviour-architecture.git",
+  "repo_name": "social-robot-embodied-behaviour-architecture",
+  "commit": "be46774403f239588c289d90dfcced2b3b70dcb1",
+  "deployment_commits": {
+    "b84e2f80fe7256d3bde51aba4a2a4ea1504cc400": "2026-06-15 — first session days",
+    "be46774403f239588c289d90dfcced2b3b70dcb1": "2026-06-18 STABLE VERSION — 18 to 29 June"
+  },
+  "deployment_window": [
+    "2026-06-15",
+    "2026-06-29"
+  ],
   "modules": {
     "executiveControl.py": {
       "path": "modules/executiveControl.py",
       "constants": {
-        "DRAIN_HOURS": {"value": 4.0, "symbol": "drain_hours", "line_hint": 107},
-        "HUNGRY_THRESHOLD": {"value": 60.0, "symbol": "hungry_threshold", "line_hint": 108},
-        "STARVING_THRESHOLD": {"value": 25.0, "symbol": "starving_threshold", "line_hint": 109},
-        "SMALL_MEAL": {"value": 10.0, "symbol": "SMALL", "line_hint": 987},
-        "MEDIUM_MEAL": {"value": 25.0, "symbol": "MEDIUM", "line_hint": 987},
-        "LARGE_MEAL": {"value": 45.0, "symbol": "LARGE", "line_hint": 987},
-        "QR_COOLDOWN_SEC": {"value": 3.0, "symbol": "_qr_cooldown_sec", "line_hint": 988},
-        "FEED_WAIT_TIMEOUT_SEC": {"value": 8.0, "symbol": "_feed_wait_timeout_sec", "line_hint": 989},
-        "CONVERSATION_TURN_ENERGY_COST": {"value": 3.6, "symbol": "CONVERSATION_TURN_ENERGY_COST"},
-        "STARTER_PROMPT_ENERGY_COST": {"value": 1.2, "symbol": "STARTER_PROMPT_ENERGY_COST"},
-        "NAME_QUESTION_ENERGY_COST": {"value": 1.0, "symbol": "NAME_QUESTION_ENERGY_COST"},
-        "HUNGER_PROMPT_ENERGY_COST": {"value": 1.0, "symbol": "HUNGER_PROMPT_ENERGY_COST"},
-        "GREETING_ENERGY_COST": {"value": 0.8, "symbol": "GREETING_ENERGY_COST"},
-        "FEED_ACK_ENERGY_COST": {"value": 0.8, "symbol": "FEED_ACK_ENERGY_COST"}
+        "DRAIN_HOURS": {
+          "symbol": "drain_hours",
+          "value": 4.0,
+          "kind": "scalar"
+        },
+        "HUNGRY_THRESHOLD": {
+          "symbol": "hungry_threshold",
+          "value": 60.0,
+          "kind": "scalar"
+        },
+        "STARVING_THRESHOLD": {
+          "symbol": "starving_threshold",
+          "value": 25.0,
+          "kind": "scalar"
+        },
+        "QR_COOLDOWN_SEC": {
+          "symbol": "_qr_cooldown_sec",
+          "value": 3.0,
+          "kind": "scalar"
+        },
+        "FEED_WAIT_TIMEOUT_SEC": {
+          "symbol": "_feed_wait_timeout_sec",
+          "value": 8.0,
+          "kind": "scalar"
+        },
+        "CONVERSATION_TURN_ENERGY_COST": {
+          "symbol": "CONVERSATION_TURN_ENERGY_COST",
+          "value": 3.6,
+          "kind": "scalar"
+        },
+        "STARTER_PROMPT_ENERGY_COST": {
+          "symbol": "STARTER_PROMPT_ENERGY_COST",
+          "value": 1.2,
+          "kind": "scalar"
+        },
+        "NAME_QUESTION_ENERGY_COST": {
+          "symbol": "NAME_QUESTION_ENERGY_COST",
+          "value": 1.0,
+          "kind": "scalar"
+        },
+        "HUNGER_PROMPT_ENERGY_COST": {
+          "symbol": "HUNGER_PROMPT_ENERGY_COST",
+          "value": 1.0,
+          "kind": "scalar"
+        },
+        "GREETING_ENERGY_COST": {
+          "symbol": "GREETING_ENERGY_COST",
+          "value": 0.8,
+          "kind": "scalar"
+        },
+        "FEED_ACK_ENERGY_COST": {
+          "symbol": "FEED_ACK_ENERGY_COST",
+          "value": 0.8,
+          "kind": "scalar"
+        },
+        "MEALS": {
+          "symbol": "_meal_mapping",
+          "kind": "dict",
+          "keys": {
+            "SMALL_MEAL": 10.0,
+            "MEDIUM_MEAL": 25.0,
+            "LARGE_MEAL": 45.0
+          }
+        }
       }
     },
     "salienceNetwork.py": {
       "path": "modules/salienceNetwork.py",
       "constants": {
-        "ALPHA": {"value": 0.25, "symbol": "ALPHA", "line_hint": 155},
-        "ALPHA_NEG": {"value": 0.10, "symbol": "ALPHA_NEG", "line_hint": 156},
-        "REWARD_SCALE": {"value": 25.0, "symbol": "REWARD_SCALE", "line_hint": 157},
-        "PENALTY_FLOOR": {"value": -0.3, "symbol": "PENALTY_FLOOR", "line_hint": 158},
-        "POSITIVE_BAND": {"value": 0.20, "symbol": "POSITIVE_BAND", "line_hint": 160},
-        "THR_GAIN": {"value": 0.15, "symbol": "GAIN", "line_hint": 161},
-        "THR_FLOOR": {"value": 0.50, "symbol": "FLOOR", "line_hint": 162},
-        "HABITUATION_LAMBDA": {"value": 0.06, "symbol": "HABITUATION_LAMBDA", "line_hint": 151},
-        "SS_THRESHOLD_ss1": {"value": 0.80, "symbol": "SS_THRESHOLDS", "line_hint": 144},
-        "SS_THRESHOLD_ss2": {"value": 0.65, "symbol": "SS_THRESHOLDS", "line_hint": 144},
-        "SS_THRESHOLD_ss3": {"value": 0.70, "symbol": "SS_THRESHOLDS", "line_hint": 144},
-        "SS_THRESHOLD_ss4": {"value": 0.85, "symbol": "SS_THRESHOLDS", "line_hint": 144},
-        "WEIGHT_PROX": {"value": 0.5, "symbol": "BASELINE_WEIGHTS", "line_hint": 141},
-        "WEIGHT_CENT": {"value": 0.15, "symbol": "BASELINE_WEIGHTS", "line_hint": 141},
-        "WEIGHT_GAZE": {"value": 0.5, "symbol": "BASELINE_WEIGHTS", "line_hint": 141}
+        "AFFINITY_ALPHA": {
+          "symbol": "AFFINITY_ALPHA",
+          "value": 0.25,
+          "kind": "scalar"
+        },
+        "AFFINITY_ALPHA_NEG": {
+          "symbol": "AFFINITY_ALPHA_NEG",
+          "value": 0.1,
+          "kind": "scalar"
+        },
+        "AFFINITY_REWARD_SCALE": {
+          "symbol": "AFFINITY_REWARD_SCALE",
+          "value": 25.0,
+          "kind": "scalar"
+        },
+        "AFFINITY_PENALTY_FLOOR": {
+          "symbol": "AFFINITY_PENALTY_FLOOR",
+          "value": -0.3,
+          "kind": "scalar"
+        },
+        "AFFINITY_NEUTRAL_BAND": {
+          "symbol": "AFFINITY_NEUTRAL_BAND",
+          "value": 0.2,
+          "kind": "scalar"
+        },
+        "AFFINITY_THRESHOLD_GAIN": {
+          "symbol": "AFFINITY_THRESHOLD_GAIN",
+          "value": 0.15,
+          "kind": "scalar"
+        },
+        "AFFINITY_THRESHOLD_FLOOR": {
+          "symbol": "AFFINITY_THRESHOLD_FLOOR",
+          "value": 0.5,
+          "kind": "scalar"
+        },
+        "ENGAGED_MIN_TURNS": {
+          "symbol": "ENGAGED_MIN_TURNS",
+          "value": 2,
+          "kind": "scalar"
+        },
+        "HABITUATION_LAMBDA": {
+          "symbol": "HABITUATION_LAMBDA",
+          "value": 0.06,
+          "kind": "scalar"
+        },
+        "SS_THRESHOLDS": {
+          "symbol": "SS_THRESHOLDS",
+          "kind": "dict",
+          "keys": {
+            "ss1": 0.8,
+            "ss2": 0.65,
+            "ss3": 0.7,
+            "ss4": 0.85
+          }
+        },
+        "BASELINE_WEIGHTS": {
+          "symbol": "BASELINE_WEIGHTS",
+          "kind": "dict",
+          "keys": {
+            "prox": 0.5,
+            "cent": 0.15,
+            "gaze": 0.5
+          }
+        }
       }
     },
     "chatBot.py": {
       "path": "modules/chatBot.py",
       "constants": {
-        "PRIORITY_THRESHOLD_HS2": {"value": 0.20, "symbol": "PRIORITY_THRESHOLD_HS2"},
-        "MIN_INTERACTIONS_FOR_TRUST": {"value": 3, "symbol": "MIN_INTERACTIONS_FOR_TRUST"},
-        "HS_DWELL_SEC": {"value": 60.0, "symbol": "HS_DWELL_SEC", "line_hint": 163}
+        "PRIORITY_THRESHOLD_HS2": {
+          "symbol": "PRIORITY_THRESHOLD_HS2",
+          "value": 0.2,
+          "kind": "scalar"
+        },
+        "MIN_INTERACTIONS_FOR_TRUST": {
+          "symbol": "MIN_INTERACTIONS_FOR_TRUST",
+          "value": 3,
+          "kind": "scalar"
+        },
+        "HS_DWELL_SEC": {
+          "symbol": "HS_DWELL_SEC",
+          "value": 60.0,
+          "kind": "scalar"
+        }
       }
     }
   }

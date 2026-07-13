@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
-"""Emit outputs/reproducibility_report.md: what went in, what ran, what came out.
+"""Emit outputs/reproducibility_report.md, and VERIFY it describes the build that just ran.
 
-Records input hashes, software versions, notebook execution status, constants-check status, and
-output hashes. The point is that a reader can tell, without rerunning anything, whether the numbers
-in the report came from the data the manifest describes, and whether the constants were ever
-actually checked against the controller source or merely asserted.
+Runs last in the acceptance build, once every other artifact exists, so the hashes it records
+are this build's hashes.
+
+`--verify` turns it into a gate. It fails if any of the following is not true of the current
+working tree:
+
+  * the notebook executed cleanly (no unexecuted cells, no error outputs)
+  * the constants check passed against the pinned deployment commits
+  * the input manifest matches the data on disk
+  * every expected output artifact exists
+  * the recorded branch / commit / dirty-state describe THIS tree
+
+A report that says "EXECUTED CLEAN" while sitting next to a stale notebook is worse than no
+report, because it is evidence of something that did not happen.
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import platform
 import subprocess
 import sys
 from datetime import datetime, timezone
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -23,7 +35,22 @@ FIGS = ANALYSIS / "figures"
 NB = ANALYSIS / "orexigenic_analysis.ipynb"
 
 PACKAGES = ["pandas", "numpy", "scipy", "statsmodels", "scikit-learn", "lifelines",
-            "matplotlib", "pyarrow", "nbformat", "nbconvert"]
+            "matplotlib", "pyarrow", "nbformat", "nbconvert", "pytest"]
+
+# Artifacts the acceptance build must have produced. A missing one is a failed build, not a
+# cosmetic omission.
+REQUIRED_OUTPUTS = [
+    "results_summary.md", "success_criteria.csv", "multiplicity_table.csv",
+    "verification_report.md", "quality_report.md",
+    "master_interactions.parquet", "hs3_episodes.parquet", "hs_transitions.parquet",
+    "b3_adjusted_models.csv", "b5_ping_control_pairs.csv", "b6_episode_outcomes.csv",
+    "b7_stratified_occupancy.csv", "b9_mechanism_check.csv",
+    "b10_scheduled_day_panel.csv", "b10_downstream_stages.csv",
+    "rq3_dose_specification_comparison.csv", "small_cluster_sensitivity.csv",
+]
+REQUIRED_FIGS = ["fig02_drive_timeline", "fig04_deficit_action", "fig05_prioritisation_heatmap",
+                 "fig08_remote_loop", "fig09_steady_state", "fig10_affinity_trajectories",
+                 "fig12_role_validation", "fig13_affinity_dose"]
 
 
 def sha256(p: Path) -> str:
@@ -42,126 +69,186 @@ def git(*args: str) -> str:
         return "(unavailable)"
 
 
-def nb_status() -> tuple[str, int, int, int]:
+def nb_status() -> dict:
     if not NB.exists():
-        return "NOT BUILT", 0, 0, 0
+        return dict(status="NOT BUILT", cells=0, unexecuted=0, errors=0)
     nb = json.loads(NB.read_text())
     code = [c for c in nb["cells"] if c.get("cell_type") == "code"]
     unexec = sum(c.get("execution_count") is None for c in code)
     errors = sum(1 for c in code for o in c.get("outputs", [])
                  if o.get("output_type") == "error")
     if not code:
-        return "EMPTY", 0, 0, 0
-    if unexec == 0 and errors == 0:
-        return "EXECUTED CLEAN", len(code), unexec, errors
-    if errors:
-        return "EXECUTED WITH ERRORS", len(code), unexec, errors
-    return "PARTIALLY EXECUTED", len(code), unexec, errors
+        st = "EMPTY"
+    elif errors:
+        st = "EXECUTED WITH ERRORS"
+    elif unexec:
+        st = "PARTIALLY EXECUTED"
+    else:
+        st = "EXECUTED CLEAN"
+    return dict(status=st, cells=len(code), unexecuted=unexec, errors=errors)
+
+
+def gather() -> dict:
+    nbs = nb_status()
+    cc_path = OUT / "constants_check.json"
+    cc = json.loads(cc_path.read_text()) if cc_path.exists() else {"status": "NOT RUN"}
+
+    man_path = ANALYSIS / "data_manifest.json"
+    man = json.loads(man_path.read_text()) if man_path.exists() else None
+    man_ok = subprocess.run([sys.executable, str(ANALYSIS / "make_manifest.py"), "--verify"],
+                            capture_output=True, text=True).returncode == 0 if man else False
+
+    missing_out = [f for f in REQUIRED_OUTPUTS if not (OUT / f).exists()]
+    missing_fig = [f for f in REQUIRED_FIGS if not (FIGS / f"{f}.png").exists()]
+
+    pkgs = {}
+    for p in PACKAGES:
+        try:
+            pkgs[p] = version(p)
+        except PackageNotFoundError:
+            pkgs[p] = None
+
+    return dict(
+        generated_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        git=dict(commit=git("rev-parse", "HEAD"),
+                 branch=git("rev-parse", "--abbrev-ref", "HEAD"),
+                 dirty=bool(git("status", "--porcelain"))),
+        python=platform.python_version(),
+        platform=f"{platform.system()}-{platform.machine()}",
+        packages=pkgs,
+        lock_present=(ANALYSIS / "requirements.lock").exists(),
+        notebook=nbs,
+        constants=cc,
+        manifest_present=man is not None,
+        manifest_verified=man_ok,
+        manifest_files=len(man["expected_files"]) if man else 0,
+        manifest_rows=sum(e.get("total_rows", 0) or 0 for e in man["expected_files"]) if man else 0,
+        collection_dates=man["collection_dates"] if man else [],
+        missing_outputs=missing_out,
+        missing_figures=missing_fig,
+        outputs={f"outputs/{p.name}": sha256(p) for p in sorted(OUT.glob("*"))
+                 if p.is_file() and p.name != "reproducibility_report.md"},
+        figures={f"figures/{p.name}": sha256(p) for p in sorted(FIGS.glob("*.png"))},
+    )
+
+
+def failures(st: dict) -> list[str]:
+    f = []
+    if st["notebook"]["status"] != "EXECUTED CLEAN":
+        f.append(f"notebook status is {st['notebook']['status']} "
+                 f"({st['notebook']['unexecuted']} unexecuted, {st['notebook']['errors']} errored)")
+    if st["constants"].get("status") != "PASS":
+        f.append(f"constants check is {st['constants'].get('status')} — the analysis constants "
+                 f"are not verified against the pinned controller commits")
+    if not st["manifest_present"]:
+        f.append("data_manifest.json is missing")
+    elif not st["manifest_verified"]:
+        f.append("the inputs on disk do not match data_manifest.json")
+    if not st["lock_present"]:
+        f.append("analysis/requirements.lock is missing")
+    if st["missing_outputs"]:
+        f.append(f"missing required outputs: {', '.join(st['missing_outputs'])}")
+    if st["missing_figures"]:
+        f.append(f"missing required figures: {', '.join(st['missing_figures'])}")
+    return f
+
+
+def render(st: dict, fails: list[str]) -> str:
+    L = ["# Reproducibility report", "",
+         f"_Generated {st['generated_utc']}_", "",
+         f"## Build status: **{'PASS' if not fails else 'FAIL'}**", ""]
+    if fails:
+        L += ["This build did not meet the acceptance gates:", ""]
+        L += [f"- {x}" for x in fails] + [""]
+    else:
+        L += ["Every acceptance gate passed. The numbers in `results_summary.md` and `README.md`",
+              "were produced by this build, from the inputs hashed below, using the constants",
+              "verified against the pinned controller commits.", ""]
+
+    L += ["## What can and cannot be reproduced", "",
+          "**The raw data are not in this repository and cannot be.** The SQLite databases hold",
+          "participant faces, names and chat transcripts; `analysis/private/` holds the identity,",
+          "role and attendance maps. Both are git-ignored.",
+          "",
+          "- **Full independent reproduction requires controlled access to the excluded data.**",
+          "  No claim to the contrary is made here.",
+          "- **Without it, a third party can still verify** that the build is deterministic, that",
+          "  the analysis constants match the pinned controller source, and — if they hold the",
+          "  data — that their copy hashes to the values recorded below.", ""]
+
+    g = st["git"]
+    L += ["## Git", "",
+          f"- branch: `{g['branch']}`",
+          f"- commit: `{g['commit']}`",
+          f"- working tree dirty: `{'yes' if g['dirty'] else 'no'}`", ""]
+
+    L += ["## Environment", "",
+          f"- python `{st['python']}` on `{st['platform']}`",
+          f"- lock file: `{'analysis/requirements.lock' if st['lock_present'] else 'MISSING'}`",
+          "", "| package | version |", "|---|---|"]
+    L += [f"| {k} | {v or '(not installed)'} |" for k, v in st["packages"].items()]
+    L.append("")
+
+    cc = st["constants"]
+    L += ["## Controller constants", ""]
+    if cc.get("status") == "PASS":
+        L += [f"**PASS** — every constant verified key-by-key against "
+              f"`{Path(str(PIN_REPO)).name if (PIN_REPO := cc.get('repo')) else '?'}` at each pinned",
+              "deployment commit, with no drift between them:", ""]
+        L += [f"- `{c[:12]}`" for c in cc.get("commits", [])]
+        L.append("")
+    else:
+        L += [f"**{cc.get('status')}** — constants are NOT verified. This fails the build.", ""]
+
+    L += ["## Inputs", ""]
+    if st["manifest_present"]:
+        L += [f"- manifest: `analysis/data_manifest.json` "
+              f"({st['manifest_files']} files, {st['manifest_rows']:,} rows)",
+              f"- verified against disk: **{'yes' if st['manifest_verified'] else 'NO'}**",
+              f"- collection dates: {', '.join(st['collection_dates'])}", ""]
+    else:
+        L += ["- **MISSING** — run `make manifest`.", ""]
+
+    n = st["notebook"]
+    L += ["## Notebook", "",
+          f"- status: **{n['status']}**",
+          f"- code cells: {n['cells']}, unexecuted: {n['unexecuted']}, errored: {n['errors']}", ""]
+
+    L += ["## Output hashes", "", "| artifact | sha256 (first 16) |", "|---|---|"]
+    L += [f"| `{k}` | `{v[:16]}` |" for k, v in {**st["outputs"], **st["figures"]}.items()]
+    L += ["",
+          "## Determinism", "",
+          "- global seed `SEED=42`, set once and used by every bootstrap, permutation and fit.",
+          "- databases opened read-only (`mode=ro`).",
+          "- `make all` deletes `analysis/outputs/`, `figures/` and `cache/` before executing, so",
+          "  no stale artifact can survive into a build.",
+          "- `make determinism` executes the whole analysis twice from clean and compares every",
+          "  generated CSV, Parquet table and report byte-for-byte.", ""]
+    return "\n".join(L)
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--verify", action="store_true",
+                    help="fail (exit 1) unless every acceptance gate passes")
+    args = ap.parse_args()
+
     OUT.mkdir(parents=True, exist_ok=True)
-    status, n_cells, unexec, errors = nb_status()
+    st = gather()
+    fails = failures(st)
+    (OUT / "reproducibility_report.md").write_text(render(st, fails))
 
-    # Constants check — run it and capture its real state rather than assuming it passed.
-    cc_json = OUT / "constants_check.json"
-    try:
-        subprocess.run([sys.executable, str(ANALYSIS / "check_constants.py"),
-                        "--json", str(cc_json)], capture_output=True, text=True, check=False)
-        cc = json.loads(cc_json.read_text()) if cc_json.exists() else {"status": "NOT RUN"}
-    except Exception as e:
-        cc = {"status": f"ERROR: {e}"}
-
-    man = json.loads((ANALYSIS / "data_manifest.json").read_text()) \
-        if (ANALYSIS / "data_manifest.json").exists() else None
-
-    L = ["# Reproducibility report", "",
-         f"_Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}_", "",
-         "## What can and cannot be reproduced", "",
-         "**The raw data are not in this repository and cannot be.** The SQLite databases hold",
-         "participant faces, names and chat transcripts, and `analysis/private/` holds the identity",
-         "canonicalisation and role-assignment maps. Both are git-ignored.",
-         "",
-         "Consequently:",
-         "",
-         "- **Full independent reproduction requires controlled access to the excluded data and the",
-         "  role mappings.** There is no way around this and no claim to the contrary is made here.",
-         "- **Without that data, a third party can still verify**: that the build is deterministic",
-         "  (fixed seed, pinned dependencies), that the analysis constants match the pinned controller",
-         "  source (`check_constants.py`), and — if they hold the data — that their copy hashes to the",
-         "  values in `data_manifest.json`.",
-         ""]
-
-    L += ["## Git state", "",
-          f"- commit: `{git('rev-parse', 'HEAD')}`",
-          f"- branch: `{git('rev-parse', '--abbrev-ref', 'HEAD')}`",
-          f"- dirty: `{'yes' if git('status', '--porcelain') else 'no'}`", ""]
-
-    L += ["## Software", "",
-          f"- python: `{platform.python_version()}` ({platform.system()} {platform.machine()})", ""]
-    L += ["| package | version |", "|---|---|"]
-    for p in PACKAGES:
-        try:
-            from importlib.metadata import version
-            L.append(f"| {p} | {version(p)} |")
-        except Exception:
-            L.append(f"| {p} | (not installed) |")
-    L.append("")
-    lock = ANALYSIS / "requirements.lock"
-    L += [f"- environment lock: `{'analysis/requirements.lock' if lock.exists() else 'MISSING'}`",
-          f"- pinned deps: `analysis/requirements.txt`", ""]
-
-    L += ["## Controller constants", ""]
-    st = cc.get("status", "UNKNOWN")
-    if st == "PASS":
-        L += [f"- **PASS** — every constant matches `{cc.get('repo')}` @ `{cc.get('commit','')[:12]}`.", ""]
-    elif str(st).startswith("SKIPPED"):
-        L += [f"- **UNVERIFIED** (`{st}`). The controller source was not available, or",
-              "  `controller_source.json` still has `commit: UNPINNED`. The constants used by the",
-              "  analysis (thresholds, meal sizes, energy costs, affinity EMA) are therefore taken on",
-              "  trust. Pin the commit and re-run `make check-constants` to close this.", ""]
-    elif st == "MISMATCH":
-        L += ["- **MISMATCH — THE ANALYSIS IS INVALID.** A constant does not match the pinned source.", ""]
-    else:
-        L += [f"- status: `{st}`", ""]
-
-    L += ["## Inputs", ""]
-    if man:
-        files = [e for e in man["expected_files"] if e.get("sha256")]
-        rows = sum(e.get("total_rows", 0) or 0 for e in man["expected_files"])
-        L += [f"- manifest: `analysis/data_manifest.json` ({len(files)} files, {rows:,} rows)",
-              f"- collection dates: {', '.join(man['collection_dates'])}",
-              f"- private maps hashed (contents never published): {len(man.get('private_files', []))}",
-              "", "| file | rows | sha256 (first 16) |", "|---|---:|---|"]
-        for e in man["expected_files"]:
-            if e.get("kind") in ("executive_control", "salience_network", "chat_bot", "vision"):
-                L.append(f"| `{e['path']}` | {e.get('total_rows', '?')} | `{e.get('sha256','')[:16]}` |")
-        L.append("")
-    else:
-        L += ["- **manifest MISSING** — run `make manifest`.", ""]
-
-    L += ["## Notebook execution", "",
-          f"- status: **{status}**",
-          f"- code cells: {n_cells}, unexecuted: {unexec}, errored: {errors}", ""]
-
-    L += ["## Outputs", "", "| file | bytes | sha256 (first 16) |", "|---|---:|---|"]
-    for f in sorted(OUT.glob("*")):
-        if f.name == "reproducibility_report.md" or f.is_dir():
-            continue
-        L.append(f"| `outputs/{f.name}` | {f.stat().st_size} | `{sha256(f)[:16]}` |")
-    for f in sorted(FIGS.glob("*.png")):
-        L.append(f"| `figures/{f.name}` | {f.stat().st_size} | `{sha256(f)[:16]}` |")
-    L.append("")
-
-    L += ["## Determinism", "",
-          "- global seed `SEED=42` set once in the notebook setup cell and used by every bootstrap,",
-          "  permutation and model fit.",
-          "- databases opened read-only (`mode=ro`).",
-          "- `make execute` regenerates every artifact under `analysis/outputs/` and",
-          "  `analysis/figures/` from a clean state (`make clean-outputs` first).", ""]
-
-    (OUT / "reproducibility_report.md").write_text("\n".join(L))
-    print(f"wrote outputs/reproducibility_report.md  (notebook: {status}, constants: {st})")
+    print(f"wrote outputs/reproducibility_report.md")
+    print(f"  branch={st['git']['branch']} commit={st['git']['commit'][:12]} "
+          f"dirty={st['git']['dirty']}")
+    print(f"  notebook={st['notebook']['status']}  constants={st['constants'].get('status')}  "
+          f"manifest={'verified' if st['manifest_verified'] else 'NOT VERIFIED'}")
+    if fails:
+        print("\nreproducibility=FAIL")
+        for x in fails:
+            print(f"  - {x}")
+        return 1 if args.verify else 0
+    print("\nreproducibility=PASS")
     return 0
 
 

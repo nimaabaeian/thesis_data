@@ -1,6 +1,542 @@
 {
-  "repo": "https://github.com/nimaabaeian/alwaysOn-embodiedBehaviour",
-  "commit": "UNPINNED",
-  "status": "SKIPPED_UNPINNED",
-  "rows": []
+  "repo": "git@github.com:nimaabaeian/social-robot-embodied-behaviour-architecture.git",
+  "commits": [
+    "b84e2f80fe7256d3bde51aba4a2a4ea1504cc400",
+    "be46774403f239588c289d90dfcced2b3b70dcb1"
+  ],
+  "status": "PASS",
+  "per_commit": {
+    "b84e2f80fe7256d3bde51aba4a2a4ea1504cc400": [
+      {
+        "module": "executiveControl.py",
+        "constant": "DRAIN_HOURS",
+        "key": null,
+        "expected": 4.0,
+        "found": 4.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "HUNGRY_THRESHOLD",
+        "key": null,
+        "expected": 60.0,
+        "found": 60.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "STARVING_THRESHOLD",
+        "key": null,
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "QR_COOLDOWN_SEC",
+        "key": null,
+        "expected": 3.0,
+        "found": 3.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "FEED_WAIT_TIMEOUT_SEC",
+        "key": null,
+        "expected": 8.0,
+        "found": 8.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "CONVERSATION_TURN_ENERGY_COST",
+        "key": null,
+        "expected": 3.6,
+        "found": 3.6,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "STARTER_PROMPT_ENERGY_COST",
+        "key": null,
+        "expected": 1.2,
+        "found": 1.2,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "NAME_QUESTION_ENERGY_COST",
+        "key": null,
+        "expected": 1.0,
+        "found": 1.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "HUNGER_PROMPT_ENERGY_COST",
+        "key": null,
+        "expected": 1.0,
+        "found": 1.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "GREETING_ENERGY_COST",
+        "key": null,
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "FEED_ACK_ENERGY_COST",
+        "key": null,
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "SMALL_MEAL",
+        "expected": 10.0,
+        "found": 10.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "MEDIUM_MEAL",
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "LARGE_MEAL",
+        "expected": 45.0,
+        "found": 45.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_ALPHA",
+        "key": null,
+        "expected": 0.25,
+        "found": 0.25,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_ALPHA_NEG",
+        "key": null,
+        "expected": 0.1,
+        "found": 0.1,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_REWARD_SCALE",
+        "key": null,
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_PENALTY_FLOOR",
+        "key": null,
+        "expected": -0.3,
+        "found": -0.3,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_NEUTRAL_BAND",
+        "key": null,
+        "expected": 0.2,
+        "found": 0.2,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_THRESHOLD_GAIN",
+        "key": null,
+        "expected": 0.15,
+        "found": 0.15,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_THRESHOLD_FLOOR",
+        "key": null,
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "ENGAGED_MIN_TURNS",
+        "key": null,
+        "expected": 2.0,
+        "found": 2.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "HABITUATION_LAMBDA",
+        "key": null,
+        "expected": 0.06,
+        "found": 0.06,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss1",
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss2",
+        "expected": 0.65,
+        "found": 0.65,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss3",
+        "expected": 0.7,
+        "found": 0.7,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss4",
+        "expected": 0.85,
+        "found": 0.85,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "prox",
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "cent",
+        "expected": 0.15,
+        "found": 0.15,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "gaze",
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "PRIORITY_THRESHOLD_HS2",
+        "key": null,
+        "expected": 0.2,
+        "found": 0.2,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "MIN_INTERACTIONS_FOR_TRUST",
+        "key": null,
+        "expected": 3.0,
+        "found": 3.0,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "HS_DWELL_SEC",
+        "key": null,
+        "expected": 60.0,
+        "found": 60.0,
+        "status": "PASS"
+      }
+    ],
+    "be46774403f239588c289d90dfcced2b3b70dcb1": [
+      {
+        "module": "executiveControl.py",
+        "constant": "DRAIN_HOURS",
+        "key": null,
+        "expected": 4.0,
+        "found": 4.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "HUNGRY_THRESHOLD",
+        "key": null,
+        "expected": 60.0,
+        "found": 60.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "STARVING_THRESHOLD",
+        "key": null,
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "QR_COOLDOWN_SEC",
+        "key": null,
+        "expected": 3.0,
+        "found": 3.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "FEED_WAIT_TIMEOUT_SEC",
+        "key": null,
+        "expected": 8.0,
+        "found": 8.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "CONVERSATION_TURN_ENERGY_COST",
+        "key": null,
+        "expected": 3.6,
+        "found": 3.6,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "STARTER_PROMPT_ENERGY_COST",
+        "key": null,
+        "expected": 1.2,
+        "found": 1.2,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "NAME_QUESTION_ENERGY_COST",
+        "key": null,
+        "expected": 1.0,
+        "found": 1.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "HUNGER_PROMPT_ENERGY_COST",
+        "key": null,
+        "expected": 1.0,
+        "found": 1.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "GREETING_ENERGY_COST",
+        "key": null,
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "FEED_ACK_ENERGY_COST",
+        "key": null,
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "SMALL_MEAL",
+        "expected": 10.0,
+        "found": 10.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "MEDIUM_MEAL",
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "executiveControl.py",
+        "constant": "MEALS",
+        "key": "LARGE_MEAL",
+        "expected": 45.0,
+        "found": 45.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_ALPHA",
+        "key": null,
+        "expected": 0.25,
+        "found": 0.25,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_ALPHA_NEG",
+        "key": null,
+        "expected": 0.1,
+        "found": 0.1,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_REWARD_SCALE",
+        "key": null,
+        "expected": 25.0,
+        "found": 25.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_PENALTY_FLOOR",
+        "key": null,
+        "expected": -0.3,
+        "found": -0.3,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_NEUTRAL_BAND",
+        "key": null,
+        "expected": 0.2,
+        "found": 0.2,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_THRESHOLD_GAIN",
+        "key": null,
+        "expected": 0.15,
+        "found": 0.15,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "AFFINITY_THRESHOLD_FLOOR",
+        "key": null,
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "ENGAGED_MIN_TURNS",
+        "key": null,
+        "expected": 2.0,
+        "found": 2.0,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "HABITUATION_LAMBDA",
+        "key": null,
+        "expected": 0.06,
+        "found": 0.06,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss1",
+        "expected": 0.8,
+        "found": 0.8,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss2",
+        "expected": 0.65,
+        "found": 0.65,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss3",
+        "expected": 0.7,
+        "found": 0.7,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "SS_THRESHOLDS",
+        "key": "ss4",
+        "expected": 0.85,
+        "found": 0.85,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "prox",
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "cent",
+        "expected": 0.15,
+        "found": 0.15,
+        "status": "PASS"
+      },
+      {
+        "module": "salienceNetwork.py",
+        "constant": "BASELINE_WEIGHTS",
+        "key": "gaze",
+        "expected": 0.5,
+        "found": 0.5,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "PRIORITY_THRESHOLD_HS2",
+        "key": null,
+        "expected": 0.2,
+        "found": 0.2,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "MIN_INTERACTIONS_FOR_TRUST",
+        "key": null,
+        "expected": 3.0,
+        "found": 3.0,
+        "status": "PASS"
+      },
+      {
+        "module": "chatBot.py",
+        "constant": "HS_DWELL_SEC",
+        "key": null,
+        "expected": 60.0,
+        "found": 60.0,
+        "status": "PASS"
+      }
+    ]
+  }
 }
