@@ -1698,11 +1698,22 @@ register_p("B3", B3_UNADJ + " (logistic GEE, cluster=person)", "deficit", b3_p,
 
 # Every adjusted-model p-value that supports the "survives adjustment" claim is REGISTERED,
 # because it is quoted in a conclusion. The previous version cited these and corrected none.
+# A NON-CONVERGED fit can still return a finite p-value (statsmodels does not null it out), but
+# that p-value describes an estimate the optimiser itself flagged as unreliable, so it must not
+# enter a BH-corrected confirmatory family -- doing so would apply a real correction to a number
+# that was never trustworthy in the first place. It is still reported, just as exploratory.
 for m in b3_models:
     if m["model"] != "unadjusted" and np.isfinite(m["p"]):
-        register_p("B3", f"{m['model']} (logistic GEE, cluster={m['cluster']})", "deficit", m["p"],
-                   "RQ1/2-behaviour", "confirmatory",
-                   note="adjusted-model sensitivity, quoted to support 'survives adjustment'")
+        if m["converged"]:
+            register_p("B3", f"{m['model']} (logistic GEE, cluster={m['cluster']})", "deficit",
+                       m["p"], "RQ1/2-behaviour", "confirmatory",
+                       note="adjusted-model sensitivity, quoted to support 'survives adjustment'")
+        else:
+            register_p("B3", f"{m['model']} (logistic GEE, cluster={m['cluster']})", "deficit",
+                       m["p"], "(none - excluded)", "exploratory",
+                       note=f"GEE did not converge ({m['reason']}); p-value reported for "
+                            f"transparency only, never used to support 'survives adjustment' and "
+                            f"excluded from BH correction")
 
 # --- Does it actually survive adjustment? Decided, not asserted. ----------------------------
 # The gate is the PRESPECIFIED model, under both clusterings. The phase-only variant is a
@@ -3250,6 +3261,22 @@ print(f"    (The old panel was built from completed interactions, so all "
       f"inflated for exactly the people who attended least reliably.)")
 pdm.to_csv(OUT_DIR/"b10_scheduled_day_panel.csv", index=False)
 
+# CROSS-CHECK the no-feed pair's Phase-1 "0/15 meals" compliance claim (computed from the
+# interaction-level `meals_eaten_count` field) against the INDEPENDENT feed-attribution pipeline
+# above (which assigns raw feeding events to whichever interaction was active by timestamp). The
+# two do not have to agree: the attribution pipeline can and does assign energy to an interaction
+# whose own `meals_eaten_count` field is zero, because it uses a looser same-run/same-timestamp
+# criterion, not the same-interaction match. That is a real limitation, not a rounding issue.
+_nf_energy_p1 = float(pdm[(pdm.role == "no_feed") & (pdm.phase == "P1")]["delivered_energy"].sum())
+print(f"\n    CROSS-CHECK: the independent feed-attribution pipeline assigns "
+      f"{_nf_energy_p1:.0f} stomach points of energy to no-feed-pair interactions in Phase 1, "
+      f"despite {_nf_k}/{_nf_n} on the direct meals_eaten_count field above. The two pipelines "
+      f"use different matching logic (attribution: nearest active interaction by timestamp within "
+      f"the same run; meals_eaten_count: whatever the executive log recorded directly on that "
+      f"interaction) and are not guaranteed to agree. This means the '0/15, perfect compliance' "
+      f"reading is not independently corroborated by the attribution pipeline, and should not be "
+      f"stated as settled.")
+
 print("\n(3) The FOUR distinct quantities, Phase 1 (mean per scheduled day unless noted):")
 p1 = pdm[pdm.phase == "P1"]
 q = (p1.groupby("role", observed=True)
@@ -3261,6 +3288,12 @@ q = (p1.groupby("role", observed=True)
             total_interactions=("n_interactions", "sum")))
 q["meals_per_interaction"] = q["total_meals"] / q["total_interactions"].replace(0, np.nan)
 q["energy_per_meal"] = q["total_energy"] / q["total_meals"].replace(0, np.nan)
+# ATTENDANCE decomposes into two independent quantities that "interactions per scheduled day"
+# conflates: whether the person showed up at all (attendance RATE), and how many interactions
+# they had once they did (intensity conditional on attending). A single "attendance" ratio that
+# is really the product of the two overstates what "they showed up more" alone would predict.
+q["attendance_rate"] = q["attended_days"] / q["scheduled_days"]
+q["interactions_per_attended_day"] = q["total_interactions"] / q["attended_days"].replace(0, np.nan)
 print(q.round(2).to_string())
 
 def _ratio(col, role_a="feeder", role_b="normal"):
@@ -3269,19 +3302,27 @@ def _ratio(col, role_a="feeder", role_b="normal"):
 
 _rr_meals  = _ratio("meals_per_sched_day")
 _rr_energy = _ratio("energy_per_sched_day")
+_rr_attend_rate = _ratio("attendance_rate")
+_rr_int_per_attend = _ratio("interactions_per_attended_day")
 _rr_perint = _ratio("meals_per_interaction")
 _rr_expo   = _ratio("interactions_per_sched_day")
 print(f"\n    feeder vs unconstrained, Phase 1:")
 print(f"      meals per scheduled day      {_rr_meals:.2f}x")
 print(f"      ATTRIBUTED ENERGY per sched.d {_rr_energy:.2f}x  <- what the drive received during their interactions")
 print(f"      meals per interaction        {_rr_perint:.2f}x   <- per-encounter propensity")
-print(f"      interactions per sched. day  {_rr_expo:.2f}x   <- ATTENDANCE")
-print(f"\n    The role acted through ATTENDANCE. {_rr_energy:.1f}x the energy arrived during")
-print(f"    interactions attributed to feeder-role participants, per scheduled day, but per")
+print(f"      interactions per sched. day  {_rr_expo:.2f}x   <- TOTAL exposure (attendance x intensity)")
+print(f"        = attendance rate ({_rr_attend_rate:.2f}x: attended/scheduled days)")
+print(f"        x interactions per attended day ({_rr_int_per_attend:.2f}x, once they showed up)")
+print(f"\n    The role acted through EXPOSURE, which is NOT purely 'showing up more' — it splits")
+print(f"    into {_rr_attend_rate:.1f}x higher attendance PROBABILITY and {_rr_int_per_attend:.1f}x more")
+print(f"    interactions PER DAY THEY ATTENDED, which multiply to the {_rr_expo:.1f}x total. "
+      f"{_rr_energy:.1f}x the energy")
+print(f"    arrived during interactions attributed to feeder-role participants, per scheduled day, but per")
 print(f"    encounter only {_rr_perint:.1f}x as often (attribution, not a verified feeder identity —")
 print(f"    see the attribution note above). Exposure is a")
-print(f"    MEDIATOR of the role (being told to feed the robot makes you go to the robot), not a")
-print(f"    confounder, so the per-encounter figure is a decomposition, not a corrected estimate.")
+print(f"    MEDIATOR of the role (being told to feed the robot makes you go to the robot, and to stay")
+print(f"    engaged once there), not a confounder, so the per-encounter figure is a decomposition, not")
+print(f"    a corrected estimate.")
 
 # --- Poisson models on the complete panel, with an exposure offset ------------------------
 pm_ = pdm[pdm["role"].isin(["feeder", "normal"])].copy()
@@ -3373,11 +3414,12 @@ SENSITIVITY.append(dict(metric="B10_role_MEALS_PER_INTERACTION_ratio", primary=_
                         unit="person-cluster bootstrap, meals per interaction"))
 globals()["_b10_meal_gee"] = dict(
     rr_energy=_rr_energy, rr_meals=_rr_meals, rr_perint=_rr_perint, rr_expo=_rr_expo,
+    rr_attend_rate=_rr_attend_rate, rr_int_per_attend=_rr_int_per_attend,
     boot=[_meal_boot["lo"], _meal_boot["median"], _meal_boot["hi"]],
     boot_perop=[_perop_boot["lo"], _perop_boot["median"], _perop_boot["hi"]],
     perm_p_energy=_pe["p"], perm_p_perint=_pp["p"], perm_floor=_pe["floor"],
     n_assignments=_pe["n_assignments"],
-    nofeed_k=_nf_k, nofeed_n=_nf_n, nofeed_hi=_nf_e[2],
+    nofeed_k=_nf_k, nofeed_n=_nf_n, nofeed_hi=_nf_e[2], nofeed_energy_p1=_nf_energy_p1,
     n_sched=len(pdm), n_noshow=int((pdm["attended"] == 0).sum()),
     randomised=False,
     total_energy_feeder=float(q.loc["feeder", "total_energy"]),
@@ -4016,6 +4058,14 @@ if len(sens_df):
 _mg=globals()["_b10_meal_gee"]; _pr=globals()["_b10_prior"]
 _sl=R["turns_pooled"]["table"].loc["z_n_turns"]
 _db=globals()["_b10_dose_boot"]
+# TWO DIFFERENT ratios get quoted in this section and must not be conflated: the OLD-vs-PRIMARY
+# spread (uncontrolled duration slope vs the controlled primary n_turns slope) is ~4.1x; the
+# spread AMONG the controlled specifications only (PRIMARY vs the two SECONDARY duration fits,
+# _agree_res['max_ratio']) is a separate, smaller ~2.7x. An earlier draft used the 2.7x figure to
+# describe the OLD-vs-PRIMARY spread, which is wrong by construction (that ratio never includes
+# OLD in its computation — see the `_ests` filter above, which keeps only PRIMARY/SECONDARY rows).
+_old_slope = float(globals()["_b10_dose_cmp"].query('model.str.startswith("OLD")')["slope"].iloc[0])
+_old_vs_primary_ratio = abs(_old_slope / _sl["coef"])
 
 # RQ3 splits into two claims with two different evidence classes. Report them separately.
 #
@@ -4034,20 +4084,30 @@ verdict("B10.1", EV_EXPL,
         f"PER INTERACTION they were credited with feeding only {_mg['rr_perint']:.1f}x as often "
         f"(bootstrap [{_mg['boot_perop'][0]:.1f}, {_mg['boot_perop'][2]:.1f}]). This is attribution "
         f"to the interaction active when the feed occurred, NOT a verified feeder identity — "
-        f"`feeder_face_id` names only 8/14 recipients. The gap is ATTENDANCE: they "
-        f"showed up {_mg['rr_expo']:.1f}x more per scheduled day. Being told to feed the robot made "
-        f"people GO TO the robot; it does not show they were markedly more generous once there. "
-        f"Exposure is a mediator of the role, not a confounder, so the per-encounter figure is a "
-        f"decomposition and the energy figure is what arrived during their interactions. A "
-        f"label-permutation sensitivity over the exact enumeration of all {_mg['n_assignments']} "
-        f"possible assignments gives p={_mg['perm_p_energy']:.3f} (energy) and "
-        f"p={_mg['perm_p_perint']:.3f} (per-encounter) against a hard design floor of "
-        f"{_mg['perm_floor']:.3f} — a descriptive measure of how much of the contrast rides on two "
-        f"individuals, NOT a randomisation test. The no-feed pair supplied "
-        f"{_mg['nofeed_k']}/{_mg['nofeed_n']} meals in Phase 1 (exact upper bound "
-        f"{_mg['nofeed_hi']:.2f}): perfect compliance, but {_mg['nofeed_n']} observations cannot "
-        f"rule out more than that. An earlier version reported a 2.7x meal-rate ratio as though "
-        f"feeders fed more READILY; the excess is real, and it is a fact about attendance.",
+        f"`feeder_face_id` names only 8/14 recipients. The gap is EXPOSURE ({_mg['rr_expo']:.1f}x "
+        f"more interactions per scheduled day), which is NOT purely 'showed up more': it decomposes "
+        f"into {_mg['rr_attend_rate']:.1f}x higher attendance PROBABILITY (feeders attended every "
+        f"scheduled day; unconstrained participants attended a minority of theirs) and "
+        f"{_mg['rr_int_per_attend']:.1f}x more interactions PER DAY THEY DID ATTEND — both "
+        f"components matter, and the product is the {_mg['rr_expo']:.1f}x headline. Being told to "
+        f"feed the robot made people GO TO the robot more reliably AND stay more engaged once there; "
+        f"it does not show they were markedly more generous per encounter. Exposure is a mediator "
+        f"of the role, not a confounder, so the per-encounter figure is a decomposition and the "
+        f"energy figure is what arrived during their interactions. A label-permutation sensitivity "
+        f"over the exact enumeration of all {_mg['n_assignments']} possible assignments gives "
+        f"p={_mg['perm_p_energy']:.3f} (energy) and p={_mg['perm_p_perint']:.3f} (per-encounter) "
+        f"against a hard design floor of {_mg['perm_floor']:.3f} — a descriptive measure of how much "
+        f"of the contrast rides on two individuals, NOT a randomisation test. The no-feed pair's "
+        f"interaction-level record shows {_mg['nofeed_k']}/{_mg['nofeed_n']} feeds in Phase 1 (exact "
+        f"upper bound {_mg['nofeed_hi']:.2f}) — BUT the independent feed-attribution pipeline "
+        f"separately assigns {_mg['nofeed_energy_p1']:.0f} stomach points of energy to their Phase-1 "
+        f"interactions anyway, because it matches feeds to the nearest active interaction by "
+        f"timestamp rather than to the interaction's own recorded meal count. The two pipelines "
+        f"disagree, so this is NOT read as verified perfect compliance — only as what the direct "
+        f"interaction-level log shows, with the caveat that a separate, independently computed "
+        f"figure for the same people and days is nonzero. An earlier version reported a 2.7x "
+        f"meal-rate ratio as though feeders fed more READILY; the excess is real, and it is mostly "
+        f"a fact about exposure, not generosity.",
         n=int(_mg["n_sched"]))
 
 # RQ3-b is IMPLEMENTATION VERIFICATION with an exploratory deployment association on top.
@@ -4080,14 +4140,17 @@ verdict("B10", EV_IMPL,
         f"comparison the previous report's 'all three doses agree in sign' claim was actually about "
         f"— the fully observed dose (`n_turns`) gives {_sl['coef']:+.3f} "
         f"[{_sl['lo']:+.3f}, {_sl['hi']:+.3f}] (person-cluster bootstrap [{_db[0]:+.3f}, "
-        f"{_db[2]:+.3f}]), against the "
-        f"{float(globals()['_b10_dose_cmp'].query('model.str.startswith(\"OLD\")')['slope'].iloc[0]):+.3f} "
-        f"the fully uncontrolled specification reported — a {_ag['max_ratio']:.1f}x spread. THESE "
-        f"({_sl['coef']:+.3f} vs "
-        f"{float(globals()['_b10_dose_cmp'].query('model.str.startswith(\"OLD\")')['slope'].iloc[0]):+.3f}) "
-        f"agree in SIGN but NOT in magnitude ({_ag['reason']}); note that NEITHER of them controls "
+        f"{_db[2]:+.3f}]), against the {_old_slope:+.3f} the fully uncontrolled specification "
+        f"reported — a {_old_vs_primary_ratio:.1f}x spread ({_old_slope:+.3f} / {_sl['coef']:+.3f}). "
+        f"THESE ({_sl['coef']:+.3f} vs {_old_slope:+.3f}) agree in SIGN but NOT in magnitude, "
+        f"{_old_vs_primary_ratio:.1f}x apart; note that NEITHER of them controls "
         f"`active_energy_cost`, so neither is the fully-rule-controlled estimate in (1) — read "
-        f"{_sl['coef']:+.3f} as partially controlled, not as the rule-controlled figure. Duration is "
+        f"{_sl['coef']:+.3f} as partially controlled, not as the rule-controlled figure. SEPARATELY "
+        f"AGAIN: among just the controlled specifications (PRIMARY `n_turns` and the two SECONDARY "
+        f"duration fits, excluding the uncontrolled OLD figure), the maximum pairwise spread is a "
+        f"different, smaller number — {_ag['max_ratio']:.1f}x ({_ag['reason']}) — do not conflate "
+        f"this with the {_old_vs_primary_ratio:.1f}x OLD-vs-PRIMARY figure above; they answer "
+        f"different questions. Duration is "
         f"52% missing and NOT at random; the IPW fit has an effective sample size of "
         f"{_ipwd['ess']:.0f}/{_ipwd['n_observed']} ({_ipwd['ess_frac']*100:.0f}%) and "
         f"{'a POSITIVITY VIOLATION' if _ipwd['positivity_violation'] else 'no positivity violation'}. "
@@ -5134,7 +5197,9 @@ L+=["## Key quantities", "",
     f"active_energy_cost, fed, affinity_before) explain R^2={_rule['r2']:.2f} of every update. On top of "
     f"the full rule, dose adds {_rule['resid']:+.4f}/SD (p={_rule['resid_p']:.3f}) — exploratory. The "
     f"controlled dose slope is {_new_slope:+.3f} against the {_old_slope:+.3f} the uncontrolled "
-    f"specification reported: same sign, {_ag['max_ratio']:.1f}x apart, so they do NOT agree.",
+    f"specification reported: same sign, {abs(_old_slope/_new_slope):.1f}x apart (OLD vs PRIMARY; "
+    f"not to be confused with the {_ag['max_ratio']:.1f}x spread among controlled specifications "
+    f"only), so they do NOT agree.",
     f"- **Downstream, decomposed** (B10.3): affinity does not clearly predict who is DETECTED "
     f"(OR {_pr['stage1_or']:.2f}, p={_pr['stage1_p']:.3f}); the eligibility rate rises with affinity "
     f"descriptively (3% -> 9% across terciles) but is NOT distinguishable at the person-cluster level "

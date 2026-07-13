@@ -107,9 +107,12 @@ zeros), **4.3x the energy arrived during interactions attributed to** obligated-
 per scheduled day (bootstrap [1.6, 20.0]), but **per interaction they were credited with feeding
 only 1.1x as often** ([0.0, 2.8]). "Attributed to" is deliberate: feeds are assigned to whichever
 interaction was active when the energy arrived, not to an independently verified feeder identity
-(`feeder_face_id` names only 8 of 14 recipients). The gap is **attendance** — they came 4.3x more
-often. Being told to feed the robot made people *visit* it more; it does not show they were more
-generous once there.
+(`feeder_face_id` names only 8 of 14 recipients). The gap is **exposure**, not per-encounter
+generosity — but exposure itself is not just "showed up more": it decomposes into **1.7x** higher
+attendance *probability* (feeders attended every scheduled day) and **2.6x** more interactions
+*per day they attended*, both of which multiply to the 4.3x headline. Being told to feed the robot
+made people visit more reliably *and* stay more engaged once there; it does not show they were
+more generous once there.
 
 The main limitation is scope: this is one robot, one site, 8 session-days, 12 monitored runs, and
 14 named people. The results are within-deployment evidence for this human-robot regulatory loop,
@@ -436,7 +439,9 @@ leaving **23 genuine no-show zeros**:
 |---|---:|
 | **Attributed energy** per scheduled day (bootstrap [1.6, 20.0]) | **4.3x** |
 | Meals per interaction (bootstrap [0.0, 2.8]) | 1.1x |
-| **Interactions per scheduled day** (attendance) | **4.3x** |
+| **Interactions per scheduled day** (total exposure) | **4.3x** |
+| — decomposes into: attendance *probability* (attended/scheduled days) | 1.7x |
+| — × interactions *per day attended* | 2.6x |
 
 "Attributed" is deliberate: `feeder_face_id` — the field that would directly name who physically
 handed over food — is populated for only 20 of 108 feeding events and names 8 of the 14 people who
@@ -445,17 +450,27 @@ occurred, which identifies who the robot was interacting with, not necessarily w
 food. Read every number in this section as *energy that arrived during an interaction attributed
 to that person*, not as an independently verified act of feeding.
 
-The gap is **attendance**: obligated feeders came 4.3x more often, but were not markedly more
-generous once there. A count of meals is not an energy — meals are SMALL 10 / MEDIUM 25 / LARGE
-45 — and the previous report called counts "meal energy" and quoted a 2.7x meal-*rate* ratio as
-though feeders fed more readily; the excess is real, and it is a fact about attendance, not
-generosity. Exposure is a **mediator** of the role, not a confounder. A label-permutation
-sensitivity over the exact enumeration of all 45 possible assignments gives p = 0.044 (energy) and
-p = 0.400 (per-encounter) against a hard design floor of 0.022 — a descriptive measure of how much
-of the contrast rides on two individuals, **not** a randomisation test. The no-feed pair supplied
-**0/15 meals in Phase 1** (exact upper bound 0.22): perfect compliance, but too few observations to
-generalise. The 4.3x attendance gap holds after reconciliation — it was not an artefact of
-uncorrected no-shows.
+The gap is **exposure**, not per-encounter generosity — but exposure is not simply "showed up
+more." In Phase 1, feeders attended 8/8 scheduled days with 51 interactions total; unconstrained
+participants attended 19/32 scheduled days with 47 interactions total. That is **1.7x** higher
+attendance probability (8/8 vs 19/32) **and** **2.6x** more interactions per day actually attended
+((51/8) vs (47/19)) — both components contribute, and they multiply to the 4.3x headline. A count
+of meals is not an energy — meals are SMALL 10 / MEDIUM 25 / LARGE 45 — and the previous report
+called counts "meal energy" and quoted a 2.7x meal-*rate* ratio as though feeders fed more readily;
+the excess is real, and it is mostly a fact about exposure, not generosity. Exposure is a
+**mediator** of the role, not a confounder. A label-permutation sensitivity over the exact
+enumeration of all 45 possible assignments gives p = 0.044 (energy) and p = 0.400 (per-encounter)
+against a hard design floor of 0.022 — a descriptive measure of how much of the contrast rides on
+two individuals, **not** a randomisation test.
+
+The no-feed pair's interaction-level record shows **0/15 feeds in Phase 1** (exact upper bound
+0.22) — but the independent feed-attribution pipeline separately assigns **115 stomach points** of
+energy to their Phase-1 interactions anyway, because it matches feeds to the nearest active
+interaction by timestamp rather than to the interaction's own recorded meal count. The two
+pipelines disagree, so this is **not** read as verified perfect compliance — only as what the
+direct interaction-level log shows, alongside a separately-computed figure for the same people and
+days that is nonzero. The 4.3x exposure gap itself holds after attendance reconciliation — it was
+not an artefact of uncorrected no-shows.
 
 **Evidence class: `Exploratory observation`.**
 
@@ -679,10 +694,17 @@ existing packages — not a `pip freeze` of a shared machine's full environment,
 pulled in hundreds of unrelated conda-local packages with machine-specific `file://` paths that
 could not install anywhere else.
 
-**The reproducibility gate fails on a dirty working tree.** `make repro` records the branch,
-commit and dirty-state of the tree that produced the current outputs. An earlier version of this
-checker recorded those fields but never actually gated on them, so a report generated from a dirty
-tree, or describing a stale commit, could still say `PASS`. It now fails the build in both cases.
+**The reproducibility gate fails on a dirty working tree — but not on cosmetic regeneration
+noise.** `make repro` records the branch, commit and dirty-state of the tree that produced the
+current outputs, and fails the build if the tree carries uncommitted changes. Four classes of
+tracked file are, by design, never byte-identical across two runs even when nothing meaningful
+changed — the three `.md` reports and this report itself embed a live generation timestamp, the
+notebook is re-serialised with fresh nbformat cell IDs on every execution, and the figure SVGs
+embed a render timestamp and randomly-salted clip-path IDs — so gating on them would fail every
+single fresh `make all` run, including one that reproduces the committed numbers exactly. Those
+are excluded from the dirty check and listed separately in the report as "regenerated but
+ignored"; everything else (code, CSV/parquet data outputs, README) is still gated at full
+strictness.
 
 ---
 
@@ -750,3 +772,29 @@ audit branch:
     does control those gives a different, sign-reversed figure (−0.093) for a different reason
     (over-controlling for a mediator of the dose effect). The two are now presented as separate,
     non-comparable specifications. See [§7, B10.2](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+
+**A third corrections pass** fixed five further issues found by a second round of external
+review, after the second pass above had already been merged:
+
+16. **`make all` failed on its own freshly-committed output.** The dirty-tree gate (correction 10)
+    was gated on tracked files that embed a live timestamp or randomly-regenerated IDs on every
+    build (reports, the notebook, figure SVGs), so a truly clean, fresh run always looked dirty.
+    Those file classes are now excluded from the gate and listed separately, transparently, as
+    "regenerated but ignored." See [Appendix B](#appendix-b-reproducing-this-analysis).
+17. **The 4.3x exposure figure was labelled "attendance" alone.** It decomposes into 1.7x higher
+    attendance probability and 2.6x more interactions per day actually attended; both components
+    matter, and the text now says so instead of naming only one of them. See [§7, B10.1](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+18. **The no-feed pair's "0/15 meals, perfect compliance" claim was inconsistent with the
+    attribution pipeline**, which separately assigns 115 stomach points of Phase-1 energy to their
+    interactions via a different matching rule (nearest active interaction by timestamp, not the
+    interaction's own recorded meal count). Both figures are now reported together, and
+    "compliance" is no longer asserted as settled. See [§7, B10.1](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+19. **A 2.7x figure (the spread among controlled dose specifications only) was substituted for the
+    4.1x OLD-vs-PRIMARY spread** in two places in the generated report text, despite the two ratios
+    being computed from different, non-overlapping sets of models. They are now named and kept
+    separate everywhere they are quoted. See [§7, B10.2](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+20. **A non-converged B3 sensitivity model's p-value entered the confirmatory BH family.** The
+    person-clustered phase-only variant failed to converge but still returned a finite p-value,
+    which the registration loop did not check for convergence before correcting. It is now
+    registered as exploratory, excluded from BH correction, and still reported for transparency.
+    See [§5, B3](#5-rq1-does-a-deficit-change-behaviour).
