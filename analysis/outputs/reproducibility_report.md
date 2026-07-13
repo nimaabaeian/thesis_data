@@ -1,12 +1,12 @@
 # Reproducibility report
 
-_Generated 2026-07-13T13:25:17+00:00_
+_Generated 2026-07-13T14:14:47+00:00_
 
-## Build status: **FAIL**
+## Build status: **PASS**
 
-This build did not meet the acceptance gates:
-
-- the working tree has MEANINGFUL uncommitted changes — this report cannot certify that a specific commit produced these outputs; commit or stash before running `make repro`. Changed: README.md, analysis/build_notebook.py, analysis/outputs/b3_adjusted_models.csv, analysis/outputs/bh_corrected_pvalues.csv, analysis/outputs/multiplicity_table.csv, analysis/outputs/success_criteria.csv, analysis/repro_report.py, analysis/tests/test_analysis.py, analysis/outputs/b10_feeder_attribution_sensitivity.csv, analysis/tests/test_reporting.py
+Every acceptance gate passed. The numbers in `results_summary.md` and `README.md`
+were produced by this build, from the inputs hashed below, using the constants
+verified against the pinned controller commits.
 
 ## What can and cannot be reproduced
 
@@ -23,38 +23,8 @@ role and attendance maps. Both are git-ignored.
 ## Git
 
 - branch: `master`
-- commit: `c319f909e7f2688ca89043e558cf017f794a92d6`
-- working tree dirty (meaningfully): `yes`
-
-**Meaningful uncommitted changes (this fails the gate):**
-
-- `README.md`
-- `analysis/build_notebook.py`
-- `analysis/outputs/b3_adjusted_models.csv`
-- `analysis/outputs/bh_corrected_pvalues.csv`
-- `analysis/outputs/multiplicity_table.csv`
-- `analysis/outputs/success_criteria.csv`
-- `analysis/repro_report.py`
-- `analysis/tests/test_analysis.py`
-- `analysis/outputs/b10_feeder_attribution_sensitivity.csv`
-- `analysis/tests/test_reporting.py`
-
-**Regenerated-but-ignored changes** (these files are rewritten by every build and embed a live timestamp, random SVG clip-path IDs, or fresh notebook cell IDs, so they never diff cleanly against a prior commit even when nothing meaningful changed — excluded from the dirty-tree gate by design, not hidden):
-
-- `analysis/figures/fig02_drive_timeline.svg`
-- `analysis/figures/fig04_deficit_action.svg`
-- `analysis/figures/fig05_prioritisation_heatmap.svg`
-- `analysis/figures/fig08_remote_loop.png`
-- `analysis/figures/fig08_remote_loop.svg`
-- `analysis/figures/fig09_steady_state.svg`
-- `analysis/figures/fig10_affinity_trajectories.svg`
-- `analysis/figures/fig12_role_validation.svg`
-- `analysis/figures/fig13_affinity_dose.svg`
-- `analysis/orexigenic_analysis.ipynb`
-- `analysis/outputs/quality_report.md`
-- `analysis/outputs/reproducibility_report.md`
-- `analysis/outputs/results_summary.md`
-- `analysis/outputs/verification_report.md`
+- commit: `daa39998b733c8dc0034ce7033d088a66afffcee`
+- working tree dirty (meaningfully): `no`
 
 ## Environment
 
