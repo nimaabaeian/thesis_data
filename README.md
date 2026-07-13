@@ -76,26 +76,40 @@ Hungry 29 → Starving 43 stomach points, **+10.9 per deficit step** (run-cluste
 +14.0]), surviving exclusion of the two obligated feeders (+7.1/step, [+2.0, +12.2]).
 
 **RQ2's recovery loop is real but weaker than previously reported.** The remote channel works and
-is weak: with reply-centric matching and "thanks, I'm full" notifications excluded, a hunger ping
-draws a reply within 1 hour **+0.22** more often than a matched control (subscriber-cluster
-bootstrap [+0.12, +0.31]). The robot starved more than the previous report showed — **17** Starving
-episodes, not 8, of which **13/17** recovered to Full by feeding (exact [0.50, 0.93]), not 100%.
-The longest ran **30 minutes** down to level 10.5 in a run with 15 logged interactions: people were
-present, and the robot was not fed. **The reliability claim is withdrawn**: the robot spent 1.67%
-of observed seconds in Starving (assumption-free, run-cluster bootstrap [0.38%, 4.04%]), but the
-modelled "1.0% [0.2, 3.1]" figure does not stand — Starving occupancy differs ~9x between Phase 1
-and Phase 2, so a time-homogeneous chain fitted across both describes neither.
+is weak: with reply-centric matching and "thanks, I'm full" notifications excluded, and using the
+15-minute window — the only one where every ping actually got a matched control (100% coverage) —
+a hunger ping draws a reply **+0.10** more often than a matched control (subscriber-cluster
+bootstrap [+0.06, +0.14]). Wider windows show a larger gap (+0.17 at 30 min, +0.22 at 60 min) but
+match progressively fewer pings to a control (74%, then 39%), so those are reported as
+sensitivity checks, not the headline. The robot starved more than the previous report showed —
+**17** Starving episodes, not 8, of which **13/17** recovered to Full by feeding (exact [0.50,
+0.93]), not 100%. The longest ran **30 minutes** down to level 10.5 in a run with 15 logged
+interactions: people were present, and the robot was not fed. **The reliability claim is
+withdrawn**: the robot spent 1.67% of observed seconds in Starving (assumption-free, run-cluster
+bootstrap [0.38%, 4.04%]), but the modelled "1.0% [0.2, 3.1]" figure does not stand — Starving
+occupancy differs ~9x between Phase 1 and Phase 2, so a time-homogeneous chain fitted across both
+describes neither.
 
 **RQ3's central mechanism claim was the source code restated, and the human finding decomposes
 into attendance.** Affinity's four programmed inputs (`credit`, `active_energy_cost`, `fed`,
-`affinity_before`) explain **R² = 0.45** of every update. Controlling for them and using the fully
-observed dose, the engagement slope is **+0.041**, against **+0.168** uncontrolled — same sign,
-**4.1x apart**, so the two specifications do **not** agree. What RQ3 does establish is about the
-humans: on the complete scheduled-day panel (96 scheduled person-days, 33 no-shows kept as genuine
-zeros), obligated feeders delivered **4.3x the energy** per scheduled day (bootstrap [1.6, 20.0]),
-but **per interaction they fed only 1.1x as often** ([0.0, 2.8]). The gap is **attendance** — they
-came 4.3x more often. Being told to feed the robot made people *visit* it, not feed more
-generously once there.
+`affinity_before`) explain **R² = 0.45** of every update. Controlling for `credit` and
+`active_energy_cost` directly — the strictest test, since `active_energy_cost` is a literal term
+in `credit` — leaves a sign-reversed, near-zero residual dose effect (**−0.093**/SD); this is not
+read as a magnitude, because `active_energy_cost` is mechanically *caused by* engagement dose, so
+conditioning on it strips out the pathway being measured, not just the circularity. The
+`n_turns`-dose specification that instead controls `fed` and `affinity_before` (but deliberately
+not `active_energy_cost`, for that reason) gives **+0.041**, against **+0.168** with no controls at
+all — same sign, **4.1x apart**, so the two do **not** agree, and neither of them is "the fully
+rule-controlled" figure. What RQ3 does establish is about the humans: on the complete
+scheduled-day panel (96 scheduled person-days — reconciled against the robot's own interaction
+logs first, which reclassified 10 sheet-marked absences as attended — leaving 23 genuine no-show
+zeros), **4.3x the energy arrived during interactions attributed to** obligated-feeder participants
+per scheduled day (bootstrap [1.6, 20.0]), but **per interaction they were credited with feeding
+only 1.1x as often** ([0.0, 2.8]). "Attributed to" is deliberate: feeds are assigned to whichever
+interaction was active when the energy arrived, not to an independently verified feeder identity
+(`feeder_face_id` names only 8 of 14 recipients). The gap is **attendance** — they came 4.3x more
+often. Being told to feed the robot made people *visit* it more; it does not show they were more
+generous once there.
 
 The main limitation is scope: this is one robot, one site, 8 session-days, 12 monitored runs, and
 14 named people. The results are within-deployment evidence for this human-robot regulatory loop,
@@ -209,7 +223,7 @@ and run-cluster bootstraps wherever both are meaningful.
 |---|---|---|---|
 | Does deficit increase feeding received? | Meal arrived, yes/no per interaction | Logistic GEE clustered by person, run-cluster and person-cluster bootstrap | Estimates how much the odds of a meal arriving change in deficit states while accounting for repeated observations. |
 | Does Starving suppress social completion? | Yes/no per interaction | Firth penalised logistic regression | With 1 success in 13 Starving interactions, ordinary logistic regression diverges under quasi-separation; Firth's estimate is a bound, not a precise magnitude. |
-| Did obligated feeders deliver more energy? | Summed meal energy per scheduled person-day | GEE clustered by person, complete scheduled-day panel with no-shows kept as zeros | Estimates an energy-rate ratio between role groups, with a label-permutation sensitivity in place of randomisation inference. |
+| Did more energy arrive during obligated-feeder participants' interactions? | Summed attributed meal energy per scheduled person-day, reconciled against logged interactions | GEE clustered by person, complete scheduled-day panel with no-shows kept as zeros | Estimates an energy-rate ratio between role groups. This is NOT randomisation inference — roles were assigned by availability — so a label-permutation sensitivity is reported instead. |
 | Does dose change affinity beyond its own update rule? | Continuous affinity update | OLS / mixed model controlling for `credit`, `active_energy_cost`, `fed`, `affinity_before` | Tests whether engagement dose adds anything once the programmed update equation is held fixed — the dose specification that omits these controls double-counts a component of the outcome's own definition. |
 | Does prior affinity predict next-day approach, decomposed? | Detection / eligibility / proactive approach, three stages | Logistic and Poisson GEE, one model per stage | Separates "does affinity predict who comes back" from "is the eligibility gate crossed" (which **is** the coded threshold, not a finding) from "does approach follow given eligibility". |
 | How much Starving time occurred? | Seconds in Starving | Empirical run-cluster bootstrap of observed occupancy | Assumption-free; reported instead of a modelled stationary fraction, because the deployment is not a time-homogeneous process. |
@@ -249,8 +263,11 @@ this the report's strongest and best-identified result.
 | Feed-seeking speech acts | 1 | 20 | State-gated in source. |
 | Proactive Telegram pings | 0 | 172 | State-gated in source. |
 
-The inferential anchor is `fed01 ~ deficit`, a person-clustered logistic GEE (see
-[Corrections](#corrections) for the earlier formula error). Deficit increases the odds of feeding
+The inferential anchor is `feeding_received ~ deficit`, a person-clustered logistic GEE (see
+[Corrections](#corrections) for the earlier formula and variable-naming errors — an older version
+of this section named the outcome `fed01`, described as "feeding pursuit"; it is the same
+underlying quantity, renamed for clarity as a dyad outcome rather than a robot action). Deficit
+increases the odds of feeding
 received by **OR 5.3** (person-cluster bootstrap **[2.8, 9.0]**; run-cluster [2.6, 7.1]; asymptotic
 GEE CI [2.9, 9.7], p = 5.8e-08; leave-one-person-out 4.4–6.5). It **survives** the prespecified
 adjustment for social state, trigger mode, phase, day and prior interaction count under both
@@ -305,16 +322,21 @@ The remote channel is real but weak. With **reply-centric one-to-one matching** 
 the *nearest* preceding ping), `hs3_recovery` ("thanks, I'm full") notifications excluded, and
 controls matched on **subscriber, run and time-of-day**:
 
-| Window | after a ping | matched control | paired difference | subscriber-cluster | run-cluster |
-|---:|---:|---:|---:|---|---|
-| 15 min | 0.12 | 0.02 | **+0.10** | [+0.06, +0.14] | [+0.06, +0.14] |
-| 30 min | 0.17 | 0.03 | **+0.17** | [+0.09, +0.26] | [+0.10, +0.26] |
-| 60 min | 0.21 | 0.04 | **+0.22** | [+0.12, +0.31] | [+0.14, +0.38] |
+| Window | match coverage | after a ping (matched subset) | matched control | paired difference | subscriber-cluster | run-cluster |
+|---:|---:|---:|---:|---:|---|---|
+| **15 min (primary)** | **172/172 (100%)** | 0.12 | 0.02 | **+0.10** | [+0.06, +0.14] | [+0.06, +0.14] |
+| 30 min | 128/172 (74%) | 0.20 | 0.03 | +0.17 | [+0.09, +0.26] | [+0.10, +0.26] |
+| 60 min | 67/172 (39%) | 0.27 | 0.04 | +0.22 | [+0.12, +0.31] | [+0.14, +0.38] |
 
-Stable across five independent control draws. 1 of 12 subscribers never replied to any hunger
-ping.
+The 15-minute window is primary because it is the only one where **every** eligible ping actually
+received a matched control window; the paired difference is computed on the matched subset only,
+so a window where that subset covers under 40% of pings is a weaker basis for a headline number,
+even though its raw difference looks larger. 30- and 60-minute figures are reported as
+declining-coverage sensitivity checks, not the primary estimate. Stable across five independent
+control draws at each window. 1 of 12 subscribers never replied to any hunger ping.
 
-**Evidence class: `Within-deployment association`.**
+**Evidence class: `Within-deployment association`**, anchored to the 15-minute, fully-covered
+window.
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
@@ -404,13 +426,24 @@ verification that the code does what the code says, not a discovered fact about 
 
 Roles were assigned **by availability**, not randomised, so nothing here is randomisation
 inference and no population role effect is estimated. On the **complete scheduled-day panel** (96
-scheduled person-days, of which 33 were no-shows kept as genuine zeros):
+scheduled person-days) the sign-in sheet marks 33 as absent — but the sheet is a hand-transcribed
+record, not ground truth, and 10 of those days had a real logged interaction anyway. Those 10 are
+reconciled to attended (log evidence overrides an absence mark; the raw sheet values are kept in
+[`b10_scheduled_day_panel_reconciliation.csv`](analysis/outputs/b10_scheduled_day_panel_reconciliation.csv)),
+leaving **23 genuine no-show zeros**:
 
 | Quantity | Feeder vs unconstrained |
 |---|---:|
-| **Delivered energy** per scheduled day (bootstrap [1.6, 20.0]) | **4.3x** |
+| **Attributed energy** per scheduled day (bootstrap [1.6, 20.0]) | **4.3x** |
 | Meals per interaction (bootstrap [0.0, 2.8]) | 1.1x |
 | **Interactions per scheduled day** (attendance) | **4.3x** |
+
+"Attributed" is deliberate: `feeder_face_id` — the field that would directly name who physically
+handed over food — is populated for only 20 of 108 feeding events and names 8 of the 14 people who
+received meals. Energy is instead assigned to whichever interaction was active when the feed
+occurred, which identifies who the robot was interacting with, not necessarily who delivered the
+food. Read every number in this section as *energy that arrived during an interaction attributed
+to that person*, not as an independently verified act of feeding.
 
 The gap is **attendance**: obligated feeders came 4.3x more often, but were not markedly more
 generous once there. A count of meals is not an energy — meals are SMALL 10 / MEDIUM 25 / LARGE
@@ -421,30 +454,46 @@ sensitivity over the exact enumeration of all 45 possible assignments gives p = 
 p = 0.400 (per-encounter) against a hard design floor of 0.022 — a descriptive measure of how much
 of the contrast rides on two individuals, **not** a randomisation test. The no-feed pair supplied
 **0/15 meals in Phase 1** (exact upper bound 0.22): perfect compliance, but too few observations to
-generalise.
+generalise. The 4.3x attendance gap holds after reconciliation — it was not an artefact of
+uncorrected no-shows.
 
 **Evidence class: `Exploratory observation`.**
 
-#### B10.2: Dose vs affinity, correctly specified
+#### B10.2: Dose vs affinity — two different comparisons, not to be conflated
 
 The earlier model regressed Δaffinity on engagement dose using duration, with only a loose set of
-controls — and reported the uncontrolled slope, **+0.168**, as the headline. But
-`active_energy_cost` — used as an "independent dose agreement check" — is a **literal additive
-term in `credit`**, which is a literal additive term in the outcome. Controlling for the full
-programmed update rule (`fed`, `affinity_before`, and the update equation's own components) and
-using the fully observed dose (`n_turns`), the engagement slope is **+0.041** [+0.016, +0.066]
-(person-cluster bootstrap [+0.009, +0.155]) — same sign as +0.168, but **4.1x smaller**:
+controls, and reported the uncontrolled slope, **+0.168**, as the headline. Two separate,
+non-comparable corrections follow.
+
+**(1) Controlling for the full update rule** — `credit` and `active_energy_cost` in the model
+directly, the strictest possible test, since `active_energy_cost` is a literal additive term in
+`credit` — leaves a **residual dose effect of −0.093**/SD (p = 0.040), sign-reversed from every
+other estimate here. This is *not* read as a magnitude: `active_energy_cost` is mechanically
+*caused by* engagement (more turns/duration → more active cost), so it is a **mediator** of the
+dose effect, not a confounder of it, and conditioning on a mediator strips out the very pathway
+being measured. The small, reversed residual is the expected symptom of that over-control, not
+evidence against the effect existing.
+
+**(2) Separately**, across specifications that control `fed` and `affinity_before` but
+*deliberately do not* also control `credit`/`active_energy_cost` (per the mediator argument
+above), the fully observed dose (`n_turns`) gives **+0.041** [+0.016, +0.066] (person-cluster
+bootstrap [+0.009, +0.155]):
 
 | Specification | Slope |
 |---|---:|
 | **OLD**: duration, no controls | **+0.168** |
 | Duration, complete case, controlled | +0.100 |
 | Duration, IPW-weighted, controlled | +0.109 |
-| **PRIMARY**: `n_turns` (fully observed), controlled | **+0.041** |
+| **PRIMARY**: `n_turns` (fully observed), controlled for `fed`/`affinity_before` only | **+0.041** |
 
-Sign agreement was never the test the previous report implied it was. Duration is 52% missing and
-not missing at random (it varies by role and phase); the IPW fit has an effective sample size of
-82/96 (85%) with a positivity violation, which is why the fully observed `n_turns` specification is
+**+0.041 and +0.168 agree in sign but differ 4.1x — this is the comparison the previous report's
+"all three doses agree in sign" claim was actually about.** Neither of them controls
+`active_energy_cost`, so neither is "the full-update-rule-controlled" figure from (1); that
+distinction was blurred in an earlier draft of this section. The two comparisons in this
+subsection use different controls to answer different questions and their signs are not compared
+to each other. Duration is 52% missing and not missing at random (it varies by role and phase);
+the IPW fit has an effective sample size of 82/96 (85%) with a positivity violation, which is why
+the fully observed `n_turns` specification is
 primary.
 
 **Evidence class: `Implementation verification`**, with an exploratory residual-dose association on
@@ -474,8 +523,8 @@ dashed vertical marks the phase boundary.*
 ![Role validation](analysis/figures/fig12_role_validation.png)
 
 *Fig 12 — units: interaction and scheduled person-day; 217 interactions, 14 named people, 96
-scheduled person-days including 33 no-show zeros. Left: feed probability per interaction. Right:
-delivered energy per scheduled day.*
+scheduled person-days including 23 no-show zeros (reconciled against logged interactions). Left:
+feed probability per interaction. Right: attributed energy per scheduled day.*
 
 ![Affinity dose model](analysis/figures/fig13_affinity_dose.png)
 
@@ -623,6 +672,18 @@ a third party can still verify that the build is deterministic, that the constan
 source, and — if they hold the data — that their copy hashes to
 [`data_manifest.json`](analysis/data_manifest.json).
 
+**The environment lock is portable, not a snapshot of the development machine.**
+[`requirements.lock`](analysis/requirements.lock) is the transitive closure of the 11 packages in
+`requirements.txt`, resolved into an isolated target directory that does not consult the host's
+existing packages — not a `pip freeze` of a shared machine's full environment, which previously
+pulled in hundreds of unrelated conda-local packages with machine-specific `file://` paths that
+could not install anywhere else.
+
+**The reproducibility gate fails on a dirty working tree.** `make repro` records the branch,
+commit and dirty-state of the tree that produced the current outputs. An earlier version of this
+checker recorded those fields but never actually gated on them, so a report generated from a dirty
+tree, or describing a stale commit, could still say `PASS`. It now fails the build in both cases.
+
 ---
 
 ### Corrections
@@ -654,10 +715,38 @@ Parts I–III above:
 
 **B3 model formula (earlier correction, carried forward).** An earlier version of this README
 stated the B3 inferential anchor as `fed_here ~ deficit + C(initial_state)`. The code
-(`analysis/build_notebook.py`) actually fits `fed01 ~ deficit` — a person-clustered logistic GEE
-with no `initial_state` covariate. `fed01` is a binary feeding-pursuit indicator local to the B3
-co-present-interaction table; `fed_here` is a separate variable (`meals_eaten_count > 0`) used
-later, in B5. The two were conflated in the write-up. The `C(initial_state)` covariate does appear
-in the notebook, but as part of the B4 model (`reached_ss4 ~ starving + C(initial_state)`), not B3.
-The reported effect size, CI, and p-value for B3 were unaffected by this naming error; only the
-formula text and variable name were stale.
+(`analysis/build_notebook.py`) actually fits `feeding_received ~ deficit` — a person-clustered
+logistic GEE with no `initial_state` covariate. The outcome was later renamed from `fed01` to
+`feeding_received` for clarity (it is a dyad outcome — a meal arrived — not a robot action);
+`fed_here` is a separate variable (`meals_eaten_count > 0`) used later, in B5. The two were
+conflated in the write-up. The `C(initial_state)` covariate does appear in the notebook, but as
+part of the B4 model (`reached_ss4 ~ starving + C(initial_state)`), not B3. The reported effect
+size, CI, and p-value for B3 were unaffected by this naming error; only the formula text and
+variable name were stale.
+
+**A second corrections pass** fixed six further issues found by external review of the merged
+audit branch:
+
+10. **The reproducibility gate never actually checked the fields it recorded.** `make repro`
+    printed branch/commit/dirty-state but did not fail on them, so a report generated from a dirty
+    tree could still say `PASS`. It now fails in that case. See [Appendix B](#appendix-b-reproducing-this-analysis).
+11. **`requirements.lock` was a full-machine `pip freeze`**, including hundreds of unrelated
+    conda-local packages with non-portable `file://` paths, and `requirements.txt` pinned a pytest
+    version that did not match what was actually running. Replaced with a lock resolved in
+    isolation from the 11 declared packages only. See [Appendix B](#appendix-b-reproducing-this-analysis).
+12. **The remote-loop headline used a 60-minute window where only 39% of pings had a matched
+    control**, while quoting a reply rate computed over all pings — two different denominators
+    presented as one comparison. The primary window is now 15 minutes (100% match coverage); 30-
+    and 60-minute figures are reported as declining-coverage sensitivity only. See [§6, B5](#6-rq2-does-deficit-expression-close-the-recovery-loop).
+13. **The attendance panel asserted all 33 sheet-marked absences were genuine zeros without
+    checking them against the robot's own logs**; 10 of them had a real logged interaction. Those
+    are now reconciled to attended, leaving 23 genuine no-shows. The 4.3x attendance gap held after
+    reconciliation. See [§7, B10.1](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+14. **"Delivered energy" implied a verified feeder identity** that the data cannot support
+    (`feeder_face_id` names only 8 of 14 recipients). Reworded throughout to "energy attributed to
+    the interaction active when the feed occurred." See [§7, B10.1](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).
+15. **The +0.041 dose slope was described as "controlling for the full update rule"** when it
+    controls only `fed` and `affinity_before`, not `credit`/`active_energy_cost`; the model that
+    does control those gives a different, sign-reversed figure (−0.093) for a different reason
+    (over-controlling for a mediator of the dose effect). The two are now presented as separate,
+    non-comparable specifications. See [§7, B10.2](#7-rq3-does-adaptive-regulatory-memory-encode-behaviour).

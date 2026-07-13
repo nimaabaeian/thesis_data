@@ -146,6 +146,11 @@ def failures(st: dict) -> list[str]:
         f.append("the inputs on disk do not match data_manifest.json")
     if not st["lock_present"]:
         f.append("analysis/requirements.lock is missing")
+    if st["git"]["dirty"]:
+        f.append("the working tree is dirty — this report cannot certify that a specific "
+                 "commit produced these outputs; commit or stash before running `make repro`")
+    if st["git"]["commit"] == "(unavailable)":
+        f.append("could not determine the git commit — not run inside a git checkout")
     if st["missing_outputs"]:
         f.append(f"missing required outputs: {', '.join(st['missing_outputs'])}")
     if st["missing_figures"]:

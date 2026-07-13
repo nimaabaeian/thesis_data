@@ -2155,10 +2155,18 @@ for w in WINDOWS:
             pair_frames.append(pair)
             _pair0 = pair
     ps = pd.DataFrame(per_seed)
+    # ALL-PINGS rate (denominator = every eligible ping, matched or not) and the MATCHED-SUBSET
+    # rate (denominator = only pings that got a control window) are two different populations.
+    # The paired difference below is computed on the matched subset only, so it must be compared
+    # against the matched-subset ping rate, not the all-pings rate — reporting the all-pings rate
+    # next to a matched-subset paired difference implies a subtraction that never happened.
     k, n = int(_p["replied"].sum()), len(_p)
     e, lo, hi = exact_prop_ci(k, n)
     kc = int(_pair0["control_replied"].sum()); nc = len(_pair0)
     ec, clo, chi = exact_prop_ci(kc, nc)
+    km = int(_pair0["replied"].sum())
+    em, mlo, mhi = exact_prop_ci(km, nc)
+    coverage = nc / n if n else float("nan")
     bs = cluster_bootstrap(_pair0, "chat_id",
                            lambda _s: float((_s["replied"] - _s["control_replied"]).mean()),
                            label=f"  {int(w/60)}min paired diff (subscriber-cluster)", verbose=False)
@@ -2167,6 +2175,8 @@ for w in WINDOWS:
                            label=f"  {int(w/60)}min paired diff (run-cluster)", verbose=False)
     rows.append(dict(window_min=int(w/60), n_pings=n, ping_k=k, ping_rate=e,
                      ping_lo=lo, ping_hi=hi,
+                     n_matched=nc, match_coverage=coverage,
+                     matched_ping_rate=em, matched_ping_lo=mlo, matched_ping_hi=mhi,
                      control_rate=ec, control_lo=clo, control_hi=chi,
                      paired_diff=float((_pair0["replied"] - _pair0["control_replied"]).mean()),
                      sub_boot_lo=bs["lo"], sub_boot_hi=bs["hi"],
@@ -2176,6 +2186,13 @@ for w in WINDOWS:
                      n_seeds=len(ps)))
 win_df = pd.DataFrame(rows)
 print(win_df.round(3).to_string(index=False))
+print("\nMatch coverage (n_matched / n_pings) by window — the paired difference is drawn from")
+print("the matched subset only, and its reliability depends on how much of the ping population")
+print("that subset actually covers:")
+for _, r_ in win_df.iterrows():
+    print(f"    {int(r_['window_min']):2d} min: {int(r_['n_matched']):3d}/{int(r_['n_pings']):3d} "
+          f"matched ({r_['match_coverage']*100:.0f}%); matched-subset ping rate "
+          f"{r_['matched_ping_rate']:.2f} vs all-pings rate {r_['ping_rate']:.2f}")
 win_df.to_csv(OUT_DIR/"b5_ping_response_windows.csv", index=False)
 pd.concat(pair_frames, ignore_index=True).to_csv(OUT_DIR/"b5_ping_control_pairs.csv", index=False)
 print(f"\n  Matched ping-control pairs exported to b5_ping_control_pairs.csv.")
@@ -2193,12 +2210,20 @@ for pt in PING_TYPES:
     e, lo, hi = exact_prop_ci(k, n)
     print(f"    {pt:15s} {k:3d}/{n:3d} = {e:.2f} [{lo:.2f}, {hi:.2f}]")
 
+# PRIMARY window is 15 min, not 60 min: match coverage is 100% there (every ping got a control),
+# vs 74% at 30 min and only 39% at 60 min. The 60-min window is where the matched subset is
+# smallest and least representative of the full ping population, which is exactly where a
+# headline number is least trustworthy. 30/60 min are reported as coverage-declining sensitivity
+# checks, not as the primary estimate.
+_w15 = win_df[win_df.window_min == 15].iloc[0]
+_w30 = win_df[win_df.window_min == 30].iloc[0]
 _w60 = win_df[win_df.window_min == 60].iloc[0]
-_diff = float(_w60["paired_diff"])
-_sub_lo, _sub_hi = float(_w60["sub_boot_lo"]), float(_w60["sub_boot_hi"])
-_run_lo, _run_hi = float(_w60["run_boot_lo"]), float(_w60["run_boot_hi"])
+_diff = float(_w15["paired_diff"])
+_sub_lo, _sub_hi = float(_w15["sub_boot_lo"]), float(_w15["sub_boot_hi"])
+_run_lo, _run_hi = float(_w15["run_boot_lo"]), float(_w15["run_boot_hi"])
 
-# The verdict rests on the PAIRED difference clearing zero under BOTH clustering schemes.
+# The verdict rests on the PRIMARY (15-min, fully-covered) paired difference clearing zero under
+# BOTH clustering schemes.
 _meaningful = bool(np.isfinite(_sub_lo) and _sub_lo > 0 and np.isfinite(_run_lo) and _run_lo > 0)
 
 _by_sub = pm.groupby("chat_id").agg(pings=("replied", "size"), replies=("replied", "sum"))
@@ -2206,10 +2231,10 @@ _by_sub["rate"] = (_by_sub["replies"] / _by_sub["pings"]).round(2)
 _by_sub.to_csv(OUT_DIR/"b5_ping_by_subscriber.csv")
 print(f"\n{(_by_sub['replies']==0).sum()}/{len(_by_sub)} subscribers never replied to a hunger ping.")
 
-globals()["_b5_ping"] = dict(rate=float(_w60["ping_rate"]), ctrl=float(_w60["control_rate"]),
+globals()["_b5_ping"] = dict(rate=float(_w15["ping_rate"]), ctrl=float(_w15["control_rate"]),
                              diff=_diff, boot=[_sub_lo, np.nan, _sub_hi],
                              run_boot=[_run_lo, np.nan, _run_hi],
-                             n_pings=int(_w60["n_pings"]), n_subs=int(pm["chat_id"].nunique()),
+                             n_pings=int(_w15["n_pings"]), n_subs=int(pm["chat_id"].nunique()),
                              meaningful=_meaningful)
 globals()["_b5_pm"] = pm
 globals()["_b5_win"] = win_df
@@ -2241,14 +2266,24 @@ verdict("B5", _ev5,
         f"{_meal['slope']:+.1f} stomach points per deficit step (run-cluster bootstrap "
         f"[{_meal['boot'][0]:+.1f}, {_meal['boot'][2]:+.1f}]){_excl_txt}. "
         f"REMOTE LOOP, with reply-centric one-to-one matching and hs3_recovery notifications "
-        f"excluded: {int(_w60['ping_k'])}/{int(_w60['n_pings'])} hunger pings drew a reply within "
-        f"1 h ({_w60['ping_rate']:.2f}, exact [{_w60['ping_lo']:.2f}, {_w60['ping_hi']:.2f}]) against "
-        f"{_w60['control_rate']:.2f} [{_w60['control_lo']:.2f}, {_w60['control_hi']:.2f}] in controls "
+        f"excluded, PRIMARY window 15 min (100% match coverage — every ping had a control): "
+        f"{int(_w15['ping_k'])}/{int(_w15['n_pings'])} hunger pings drew a reply "
+        f"({_w15['ping_rate']:.2f}, exact [{_w15['ping_lo']:.2f}, {_w15['ping_hi']:.2f}]) against "
+        f"{_w15['control_rate']:.2f} [{_w15['control_lo']:.2f}, {_w15['control_hi']:.2f}] in controls "
         f"matched on subscriber, run and time-of-day — a PAIRED difference of {_diff:+.2f} "
         f"(subscriber-cluster bootstrap [{_sub_lo:+.2f}, {_sub_hi:+.2f}]; run-cluster "
         f"[{_run_lo:+.2f}, {_run_hi:+.2f}]), stable across {len(CTRL_SEEDS)} independent control "
-        f"draws. {(_by_sub['replies']==0).sum()}/{len(_by_sub)} subscribers never replied to any "
-        f"hunger ping. The remote channel is a real but WEAK recovery pathway"
+        f"draws. WIDER WINDOWS have declining match coverage and are reported as sensitivity only, "
+        f"not as the primary estimate: 30 min matches {int(_w30['n_matched'])}/{int(_w30['n_pings'])} "
+        f"pings ({_w30['match_coverage']*100:.0f}%), paired diff {_w30['paired_diff']:+.2f} "
+        f"(subscriber-cluster [{_w30['sub_boot_lo']:+.2f}, {_w30['sub_boot_hi']:+.2f}]); 60 min "
+        f"matches only {int(_w60['n_matched'])}/{int(_w60['n_pings'])} pings "
+        f"({_w60['match_coverage']*100:.0f}%), paired diff {_w60['paired_diff']:+.2f} (subscriber-"
+        f"cluster [{_w60['sub_boot_lo']:+.2f}, {_w60['sub_boot_hi']:+.2f}]) — at that coverage the "
+        f"matched subset is well under half the ping population, so this figure should not be "
+        f"quoted as a headline on its own. {(_by_sub['replies']==0).sum()}/{len(_by_sub)} "
+        f"subscribers never replied to any hunger ping. The remote channel is a real but WEAK "
+        f"recovery pathway"
         + ("." if _meaningful else
            "; the ping-control difference does not clear zero under both clustering schemes, so it "
            "is reported as exploratory."),
@@ -3071,12 +3106,30 @@ recorded in `analysis/private/presence_panel.json` and it governs what can be sa
 - Enumeration is **exact**, not 5,000 random draws. Approximating a 66-point discrete
   distribution by sampling adds Monte-Carlo error for nothing.
 
-**The exposure denominator is now the complete scheduled-day panel.** Participants were scheduled
-for specific session days, and on 33 of 96 scheduled person-days a participant **did not turn up**.
-Those are genuine zeros — zero interactions, zero meals — and they belong in the denominator. The
-previous analysis built its panel from *completed interactions*, so a person who was expected and
-never came simply vanished, which inflates every per-day rate for exactly the people who attended
-least reliably.
+**The exposure denominator is the complete scheduled-day panel, reconciled against the robot's own
+logs.** Participants were scheduled for specific session days. The sign-in sheet marks 33 of 96
+scheduled person-days as **not attended** — but it is a hand-transcribed record, not ground truth,
+and some of those days have a logged interaction anyway. Wherever the logs show a real interaction
+on a sheet-marked-absent day, the log wins: that day is reclassified as attended, and the count of
+overrides is reported (see `b10_scheduled_day_panel_reconciliation.csv` for the pre-override sheet
+values against the post-override panel). Only the days that remain zero-interaction *after*
+reconciliation are treated as genuine zeros — zero interactions, zero meals — and kept in the
+denominator. The previous analysis built its panel from *completed interactions* with no
+sign-in sheet at all, so a person who was expected and never came simply vanished, which inflated
+every per-day rate for exactly the people who attended least reliably; asserting the sheet's raw
+absences were all genuine zeros without checking them against the logs would have reintroduced a
+version of the same error in the other direction.
+
+**Delivered energy is attributed to the interaction active at the time a feed occurred, not to a
+verified feeder identity.** `feeder_face_id` — the field that would directly name who physically
+handed over food — is populated for only 20 of 108 feeding events and names 8 of the 14 people who
+received meals, so using it drops most of the energy and most of the participants. Instead, each
+feed is assigned to whichever interaction was open on the same run at that timestamp (with a brief
+grace window for feeds landing just after a short interaction ends). This identifies **who the
+robot was interacting with when the energy arrived**, not necessarily who delivered it — in a
+room with more than one person present, those can differ. Read every "delivered energy" and
+"fed X amount" figure below as *energy that arrived during an interaction attributed to that
+person*, not as an independently verified act of feeding by them.
 
 **Meal COUNT and delivered ENERGY are different quantities and are reported separately.** Meals
 come in three sizes (SMALL 10 / MEDIUM 25 / LARGE 45 stomach points), so a count is not an energy.
@@ -3171,10 +3224,25 @@ pdm = (sched.merge(_ix, on=["person_id", "day_rome"], how="left")
 for c_ in ("n_interactions", "meal_count", "delivered_energy"):
     pdm[c_] = pdm[c_].fillna(0.0)
 
+# RECONCILE against the robot's own logs. The presence panel is a sign-in sheet transcribed by
+# the experimenter, not ground truth — and on some scheduled-absent days the robot logged a real
+# interaction with that person anyway (sheet not updated, informal drop-in, etc.). Asserting
+# every attended=0 row is a "genuine zero" is false whenever the logs show otherwise: log
+# evidence of a completed interaction overrides an absence mark, never the reverse (a sheet
+# cannot un-happen a logged interaction, but it CAN miss recording one that happened).
+_sheet_absent_but_logged = (pdm["attended"] == 0) & (pdm["n_interactions"] > 0)
+_n_reconciled = int(_sheet_absent_but_logged.sum())
+pdm["attended_sheet"] = pdm["attended"]           # keep the raw sheet value for transparency
+pdm.loc[_sheet_absent_but_logged, "attended"] = 1
+pdm.to_csv(OUT_DIR/"b10_scheduled_day_panel_reconciliation.csv", index=False)  # pre-drop audit trail
+
 print(f"\n(2) COMPLETE scheduled-day panel: {len(pdm)} scheduled person-days over "
       f"{pdm['person_id'].nunique()} people.")
-print(f"    scheduled but DID NOT ATTEND: {int((pdm['attended']==0).sum())} person-days "
-      f"({(pdm['attended']==0).mean()*100:.0f}%) — genuine zeros, kept in the denominator.")
+print(f"    RECONCILED against logs: {_n_reconciled} day(s) the sheet marked absent had a logged "
+      f"interaction; RECLASSIFIED as attended (see `attended_sheet` for the raw sheet value).")
+print(f"    scheduled but DID NOT ATTEND (post-reconciliation): {int((pdm['attended']==0).sum())} "
+      f"person-days ({(pdm['attended']==0).mean()*100:.0f}%) — genuine zeros, kept in the "
+      f"denominator.")
 print(f"    attended but delivered nothing: "
       f"{int(((pdm['attended']==1) & (pdm['meal_count']==0)).sum())} person-days.")
 print(f"    (The old panel was built from completed interactions, so all "
@@ -3205,11 +3273,13 @@ _rr_perint = _ratio("meals_per_interaction")
 _rr_expo   = _ratio("interactions_per_sched_day")
 print(f"\n    feeder vs unconstrained, Phase 1:")
 print(f"      meals per scheduled day      {_rr_meals:.2f}x")
-print(f"      DELIVERED ENERGY per sched.d {_rr_energy:.2f}x   <- what the drive experienced")
+print(f"      ATTRIBUTED ENERGY per sched.d {_rr_energy:.2f}x  <- what the drive received during their interactions")
 print(f"      meals per interaction        {_rr_perint:.2f}x   <- per-encounter propensity")
 print(f"      interactions per sched. day  {_rr_expo:.2f}x   <- ATTENDANCE")
-print(f"\n    The role acted through ATTENDANCE. Feeders delivered {_rr_energy:.1f}x the energy per")
-print(f"    scheduled day, but per encounter fed only {_rr_perint:.1f}x as often. Exposure is a")
+print(f"\n    The role acted through ATTENDANCE. {_rr_energy:.1f}x the energy arrived during")
+print(f"    interactions attributed to feeder-role participants, per scheduled day, but per")
+print(f"    encounter only {_rr_perint:.1f}x as often (attribution, not a verified feeder identity —")
+print(f"    see the attribution note above). Exposure is a")
 print(f"    MEDIATOR of the role (being told to feed the robot makes you go to the robot), not a")
 print(f"    confounder, so the per-encounter figure is a decomposition, not a corrected estimate.")
 
@@ -3957,15 +4027,18 @@ verdict("B10.1", EV_EXPL,
         f"AVAILABILITY, not randomised, so nothing here is randomisation inference and no "
         f"population role effect is estimated. On the COMPLETE scheduled-day panel "
         f"({_mg['n_sched']} scheduled person-days, of which {_mg['n_noshow']} were no-shows kept as "
-        f"genuine zeros): obligated feeders delivered {_mg['rr_energy']:.1f}x the ENERGY per "
-        f"scheduled day (sum of meal_delta — stomach points, not a meal count; person-cluster "
-        f"bootstrap [{_mg['boot'][0]:.1f}, {_mg['boot'][2]:.1f}]), but PER INTERACTION they fed only "
-        f"{_mg['rr_perint']:.1f}x as often (bootstrap "
-        f"[{_mg['boot_perop'][0]:.1f}, {_mg['boot_perop'][2]:.1f}]). The gap is ATTENDANCE: they "
+        f"genuine zeros, reconciled against the robot's own logs first — see the attribution note): "
+        f"{_mg['rr_energy']:.1f}x the ENERGY arrived during interactions attributed to "
+        f"obligated-feeder participants, per scheduled day (sum of meal_delta — stomach points, not "
+        f"a meal count; person-cluster bootstrap [{_mg['boot'][0]:.1f}, {_mg['boot'][2]:.1f}]), but "
+        f"PER INTERACTION they were credited with feeding only {_mg['rr_perint']:.1f}x as often "
+        f"(bootstrap [{_mg['boot_perop'][0]:.1f}, {_mg['boot_perop'][2]:.1f}]). This is attribution "
+        f"to the interaction active when the feed occurred, NOT a verified feeder identity — "
+        f"`feeder_face_id` names only 8/14 recipients. The gap is ATTENDANCE: they "
         f"showed up {_mg['rr_expo']:.1f}x more per scheduled day. Being told to feed the robot made "
-        f"people GO TO the robot; it did not make them markedly more generous once there. Exposure "
-        f"is a mediator of the role, not a confounder, so the per-encounter figure is a "
-        f"decomposition and the energy figure is what the drive actually experienced. A "
+        f"people GO TO the robot; it does not show they were markedly more generous once there. "
+        f"Exposure is a mediator of the role, not a confounder, so the per-encounter figure is a "
+        f"decomposition and the energy figure is what arrived during their interactions. A "
         f"label-permutation sensitivity over the exact enumeration of all {_mg['n_assignments']} "
         f"possible assignments gives p={_mg['perm_p_energy']:.3f} (energy) and "
         f"p={_mg['perm_p_perint']:.3f} (per-encounter) against a hard design floor of "
@@ -3988,15 +4061,33 @@ verdict("B10", EV_IMPL,
         f"general learning result. Affinity is a DETERMINISTIC EMA of delivered energy: modelling "
         f"its four programmed inputs (credit, active_energy_cost, fed, affinity_before) explains "
         f"R^2={_rule['r2']:.2f} of every update, and what they leave over is clamping and the "
-        f"alpha/alpha_neg branch, not behaviour. On top of the FULL update rule, engagement dose "
-        f"adds {_rule['resid']:+.4f} per SD (p={_rule['resid_p']:.3f}) — EXPLORATORY, because dose "
-        f"and outcome remain mechanically connected (turns drive active_energy_cost, a literal term "
-        f"in `credit`). With only `fed` and `affinity_before` controlled and the fully observed dose, "
-        f"the slope is {_sl['coef']:+.3f} [{_sl['lo']:+.3f}, {_sl['hi']:+.3f}] (person-cluster "
-        f"bootstrap [{_db[0]:+.3f}, {_db[2]:+.3f}]) against the "
+        f"alpha/alpha_neg branch, not behaviour. TWO SEPARATE dose comparisons follow; they answer "
+        f"different questions and their signs are NOT compared to each other. (1) On top of the "
+        f"FULL update rule — i.e. with `credit` and `active_energy_cost` also in the model, which "
+        f"absorbs nearly all deterministic variance by construction — engagement dose adds a "
+        f"RESIDUAL {_rule['resid']:+.4f} per SD (p={_rule['resid_p']:.3f}, SIGN-REVERSED from every "
+        f"estimate below). This is EXPLORATORY and not interpreted as a magnitude, because dose and "
+        f"outcome remain mechanically connected (turns drive active_energy_cost, a literal term in "
+        f"`credit`) and because conditioning on `credit` over-controls for a near-deterministic "
+        f"function of the outcome itself — `active_energy_cost` is mechanically CAUSED BY dose "
+        f"(more turns/duration -> more active cost), so it is a MEDIATOR of the dose effect, not a "
+        f"confounder of it; controlling for a mediator when the target is dose's total effect "
+        f"strips out exactly the pathway being measured, which is the more likely explanation for "
+        f"why (1)'s residual is small and sign-reversed, not evidence that (2) is wrong. That is "
+        f"also why `active_energy_cost` is deliberately NOT a covariate in (2) below — a design "
+        f"choice, not an oversight. (2) SEPARATELY, across specifications that control `fed` "
+        f"and `affinity_before` but do NOT additionally control `credit`/`active_energy_cost` — the "
+        f"comparison the previous report's 'all three doses agree in sign' claim was actually about "
+        f"— the fully observed dose (`n_turns`) gives {_sl['coef']:+.3f} "
+        f"[{_sl['lo']:+.3f}, {_sl['hi']:+.3f}] (person-cluster bootstrap [{_db[0]:+.3f}, "
+        f"{_db[2]:+.3f}]), against the "
         f"{float(globals()['_b10_dose_cmp'].query('model.str.startswith(\"OLD\")')['slope'].iloc[0]):+.3f} "
-        f"the uncontrolled specification reported — a {_ag['max_ratio']:.1f}x spread across "
-        f"specifications, so they agree in SIGN but NOT in magnitude ({_ag['reason']}). Duration is "
+        f"the fully uncontrolled specification reported — a {_ag['max_ratio']:.1f}x spread. THESE "
+        f"({_sl['coef']:+.3f} vs "
+        f"{float(globals()['_b10_dose_cmp'].query('model.str.startswith(\"OLD\")')['slope'].iloc[0]):+.3f}) "
+        f"agree in SIGN but NOT in magnitude ({_ag['reason']}); note that NEITHER of them controls "
+        f"`active_energy_cost`, so neither is the fully-rule-controlled estimate in (1) — read "
+        f"{_sl['coef']:+.3f} as partially controlled, not as the rule-controlled figure. Duration is "
         f"52% missing and NOT at random; the IPW fit has an effective sample size of "
         f"{_ipwd['ess']:.0f}/{_ipwd['n_observed']} ({_ipwd['ess_frac']*100:.0f}%) and "
         f"{'a POSITIVITY VIOLATION' if _ipwd['positivity_violation'] else 'no positivity violation'}. "
