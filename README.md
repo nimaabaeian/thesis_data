@@ -360,11 +360,28 @@ bootstrap 95% CIs.*
 
 #### B6: Observed Starving episodes
 
-The executive logger writes `hunger_state_before` and `hunger_state_after` as the **same value**
-on a passive-drain crossing, so an episode builder keyed on `after == "HS3" and before != "HS3"`
-is blind to every drain-entered episode: precisely the ones where nobody was interacting with the
-robot, and therefore nobody was there to feed it. Deriving hunger state from the **level series**
-instead finds **17** Starving episodes.
+The analysis does not automatically trust every logged label. During passive energy drain the
+executive logger writes `hunger_state_before` and `hunger_state_after` as the **same value** even
+when the numerical level crosses a threshold, so an episode builder keyed on
+`before != Starving and after == Starving` is blind to every drain-entered episode: precisely the
+ones where nobody was interacting with the robot, and therefore nobody was there to feed it.
+
+The corrected analysis derives the state directly from the level `L`:
+
+$$
+H(L) = \begin{cases}
+\text{Full} & L \ge 60 \\
+\text{Hungry} & 25 \le L < 60 \\
+\text{Starving} & L < 25
+\end{cases}
+$$
+
+This finds **17** Starving episodes; a label-based detector would have missed nine of them. The
+missed episodes are not random — they are disproportionately the ones entered by drain while no
+person was present to feed the robot, so a label-based method would have produced a strongly
+optimistic recovery estimate. The regression tests deliberately recreate this exact failure and
+verify that the production episode builder detects it, importing the same statistical functions
+used by the notebook rather than maintaining duplicated test-only implementations.
 
 Of these, **13/17** received a feed and **13/17** recovered to Full by feeding (exact 95% CI
 [0.50, 0.93]; run-cluster bootstrap [0.46, 0.95]). The episodes cluster in 9 runs, so the effective
