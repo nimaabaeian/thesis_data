@@ -4247,7 +4247,7 @@ depends on colour alone. Figure titles state the analytic claim; captions state 
 analysis and whether the panel is confirmatory, diagnostic, or exploratory.
 """)
 
-md("""**Fig 2 — Drive timeline per day** *(unit: hunger-level event, n = 165,460 events across
+md("""**Drive timeline per day** *(unit: hunger-level event, n = 165,460 events across
 12 monitored runs / 8 days)*: one panel per experiment day. The drive `run_id`/`monotonic` clock resets on every restart, so a day can
 contain several runs (4 restarts on 2026-06-15, 2 on 2026-06-18); we stitch a day's runs
 on the shared wall-clock (`timestamp_epoch`) and mark each restart with a dotted line.
@@ -4306,12 +4306,12 @@ handles=[Patch(fc=HS_PALETTE["HS1"],alpha=.4,label="Full (≥60)"),
          Line2D([0],[0],color=MUTED,lw=0.9,ls=":",label="restart"),
          Line2D([0],[0],marker="^",color=HS_ACCENT["HS1"],lw=0,label="meal (▲ size ∝ SMALL/MED/LARGE)")]
 fig.legend(handles=handles,loc="lower center",ncol=6,bbox_to_anchor=(0.5,-0.05),fontsize=9)
-fig.suptitle("Fig 2 — Orexigenic-drive dynamics per experiment day: autonomous drain, discrete replenishment, Starving sojourns",
+fig.suptitle("Orexigenic-drive dynamics per experiment day: autonomous drain, discrete replenishment, Starving sojourns",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig02_drive_timeline"); plt.show()
 """)
 
-md("""**Fig 4 — Deficit → action (RQ1-3)** *(units: 367 interaction turns, 710 chat messages,
+md("""**Deficit → action (RQ1-3)** *(units: 367 interaction turns, 710 chat messages,
 217 co-present interactions, and 193 deficit-gated action events)*: the correct contrast,
 **Full vs deficit (Hungry+Starving)**. Left: recovery-action rates with bootstrap CIs.
 Right: the time distribution of deficit-gated actions across the deployment, rather than a
@@ -4413,12 +4413,12 @@ axB.legend(loc="upper left",bbox_to_anchor=(1.01,1.0),fontsize=8,frameon=False)
 axB.text(0.01,0.985,"thin line: stomach level (green/amber/red = state)",
          transform=axB.transAxes,ha="left",va="top",fontsize=8.2,color=MUTED)
 axB.set_title("Temporal allocation of deficit-gated actions",fontsize=11)
-fig.suptitle("Fig 4 — Deficit-to-action-selection coupling: deficits bias recovery policy",
+fig.suptitle("Deficit-to-action-selection coupling: deficits bias recovery policy",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig04_deficit_action"); plt.show()
 """)
 
-md("**Fig 5 — State×hunger priority-reallocation heatmap** *(unit: interaction, n = 217; Starving column n = 13)*: grid coloured by Engaged-completion and by average turns, with the low-n Starving column interpreted directionally.")
+md("**State×hunger priority-reallocation heatmap** *(unit: interaction, n = 217; Starving column n = 13)*: grid coloured by Engaged-completion and by average turns, with the low-n Starving column interpreted directionally.")
 code(r"""
 # Sequential single-hue (magnitude), NOT a red-green rainbow: CVD-safe, and every cell
 # is annotated with value + n so small cells (esp. the HS3 column) are not over-read.
@@ -4451,12 +4451,12 @@ draw(a1,grid("reached_ss4"),N,"Greens",1.0,"P(reach Engaged)","{:.2f}")
 a1.set_ylabel("social state at start"); a1.set_title("Engaged-completion probability")
 draw(a2,grid("n_turns"),N,"Purples",grid("n_turns").max().max(),"avg conversation turns","{:.1f}")
 a2.set_title("Mean conversation turns")
-fig.suptitle("Fig 5 — Priority reallocation: Starving shifts behaviour away from social completion",
+fig.suptitle("Priority reallocation: Starving shifts behaviour away from social completion",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig05_prioritisation_heatmap"); plt.show()
 """)
 
-md("""**Fig 8 — The remote loop, against its control** *(unit: proactive Telegram ping; one-to-one
+md("""**The remote loop, against its control** *(unit: proactive Telegram ping; one-to-one
 reply matching; `hs3_recovery` notifications excluded from the hunger channel)*. The bar that
 matters is the **matched no-ping control window**: people message the bot anyway, so a raw
 response-to-ping rate says nothing on its own. Exact 95% CIs.""")
@@ -4510,12 +4510,12 @@ axR.set_xticks([15,30,60]); axR.set_xlabel("reply window (minutes)")
 axR.set_ylabel("P(user reply)"); axR.set_ylim(0,1)
 axR.legend(fontsize=8.6, loc="upper left")
 axR.set_title("Window sensitivity (exact 95% CI; paired difference labelled)", fontsize=10.6)
-fig.suptitle("Fig 8 — Hunger pings show a small matched reply association",
+fig.suptitle("Hunger pings show a small matched reply association",
              fontsize=13, fontweight="semibold")
 savefig(fig,"fig08_remote_loop"); plt.show()
 """)
 
-md("""**Fig 9 — Occupancy: what happened, and what the model says** *(unit: state sojourn from the
+md("""**Occupancy: what happened, and what the model says** *(unit: state sojourn from the
 level series, terminal right-censored dwells included; 12 monitored runs)*. The **empirical** bars
 need no stationarity assumption and are the figure of record. The modelled CTMC is shown beside
 them, with its diagnostics: the fraction of non-ergodic bootstrap resamples, and the spread between
@@ -4573,12 +4573,12 @@ _verdict = "NOT identified" if not _b7["stable"] else "stable"
 axR.set_title(f"Stratified: the pooled chain mixes these\n"
               f"{_b7['nonergodic']*100:.0f}% of run-resamples non-ergodic  →  {_verdict}",
               fontsize=10.6)
-fig.suptitle("Fig 9 — Report the empirical occupancy; the stationary model does not survive its diagnostics",
+fig.suptitle("Report the empirical occupancy; the stationary model does not survive its diagnostics",
              fontsize=12.6,fontweight="semibold")
 savefig(fig,"fig09_steady_state"); plt.show()
 """)
 
-md("""**Fig 10 — Homeostatic-affinity trajectories, faceted by Phase-1 role** *(unit: learning
+md("""**Homeostatic-affinity trajectories, faceted by Phase-1 role** *(unit: learning
 update event, n = 205 learning-eligible RQ3 events over 14 named people)*: one panel per
 assigned role, sharing both axes. Thin lines are individual people; the bold line is the role
 mean of the currently-held affinity. Faceting replaces the 14-line overlay: the panel carries
@@ -4663,7 +4663,7 @@ axes[0].plot([],[],lw=1.0,color=MUTED,alpha=0.6,label="individual person")
 axes[0].plot([],[],lw=2.6,color=MUTED,label="role mean (currently-held affinity)")
 fig.legend(loc="outside lower center",ncol=2,frameon=False,fontsize=8.6)
 axes[-1].set_xlabel("experiment time (days from first logged affinity update)")
-fig.suptitle("Fig 10 — Adaptive regulatory memory: affinity separates by assigned role, then relaxes",
+fig.suptitle("Adaptive regulatory memory: affinity separates by assigned role, then relaxes",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig10_affinity_trajectories"); plt.show()
 """)
@@ -4672,7 +4672,7 @@ savefig(fig,"fig10_affinity_trajectories"); plt.show()
 # share comparison over 5 people, superseded by the inferential B10.3 test (prior affinity ->
 # next-day proactive approaches, person-clustered GEE) and Fig 13.
 
-md("""**Fig 12 — Role-manipulation validation (B10.1)** *(units: interaction and person-day;
+md("""**Role-manipulation validation (B10.1)** *(units: interaction and person-day;
 217 interactions, 14 named people, 8 days; controlled roles = 2 feeders + 2 no-feed in
 Phase 1)*: did the Phase-1 experimental labels produce the intended feeding behaviour, and
 did it relax in Phase 2? Left: feed probability per interaction with exact 95% CIs. Right:
@@ -4725,12 +4725,12 @@ axR.set_xticks([0,1]); axR.set_xticklabels(["Phase 1 (roles active)","Phase 2 (u
 axR.set_ylabel("meals per person-day (observed)")
 axR.set_ylim(0, float(_bars.max())*1.9 if len(_bars) else 1.0)
 axR.set_title("Meal supply per person-day",fontsize=11.5)
-fig.suptitle("Fig 12 — The role changed ATTENDANCE, not generosity. Non-randomised; 4 people.",
+fig.suptitle("The role changed ATTENDANCE, not generosity. Non-randomised; 4 people.",
              fontsize=12.4,fontweight="semibold")
 savefig(fig,"fig12_role_validation"); plt.show()
 """)
 
-md("""**Fig 13 — What actually drives Δaffinity (B10.2)** *(unit: learning update event, all named
+md("""**What actually drives Δaffinity (B10.2)** *(unit: learning update event, all named
 learning-eligible events)*. Left: Δaffinity against engagement dose, coloured by whether a **meal
 arrived** — the split the old model did not control for. Right: the dose slope under four
 specifications. The gap between the uncontrolled slope and the controlled one is the finding: most
@@ -4781,7 +4781,7 @@ axR.set_yticklabels([r[0].replace(": ",":\n") for r in _rows],fontsize=8.4)
 axR.set_xlabel("Δaffinity per +1 SD of engagement dose (95% CI)")
 axR.set_title("Same question, four specifications",fontsize=11.2)
 axR.margins(x=0.34)
-fig.suptitle("Fig 13 — Most of the reported dose→affinity effect was the update rule itself",
+fig.suptitle("Most of the reported dose→affinity effect was the update rule itself",
              fontsize=13,fontweight="semibold")
 savefig(fig,"fig13_affinity_dose"); plt.show()
 """)

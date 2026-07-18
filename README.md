@@ -292,7 +292,7 @@ association, not a causal effect of the drive.
 
 ![Deficit to action](analysis/figures/fig04_deficit_action.png)
 
-*Fig 4 — units: 367 interaction turns, 710 chat messages, 217 co-present interactions, and 193
+*units: 367 interaction turns, 710 chat messages, 217 co-present interactions, and 193
 deficit-gated action events. Recovery-action rates Full vs deficit are shown with bootstrap CIs,
 and deficit-gated actions are plotted on the stomach-level timeline.*
 
@@ -315,7 +315,7 @@ replication with more Starving exposure before any magnitude is claimed.
 
 ![Prioritisation heatmap](analysis/figures/fig05_prioritisation_heatmap.png)
 
-*Fig 5 — unit: interaction, n = 217; Starving column n = 13. Completion is high for known people
+*unit: interaction, n = 217; Starving column n = 13. Completion is high for known people
 until Starving shifts priority away from social completion.*
 
 ---
@@ -354,7 +354,7 @@ every time-varying difference in subscriber availability or deployment context.
 
 ![Remote loop](analysis/figures/fig08_remote_loop.png)
 
-*Fig 8 — unit: proactive Telegram ping, matched against non-overlapping, ping-free control
+*unit: proactive Telegram ping, matched against non-overlapping, ping-free control
 windows on the same subscriber, run and time-of-day. Bars show response-to-ping rates with
 bootstrap 95% CIs.*
 
@@ -413,7 +413,7 @@ contains.
 
 ![Steady state](analysis/figures/fig09_steady_state.png)
 
-*Fig 9 — unit: hunger-state sojourn/transition reconstructed from the level series across 12
+*unit: hunger-state sojourn/transition reconstructed from the level series across 12
 monitored runs. The empirical occupancy (1.67%) is shown alongside the unidentified modelled
 figure for comparison.*
 
@@ -569,19 +569,19 @@ written to do.
 
 ![Affinity trajectories](analysis/figures/fig10_affinity_trajectories.png)
 
-*Fig 10 — unit: learning update event, n = 205 learning-eligible events over 14 named people. One
+*unit: learning update event, n = 205 learning-eligible events over 14 named people. One
 panel per Phase-1 role; thin lines are individual people, the bold line is the role mean, and the
 dashed vertical marks the phase boundary.*
 
 ![Role validation](analysis/figures/fig12_role_validation.png)
 
-*Fig 12 — units: interaction and scheduled person-day; 217 interactions, 14 named people, 96
+*units: interaction and scheduled person-day; 217 interactions, 14 named people, 96
 scheduled person-days including 23 no-show zeros (reconciled against logged interactions). Left:
 feed probability per interaction. Right: attributed energy per scheduled day.*
 
 ![Affinity dose model](analysis/figures/fig13_affinity_dose.png)
 
-*Fig 13 — unit: learning update event; duration-linked subset is roughly half of 205 events. The
+*unit: learning update event; duration-linked subset is roughly half of 205 events. The
 figure shows the controlled vs uncontrolled dose specifications side by side.*
 
 ---
@@ -683,6 +683,6 @@ learning results in RQ1–RQ3.
 
 ![Drive timeline](analysis/figures/fig02_drive_timeline.png)
 
-*Fig 2 — unit: hunger-level event across 12 monitored runs / 8 days. The timeline shows autonomous
+*unit: hunger-level event across 12 monitored runs / 8 days. The timeline shows autonomous
 drain, discrete feeding recoveries, and Starving periods, including the drain-entered episodes
 invisible to a before/after-label-keyed detector.*
